@@ -57,6 +57,7 @@ const inquiry = (over: Partial<Inquiry> = {}): Inquiry => ({
   duration: 0,
   rentalDays: 1,
   guests: 0,
+  budget: 0,
   contactMethod: "WhatsApp",
   consent: true,
   website: "",
@@ -64,7 +65,7 @@ const inquiry = (over: Partial<Inquiry> = {}): Inquiry => ({
   basket: { services: [], products: [] },
   id: `demande-${++sequence}`,
   createdAt: received(1),
-  status: "Nouvelle demande",
+  status: "Nouveau",
   notes: "",
   estimate: 0,
   hasUnpriced: false,
@@ -100,9 +101,9 @@ const inquiries: Inquiry[] = [
     date: on(-5),
     basket: { services: ["animation"], products: [{ id: "led", quantity: 2, variant: "" }] },
   }),
-  inquiry({ createdAt: received(20), status: "Confirmé", estimate: 3000, guests: 200, date: on(60) }),
+  inquiry({ createdAt: received(20), status: "Accepté", estimate: 3000, guests: 200, date: on(60) }),
   inquiry({ createdAt: received(40), status: "Terminé", estimate: 1500, event: "event-anniv", date: on(-100) }),
-  inquiry({ createdAt: received(50), status: "Annulé", estimate: 800, event: "event-anniv", date: on(5) }),
+  inquiry({ createdAt: received(50), status: "Refusé", estimate: 800, event: "event-anniv", date: on(5) }),
   inquiry({
     createdAt: received(6),
     status: "En cours de traitement",
@@ -137,12 +138,12 @@ test("the pipeline keeps the order of the statuses and totals every request", ()
   assert.deepEqual(
     stats.pipeline.map((line) => [line.status, line.count]),
     [
-      ["Nouvelle demande", 5],
+      ["Nouveau", 5],
       ["En cours de traitement", 1],
       ["Devis envoyé", 1],
-      ["Confirmé", 1],
+      ["Accepté", 1],
+      ["Refusé", 1],
       ["Terminé", 1],
-      ["Annulé", 1],
     ],
   );
   assert.ok(

@@ -1,54 +1,54 @@
-# CLAUDE.md — EVENTHEME
+# CLAUDE.md — EVENTHEMES
 
 ## Project Context
 
-EVENTHEME is a Moroccan event company: event organisation, entertainment (_animation_), decoration and staging (_mise en scène_), and event-equipment rental.
+EVENTHEMES is a Moroccan **event technical production and equipment rental** company: technical and audiovisual solutions for events of every size. It supplies, rents, installs and operates the equipment that professional and private events need: stages, truss structures, LED screens and video, sound, lighting and technical control (_régie_).
 
-This repository is its official website. The site does three jobs at once:
+Audience: companies, institutions, event agencies and private clients in Morocco.
 
-- a **digital showcase** for a premium, creative, reliable brand,
-- a **commercial catalogue** of services and rental equipment,
-- a **lead-generation tool**: visitors select their needs and send a personalised quote request.
+This repository is its official website: a premium showcase, an interactive equipment catalogue, a multi-step quote request system, and a back office.
 
-Brand signature (use verbatim):
+Proposed creative tagline (from the spec, still to be validated by EVENTHEMES):
 
-> Votre événement. Votre vision. Notre savoir-faire.
+> WE ENGINEER THE EXPERIENCE.
 
-Target visitor journey:
+Client journey (spec §05):
 
 ```text
-Découvrir EVENTHEME → Choisir un service → Sélectionner ses besoins → Demander un devis → Contacter l'équipe
+Découvrir → Explorer le catalogue → Sélectionner (matériel + prestations) → Personnaliser (infos événement) → Envoyer → Suivi commercial
 ```
-
-Client priorities, in order: visual elegance, image quality, clarity of services, ease of requesting a quote, conversion, performance, security, scalability.
 
 ---
 
 ## Sources of Truth
 
-1. **The EVENTHEME cahier des charges** (client specification, summarised in this file) is authoritative for brand, content, pages, features and requirements. It wins every conflict.
-2. **`aurelys-maquette .html`** (note the space in the filename) is the approved mockup from the project's earlier AURÉLYS phase. It remains the reference for layout quality, spacing, motion, interaction patterns and responsive behaviour. It is **no longer** a reference for the brand name, colours, fonts or copy.
-3. **Stack decision (user, 2026-09-18):** Next.js front-end with a Supabase backend. This replaces the WordPress / Elementor / WPCode stack named in §4 of the cahier des charges. Every other requirement of the spec still applies, including a back office usable by staff with no technical knowledge.
+1. **The EVENTHEMES cahier des charges** (« Conception & développement du site web », supplied 2026-11-14, summarised in this file) is authoritative for brand, content, pages, features and requirements. It wins every conflict.
+2. **Stack decisions (user):** Next.js front-end with a Supabase backend (2026-09-18). The spec's §09 table is a list of « pistes techniques » for the developer to validate: Supabase covers PostgreSQL and S3-compatible media storage; **CSS Modules with design tokens are kept instead of Tailwind** (2026-11-14).
+3. **Superseded:** the earlier EVENTHEME brief (organisation, animation, décoration; golden butterflies; Cormorant/Cinzel; « Votre événement. Votre vision. Notre savoir-faire. »). Do not reintroduce its services, copy, palette, fonts or motifs.
+4. **`aurelys-maquette .html`** (space in the filename) remains a reference only for interaction quality, spacing and motion. Never for brand, colours, fonts or copy.
 
 ---
 
-## Current State of the Repository
+## Current State (2026-11-14)
 
-The code is a single-page Next.js front-end that reproduces the AURÉLYS mockup. It is the starting point for EVENTHEME, not the finished product.
+**Built and working:**
 
-**Still AURÉLYS and due for the rebrand:**
+- Multi-page App Router site: `/`, `/a-propos`, `/services`, `/materiel`, `/materiel/[id]`, `/realisations`, `/realisations/[id]`, `/contact`, `/devis`, `/mentions-legales`, `/politique-de-confidentialite`, `/bientot` (coming soon, not enforced). `/location*` and `/evenements` redirect (308) to their replacements.
+- Rebrand to EVENTHEMES: tokens, Space Grotesk + Inter, copy, technical demo content, truss motif (`src/components/ui/Truss.tsx`), 3D truss rig in the hero (`HeroSculpture.tsx`, three.js, lazy-loaded with an SVG fallback).
+- Home in spec order: hero → introduction → expertises → réalisations → matériel → « Pourquoi EVENTHEMES » → quote studio → final CTA.
+- Catalogue: categories and sub-categories managed as content (`kind: "categories"`, products reference them by id; helpers in `src/lib/eventheme/catalogue.ts`), filters by category, sub-category, brand, colour, price and availability, search by name, brand, model and reference, `?categorie=` preselection. Product sheets: brand, model, reference, specs table, variants, quantity, availability note, WhatsApp link. « Ajouter au devis » basket persisted across pages.
+- Quote studio (`QuoteStudio.tsx`): callback request first (name, optional company, phone, optional e-mail, event type, consent), then an optional five-step configuration (événement, prestations, matériel, détails, récapitulatif) with live indicative estimate and a printable summary. Only event type, date and city are required; participants and budget are optional. Up to 3 attachments (PDF/JPG/PNG/WebP, 4 MB each, type checked on content, large photos shrunk in the browser) go to `/api/inquiries/attachments` under the request's continuation token. Every request gets a readable reference `EVT-AAAA-NNNN` (Postgres sequence in production). WhatsApp message prefilled when the business number is configured.
+- Admin at `/admin` (Supabase Auth, `app_metadata.role = "admin"`): dashboard, statistics, requests (reference, budget, participants, attachments downloaded through `/api/admin/attachments`), messages, clients, CRUD for services, products, catalogue categories, event types, projects, page texts, socials; CSV export.
+- Data layer `src/lib/eventheme/server.ts`: local JSON store in development (`.eventheme/data.json`, git-ignored), Supabase when `EVENTHEME_DATA_MODE=supabase`. Migrations and a generated public seed in `supabase/`. RLS on every table, server-side validation, origin checks, DB rate limiting.
+- Automatic e-mails after each request (`after()` in `/api/inquiries`): team alert and client acknowledgement. Templates and provider payloads are pure (`src/lib/eventheme/emails.ts`); sending in `mailer.ts` through Resend or Brevo HTTP APIs with `fetch` (no SDK), chosen by `EMAIL_PROVIDER`; recipients and anti-abuse limits in `notifications.ts`. Without a provider: previews in `.eventheme/emails/` locally, nothing in production. A failed e-mail never fails a request; a retried completion never re-sends.
+- Languages: French at `/`, English under `/en/…` with English slugs (`/en/equipment`, `/en/quote`…). Routing helpers in `src/lib/i18n.ts` (`pathFor`, `routeOf`, `translatePath`, `alternatesFor`); the proxy passes the page language to the root layout (`<html lang>`, metadata, content); hreflang alternates on every page and in the sitemap; language switcher in the header and mobile menu. Interface texts live in `src/data/locales/fr.ts` (reference) and `en.ts` (English draft, to be validated by EVENTHEMES); components read `t`, `locale` and `href(key, id)` from `useEventheme()`. Staff content has an optional « Version anglaise » in the admin (`entry.translations.en`: title, subtitle, description, specifications, service discipline, colour, option names), merged server-side by `localizeEntries`; an empty field falls back to French. Each request records its language (`inquiry.locale`, from the `X-Locale` header): API errors (`translateServerError`) and the client acknowledgement follow it; the team alert stays French and flags English requests.
+- `npm test` (node:test via tsx), lint, typecheck; smoke scripts in `tests/*.mjs`.
 
-- name, metadata and copy (`src/data/site.ts` and the other `src/data/*` modules),
-- colour tokens (`src/styles/tokens.css`),
-- the Jost body font (`src/app/layout.tsx`), which is not one of the spec's typefaces,
-- placeholder phone, e-mail and WhatsApp number, and Unsplash/Picsum photography (`src/lib/images.ts`),
-- the `package.json` name and the git remote (`AURELYS`).
+**Not built yet (see Roadmap):** the Settings admin module, Arabic (optional, right-to-left), service and city SEO pages, structured data, analytics. « Archiver » a product is unpublishing it: it stays in the admin.
 
-**Inherited sections the EVENTHEME home page spec does not ask for:** Stats (unconfirmed figures such as « 500+ événements »), Testimonials (a future evolution in the spec), the Equipment rail, the 5-step Process timeline, and the budget simulator with its Essentiel / Signature / Prestige multipliers (`src/lib/pricing.ts`, `src/data/calculator.ts`). Don't extend them, don't present their figures as EVENTHEME facts, and ask before removing or repurposing them.
+**Inherited, unused modules** (AURÉLYS single-page era; nothing imports them): `src/data/{site,hero,services,stats,testimonials,calculator}.ts`, `src/lib/pricing.ts`, `src/components/sections/{EventCalculator,Stats,StatCounter,Testimonials,EventTypes}.*`. Ask before deleting or repurposing them; never present their figures as EVENTHEMES facts.
 
-**Not built yet:** multi-page routing, Coming Soon page, rental catalogue, quote configurator and « Mon devis » basket, contact form, Supabase integration, admin area, e-mails, legal pages, sitemap, structured data.
-
-Rebrand what a task touches, but don't fold a codebase-wide rebrand into an unrelated change unless asked.
+Internal identifiers keep the historical `eventheme` spelling on purpose: the `src/components/eventheme/` and `src/lib/eventheme/` folders, `useEventheme`, the `EVENTHEME_DATA_MODE` variable, the `eventheme-media` bucket, `.eventheme/`. Renaming them breaks deployments and stored data for no visible gain. User-facing text always says **EVENTHEMES**.
 
 ---
 
@@ -56,288 +56,177 @@ Rebrand what a task touches, but don't fold a codebase-wide rebrand into an unre
 
 ### Positioning
 
-Communicate élégance, créativité, professionnalisme, fiabilité, qualité, innovation and sens du détail. EVENTHEME must read as a professional, creative event brand in Morocco.
+Three values (spec §02): **puissance technique, excellence professionnelle, innovation audiovisuelle**. Style: minimalist, premium, cinematic, technical. « Spectaculaire sans devenir chargé » — readability, speed and accessibility come first.
 
-Style: luxueux, moderne, minimaliste, cinématographique, élégant, professionnel. **Never overloaded.** The site stays mostly black, white and photographic.
+### Colour Palette (spec §02)
 
-### Colour Palette
+| Spec name | Hex | Token | Use |
+| --- | --- | --- | --- |
+| Noir profond | `#08090B` | `--noir` | Main background, premium sections |
+| Or | `#C9A24A` | `--or` | Accents, separators, details |
+| Argent | `#C5C8CE` | `--argent` | Technical details, secondary elements, body copy on dark |
+| Blanc | `#FFFFFF` | `--blanc` | Text and contrast |
+| Gris | `#858990` | `--gris` | Secondary text (5.7:1 on `--noir`) |
 
-| Spec name | Hex | Suggested token |
-| --- | --- | --- |
-| Noir profond | `#050505` | `--noir` |
-| Noir secondaire | `#111111` | `--noir-2` |
-| Blanc cassé | `#F5F1E8` | `--blanc` |
-| Or principal | `#C9A34E` | `--or` |
-| Or clair | `#E4C779` | `--or-clair` |
-| Bronze foncé | `#8B6914` | `--or-profond` |
-| Gris secondaire | `#A5A5A5` | `--gris` |
+Derived tokens in `src/styles/tokens.css` are mixes of palette colours only: surfaces `--noir-2/3/4`, gold states `--or-clair` / `--or-profond`, hairlines `--ligne` (gold) and `--ligne-argent`. Transparent variants of palette colours are fine; new hues are not (the destructive `--rouge` is the one agreed exception). Never hard-code colours in components: use tokens.
 
-- Gold is an accent only: logo, important headings, buttons, decorative lines, prices, hover effects.
-- Transparent variants of palette colours (hairlines, overlays) are fine. New hues are not.
-- Current tokens with no spec equivalent (`--anthracite`, `--anthracite-2`, `--or-vif`, `--blanc-doux`) must be remapped or retired during the rebrand.
+### Typography (spec §02)
 
-### Typography
+- **Headings:** Space Grotesk (`--ff-display`). Sora is the spec's alternative; Space Grotesk was chosen because the spec also uses it for numbers, so one family covers both.
+- **Body and UI:** Inter (`--ff-body`).
+- **Numbers and data:** Space Grotesk (`--ff-data`).
+- Both are variable fonts loaded through `next/font` in `src/app/layout.tsx`. Neither display face is set in italic: accents are colour (gold), not italics.
 
-- **Headings:** Bodoni Moda, Cormorant Garamond or Playfair Display. Cormorant Garamond is already loaded.
-- **Premium accents:** Cinzel (for example eyebrows, labels, small caps details).
-- **Body and UI:** Montserrat or Manrope, replacing Jost.
+### Graphic Principles
 
-The final choice between the allowed typefaces hasn't been made. Ask before switching fonts.
+Large-format photography and immersive video; geometric grids inspired by **truss structures** (`<Truss />` ornament, the 3D rig); coherent technical iconography; fluid, useful animation. No golden butterflies or floral motifs.
+
+**Logo:** `public/eventheme_logo*.webp` is the client's existing script « EvenTheme » logo with a butterfly. It predates this spec and lacks the S. Keep it until EVENTHEMES supplies a logo for the new identity; never invent one.
 
 ### Tone
 
-Polished French: concise, premium, reassuring, client-focused.
+Polished French: precise, technical, premium, reassuring. The English tagline is marked `lang="en"` wherever it appears (`brand.signature`, `isSignature()` in `src/data/eventheme.ts`).
 
-Never invent facts. Statistics, client names, testimonials, awards, prices and contact details appear only when EVENTHEME supplies them. Placeholder content must be obviously placeholder.
-
-The site is French (`lang="fr"`). French/Arabic/English is a future evolution, so keep copy in the data layer rather than hard-coded in JSX.
+**Never invent facts.** Key figures only when real and verifiable; projects only when real and authorised for publication; no client names, testimonials, brands, models, prices or contact details unless EVENTHEMES supplies them. Demo content is marked `demo: true` and labelled « Exemple » / « Inspiration » / « Photographie d’illustration ».
 
 ---
 
-## Site Structure
+## Site Structure (spec §03)
 
-Main menu: **Accueil · Événements · Services · Location · Réalisations · À propos · Contact · Mon devis**. « Mon devis » is a highlighted button that stays reachable on mobile.
+| Spec page | Route | Notes |
+| --- | --- | --- |
+| Home | `/` | |
+| About | `/a-propos` | |
+| Services | `/services` | Future: one page per service (`/services/[slug]`) |
+| Equipment | `/materiel`, `/materiel/[id]` | Content id of the page text: `location-page` (kept for data stability) |
+| Projects | `/realisations`, `/realisations/[id]` | |
+| Request a Quote | `/devis` | « Mon devis » button in the header and mobile menu |
+| Contact | `/contact` | |
+| Legal | `/mentions-legales`, `/politique-de-confidentialite` | |
+| Back office | `/admin` | Authenticated |
 
-Proposed routes (clean French URLs, not created yet):
+English: the same pages under `/en` with English slugs (`/en/about`, `/en/services`, `/en/equipment`, `/en/projects`, `/en/contact`, `/en/quote`, `/en/legal-notice`, `/en/privacy-policy`). The admin stays in French.
 
-| Route | Page |
+Main menu: Accueil · À propos · Services · Matériel · Réalisations · Contact, plus the highlighted « Mon devis » button (reachable on mobile).
+
+---
+
+## Page Requirements (spec §04)
+
+**Home:** full-screen stage visual or video with clear navigation, main message and CTAs; introduction; Our Expertise; Featured Projects; Technical Equipment (overview of equipment categories); Why EVENTHEMES (équipements professionnels, expertise technique, solutions adaptées, exécution fiable); Chiffres clés (**real, verifiable data only**: not shown until supplied); final CTA to request a quote.
+
+**About:** company presentation, vision and mission, values, technical expertise, methodology, team (only if information and visuals exist). Vision/mission and team await EVENTHEMES content.
+
+**Services:**
+
+| Service | Content |
 | --- | --- |
-| `/` | Accueil |
-| `/evenements` | Événements |
-| `/services` | Services |
-| `/location`, `/location/[slug]` | Catalogue, fiche produit |
-| `/realisations`, `/realisations/[slug]` | Réalisations, fiche projet |
-| `/a-propos` | À propos |
-| `/contact` | Contact |
-| `/devis` | Mon devis (configurateur) |
-| `/mentions-legales`, `/politique-de-confidentialite`, … | Legal pages |
-| `/admin` | Back office (authenticated) |
+| Scènes & Podiums | Scènes modulaires, podiums, plateformes et installations |
+| Structures & Truss | Structures aluminium, roof systems, supports et rigging |
+| Écrans LED & Vidéo | Murs LED, écrans géants, diffusion et solutions vidéo |
+| Sonorisation | Systèmes audio, enceintes, microphones et consoles |
+| Éclairage professionnel | Moving heads, PAR LED, éclairage architectural, effets lumineux |
+| Régie technique | Régie son, lumière, vidéo, coordination et exploitation technique |
+| Services complémentaires | Effets spéciaux, installation, exploitation et démontage |
 
-Before launch, the Coming Soon page replaces the public site.
+**Equipment catalogue:** organised by categories **and sub-categories**; per item: professional photo, name, **brand and model when available**, description and technical specifications, category, optional internal reference, availability « à confirmer », « Ajouter au devis ». Filters by category, **brand** and equipment type; search by name, **brand or reference**. Prices may be « sur demande »; availability and final price are always confirmed by the team according to date, quantity, duration and place.
+
+**Projects:** filter by Galas, Événements corporate, Concerts, Événements privés, Festivals, Conférences. Each project may have name, event type, city, photos, video and services delivered. Only real, authorised projects.
+
+**Request a Quote:** multi-step form with a summary before sending, easy on mobile, **required fields kept to the strict minimum**.
+
+**Contact:** phone and WhatsApp, e-mail, address and map if available, social networks, contact form.
+
+**Event types (spec §01):** Galas & cérémonies · Soirées privées et professionnelles · Concerts & festivals · Événements corporate · Conférences & séminaires · Lancements de produits · Anniversaires et événements privés.
 
 ---
 
-## Page Requirements
+## Quote System (spec §05)
 
-### Coming Soon
+Form fields:
 
-- Centred EVENTHEME logo, the signature, « Quelque chose d’extraordinaire arrive. » and « L’expérience EVENTHEME arrive bientôt. »
-- Instagram and WhatsApp links.
-- Dark, luxurious design on a photographic or light video background, with discreet golden butterflies.
-- Content perfectly centred on the vertical axis at every viewport.
-- **No countdown.**
+- **Client:** nom complet, entreprise (optional), téléphone, e-mail.
+- **Événement:** type, date, ville, lieu, nombre estimé de **participants**.
+- **Prestations:** scène, structure, LED, son, lumière, régie, autres besoins.
+- **Matériel:** catalogue items and quantities.
+- **Détails:** project description, optional estimated budget, **attachments** (plans, photos, documents).
+- **Confirmation:** summary, privacy-policy consent, send.
 
-### Header
+After sending: generate a **unique reference number**, notify the admin team, send an acknowledgement to the client, offer direct WhatsApp access, save the request in the back office. No online payment. Any amount shown is indicative, never a quotation.
 
-Logo, main menu, « Mon devis » button, WhatsApp link (in the header or mobile menu), hamburger menu on mobile, transparent or dark background, sticky with an elegant transition on scroll.
+Attachments are private client documents: they go to a **private** Storage bucket served through signed URLs, never to the public `eventheme-media` bucket.
 
-### Accueil
+---
 
-1. **Hero:** high-quality event image or video, dark overlay, signature, short introduction, buttons « CONFIGURER MON ÉVÉNEMENT » and « DÉCOUVRIR NOS SERVICES », WhatsApp link.
-2. **Présentation rapide:** who EVENTHEME is, what it does, why choose it. Button to À propos.
-3. **Services principaux:** Organisation (complete or partial), Animation (children, adults, companies, institutions), Location (equipment, furniture, lighting, accessories).
-4. **Types d'événements:** Anniversaires, Mariages, Fiançailles, Réceptions, Cérémonies, Événements professionnels, Team building, Conférences, Événements institutionnels, Événements pour enfants, Soirées privées, Lancements de produits.
-5. **Réalisations mises en avant:** photos and videos, each with event name, type, date or year, place and description.
-6. **CTA final:** « Parlons de votre prochain événement. » with « Demander un devis » and « Nous contacter sur WhatsApp ».
+## Back Office (spec §07)
 
-### Événements
+Modules: Dashboard, Equipment (add, edit, **archive**, organise), **Categories** (with sub-categories), Projects, Services, Requests (status changes), Clients, Messages, **Settings** (general information, languages, parameters).
 
-Categories: privés, professionnels, institutionnels, pour enfants, culturels, promotionnels. Each has an image, a presentation, the available services, example projects and a quote button.
+Request statuses (spec): `Nouveau` · `En cours de traitement` · `Devis envoyé` · `Accepté` · `Refusé` · `Terminé`. Former values (`Nouvelle demande`, `Confirmé`, `Annulé`) are mapped when read (`normalizeStatus`) and rewritten by migration `20261114180000`.
 
-### Services
+Supabase rules: RLS on every table (visitors read published content; only server code creates requests; only admins read requests or edit content); secret keys server-side only, never `NEXT_PUBLIC_*`; admin accounts via Supabase Auth with no public sign-up; schema changes as versioned migrations in `supabase/migrations/`; required variables listed in `.env.example`. E-mail: Resend and Brevo adapters exist; which one to use, and the account and sending domain, are EVENTHEMES' decision (configuration only). Ask before adding another provider or an SDK.
 
-Every service item has an « Ajouter à mon devis » button.
+---
 
-- **Organisation événementielle:** conception du concept, planification, gestion logistique, coordination des prestataires, gestion du planning, installation et démontage, décoration, gestion technique, coordination le jour de l'événement, accompagnement personnalisé.
-- **Animation événementielle:** animation pour enfants, jeux et activités, mascottes, animateurs, présentation et prise de parole, animation micro, animation musicale, jeux interactifs, ateliers créatifs, animation pour entreprises, animation de cérémonies.
-- **Décoration et mise en scène:** décoration thématique, scénographie, arche et backdrop, décoration florale, mobilier décoratif, mise en lumière, décoration de tables, structures et éléments visuels, personnalisation selon le thème.
-- **Location de matériel:** mobilier, tables et chaises, structures, éclairage, sonorisation, écrans LED, éléments de décoration, accessoires événementiels, machines à fumée, jeux de lumière, matériel audiovisuel.
+## Cross-cutting Requirements
 
-### Location (Rental Catalogue)
+- **Languages (spec §11):** French (main), English, Arabic (optional, with RTL). Never hard-code copy in JSX: add the key to `fr.ts` **and** `en.ts` (`tests/i18n.test.ts` fails if keys, list lengths or `{placeholders}` differ) and read it through `t`. Links go through `href(key, id)` / `pathFor`, never a literal French path. Formatting helpers (`money`, `priceLabel`, `participantsLabel`, `daysLabel`, `sizeLabel`, `formatLongDate`…) take the locale. Stored values stay French (project types, contact methods, option names, server error messages) and are labelled per language at display (`projectCategoryLabel`, `contactMethodLabel`, `variantLabel`, `translateServerError`). Use CSS logical properties in new styles so RTL stays possible.
+- **Responsive:** desktop, laptop, tablet, phone; menus, galleries, filters, forms and catalogue usable on small screens; no horizontal scroll.
+- **Animation (spec §08):** smooth scrolling, reveal on scroll, light cinematic transitions, discreet hovers, subtle parallax, animated counters only for real figures, micro-interactions. Never slow the site or block low-power devices; honour `prefers-reduced-motion`.
+- **Accessibility:** semantic HTML, keyboard navigation, visible focus, sufficient contrast, labelled inputs, meaningful alt text.
+- **SEO (spec §10):** clean URLs, unique meta titles and descriptions, dedicated pages for services and relevant service areas (cities), XML sitemap, robots.txt, relevant structured data, Search Console and a compliant analytics tool.
+- **Performance:** WebP/AVIF images, compressed video, lazy-loaded non-critical media, few dependencies (`animejs` duplicates GSAP: candidate for removal).
+- **Security and privacy:** SSL, validated and spam-protected forms, backups and updates, data-protection rules; client data visible only to authorised staff.
 
-- **Product sheet:** main photo, gallery, name, category, description, technical specifications, dimensions, colour or finish, indicative price (if applicable), availability (if enabled), « Ajouter à mon devis », WhatsApp link.
-- **Categories:** Mobilier, Tables et chaises, Décoration, Éclairage, Sonorisation, Écrans et affichage, Structures, Scénographie, Accessoires, Matériel audiovisuel, Animation, Machines et effets spéciaux.
-- **Filters:** category, equipment type, colour, dimension, price range, availability (if possible).
-- **Rental details from the client:** quantity, rental date, return date, event location.
-- **Price modes:** fixed, « à partir de », sur demande, or calculated from quantity and duration. The data model must support all four.
+---
 
-Staff must be able to add products without touching code, so products live in Supabase, not in `src/data`.
+## Technical Principles
 
-### Mon devis (Quote Configurator)
+**Stack:** Next.js (App Router), React 19, TypeScript, CSS Modules with design tokens, GSAP (`gsap`, `@gsap/react`), Lenis smooth scrolling on the home page, three.js for the hero rig, `next/font`, Supabase (Postgres, Auth, Storage). No UI framework, no utility-class library.
 
-The central feature of the site. It prepares a request; there is **no online payment**.
+**Code organisation (keep it):**
 
-1. **Type d'événement:** Anniversaire, Mariage, Fiançailles, Réception, Événement professionnel, Conférence, Team building, Événement pour enfants, Autre.
-2. **Services souhaités:** Organisation, Animation, Décoration, Location de matériel, Sonorisation, Éclairage, Écran LED, Photographie, Vidéo, Autre prestation.
-3. **Informations de l'événement:** date, start and end time, ville, lieu, nombre d'invités, budget estimatif, thème ou ambiance, informations complémentaires.
-4. **Sélection du matériel:** add a product, change its quantity, remove it, view the selection, add a remark.
-5. **Informations du client:** nom et prénom, nom de l'entreprise, téléphone, e-mail, ville, moyen de contact préféré, consentement à la politique de confidentialité.
-6. **Résumé:** event type, date, place, services, equipment and quantities, indicative budget, client details.
-7. **Envoi:** saved in Supabase (visible in the admin), e-mailed, and sendable through WhatsApp.
+- `src/data/`: static content and options. `eventheme.ts` holds the brand constants, imagery, navigation keys, project types and the demo seed (with English drafts); `locales/` holds the interface texts per language (`fr.ts`, `en.ts`) and the server error translations (`errors.ts`).
+- `src/lib/`: pure, testable logic (pricing, validation, WhatsApp, dates, motion core, `i18n.ts` routing).
+- `src/hooks/`: behaviour.
+- `src/components/`: `eventheme/` (site shell, pages, admin, quote), `layout/`, `sections/` (home sections), `ui/` (primitives, forms, `Truss`).
+- `src/styles/`: tokens, base styles, utilities.
 
-Items added with « Ajouter à mon devis » on Services and Location feed steps 2 and 4. That basket must persist while the visitor browses between pages.
+Repeated content is data-driven, never hard-coded in JSX. Anything staff must edit lives in the content store (local JSON in development, Supabase in production), not in `src/data`.
 
-WhatsApp message (fill the brackets):
+**Motion rules** (`src/lib/motion.ts`): ornament goes through `motionSafe`, scroll-revealed content through `revealSafe`; always `fromTo`, never `from`; one property, one owner; animate `transform` and `opacity`.
 
-> Bonjour EVENTHEME, je souhaite demander un devis pour un événement de type [type], prévu le [date], à [ville]. Les services souhaités sont : [services]. Voici mes informations : [coordonnées].
+**Checks:** `npm run lint`, `npm run typecheck` and `npm test` before calling work done; `npm run build` for anything touching routing, metadata or server code. Visual changes should be checked at desktop, tablet and phone widths.
 
-Confirmation message:
+---
 
-> Merci pour votre demande. Notre équipe vous contactera dans les meilleurs délais afin de préparer une proposition adaptée à votre événement.
+## Roadmap
 
-Until Phase 2 adds automatic price calculation, the budget is the figure the client enters. Any amount shown is indicative, never a quotation.
-
-### Réalisations
-
-Photo gallery, videos, filters by event type, project detail pages, lightbox.
-
-Categories: mariages, anniversaires, événements professionnels, événements institutionnels, animation enfants, décoration et scénographie. Each project has a name, type, date or year, place and description.
-
-### À propos
-
-Histoire, vision, mission, valeurs, équipe, expérience, engagements qualité, méthode de travail.
-
-Collaboration steps, replacing the mockup's 5-step process:
-
-1. Échange initial
-2. Analyse du besoin
-3. Proposition créative
-4. Devis personnalisé
-5. Préparation
-6. Réalisation
-7. Suivi
-
-### Contact
-
-Contact form plus phone, e-mail, WhatsApp, Instagram, city of operation, opening hours and an optional Google Maps embed.
-
-Form fields: nom complet, e-mail, téléphone, objet, type d'événement, message, consentement à la politique de confidentialité. The form must be protected against spam, automated submissions, injection and repeated abuse.
-
-### Footer
-
-Logo, signature, short description, quick links, services, social networks, WhatsApp, contact information, mentions légales, politique de confidentialité, copyright.
-
-Recommended line: « EVENTHEME — Organisation, animation et location événementielle. »
+| Phase | Scope | Status |
+| --- | --- | --- |
+| 0 | Lock the direction: this file, README, baseline commit | Done |
+| 1 | Rebrand: name, palette, fonts, copy, navigation, home order, truss motif, technical demo content | Done |
+| 2 | Catalogue and quote: brand/model/reference, categories and sub-categories, private attachments, reference numbers, new statuses, « participants », minimal required fields | Done |
+| 3 | E-mails: admin notification and client acknowledgement | Done (provider account and `EMAIL_*` variables to configure) |
+| 4 | Languages: FR/EN routing and content model, then optional AR with RTL | FR/EN done (English texts to validate by EVENTHEMES); Arabic optional, later |
+| 5 | SEO and launch: service and city pages, structured data, analytics with consent, legal pages, performance and cross-browser checks | Next |
 
 ---
 
 ## Contact & Social Links
 
 - Instagram: https://www.instagram.com/eventhemes/
-- WhatsApp: https://wa.me/message/AREDMVCCJW5GM1
+- WhatsApp: https://wa.me/message/AREDMVCCJW5GM1 (short link: its message is fixed in WhatsApp Business; per-request prefilled messages need `https://wa.me/<number>`).
 
-WhatsApp appears in the header or mobile menu, the hero, Contact, the configurator, product sheets and the footer. Instagram appears in the footer, on Contact, and optionally as a stable Instagram gallery.
-
-The WhatsApp link above is a short link: its pre-filled message is fixed in the WhatsApp Business app. The configurator's per-request message needs a `https://wa.me/<number>?text=…` link, which requires the business number in international format.
-
-Still to be supplied by EVENTHEME: phone number, e-mail address, city of operation, opening hours, logo files, real photos and videos, legal content. Don't invent them. Keep clearly marked placeholders until they arrive.
+Still to be supplied by EVENTHEMES: logo for the new identity, phone, e-mail, address, opening hours, real equipment list (brands, models, specs, photos), authorised projects, verifiable key figures, vision/mission and team content, legal texts. Keep clearly marked placeholders until they arrive.
 
 ---
 
-## Back Office & Data (Supabase)
+## Deliverables & Acceptance (spec §12)
 
-Staff manage, without code: page texts, images, videos, services, categories, rental products, prices, quote requests, contact requests and social links.
+Deliverables include the sitemap and user journeys, wireframes, desktop and mobile UI mockups (Figma), a design system (colours, type, components, states), front-end and back-end, the administrable catalogue, the quote system, integration of validated content, SEO and analytics setup, tests, launch and user documentation.
 
-**Quote requests.** The admin can list every request, see client details, selected products, requested services and event date, change the status, add internal notes, export requests (if possible), and receive an e-mail for each new request.
-
-Statuses: `Nouvelle demande` · `En cours de traitement` · `Devis envoyé` · `Confirmé` · `Terminé` · `Annulé`.
-
-**Automated e-mails.**
-
-- To the admin: name, phone, e-mail, event type, date, place, services, selected equipment, message.
-- To the client: « Nous avons bien reçu votre demande de devis. Notre équipe EVENTHEME reviendra vers vous prochainement. »
-
-**Supabase rules.**
-
-- Row Level Security on every table. Visitors can read published content and create requests; only authenticated admins read requests or edit content.
-- Public submissions go through server code (Server Actions or Route Handlers) that validates input, applies anti-spam checks and triggers the e-mails.
-- Secret and service-role keys stay server-side. Never put them in `NEXT_PUBLIC_*` variables or client components.
-- Media (product photos, galleries, videos) lives in Supabase Storage and is served compressed.
-- Admin accounts use Supabase Auth, with no public sign-up.
-- Keep schema changes as versioned migrations in the repo.
-- The e-mail provider isn't chosen yet. Ask before adding one.
-
-Supabase is not installed yet. When it is, list the required environment variables in a committed `.env.example`.
-
----
-
-## Cross-cutting Requirements
-
-### Responsive
-
-Desktop, tablet, Android phones and iPhone. Check alignment, text readability, button sizes, mobile menu, forms, galleries, configurator, animations and images. No horizontal scrolling. Central elements, especially on the Coming Soon page and heroes, stay precisely aligned on the vertical axis.
-
-### Animation
-
-Elegant, light and non-intrusive: progressive reveals, image transitions, moderate parallax, hover effects, golden lines, golden butterflies, sticky header. Animations must not slow the site and must respect `prefers-reduced-motion`.
-
-### Accessibility
-
-Semantic HTML, keyboard navigation, visible focus states, accessible mobile menu, labelled inputs, meaningful alt text, readable contrast (including gold on black), reduced motion.
-
-### SEO
-
-A title and meta description per page, one H1 per page with a clean H2/H3 hierarchy, clean URLs, XML sitemap, alt text, relevant structured data, optimised images, internal linking, Google Search Console, Google Analytics or an equivalent.
-
-Keywords: organisation événementielle au Maroc, organisation événements Casablanca, animation événementielle Maroc, location matériel événementiel Casablanca, décoration événementielle, organisation anniversaire, animation enfants, location mobilier événementiel, événement professionnel Maroc, scénographie événementielle.
-
-### Performance
-
-WebP images, lazy loading, minified and deferred scripts, caching, light videos, mobile optimisation, few dependencies, good Core Web Vitals.
-
-### Security
-
-SSL, protected and spam-resistant forms, protection against injection, personal-data protection, secure admin accounts, limited login attempts, regular backups, dependencies kept up to date, no unused packages.
-
-### Legal
-
-Mentions légales, politique de confidentialité, politique cookies (if needed), conditions générales de location, conditions générales de prestation, politique d'annulation (if applicable).
-
-Build the pages, but the final legal text must be validated by the owner or a qualified professional. Never present drafted legal text as final.
-
----
-
-## Technical Principles
-
-**Stack:** Next.js (App Router), React 19, TypeScript, CSS Modules with design tokens, GSAP (`gsap`, `@gsap/react`), `next/font`, and Supabase for data, auth and storage. No UI framework and no utility-class library. Avoid unnecessary dependencies.
-
-**Code organisation (keep it):**
-
-- `src/data/`: static content and options (navigation, service lists, configurator options). Anything staff must edit moves to Supabase.
-- `src/lib/`: business logic, kept pure and testable (pricing, formatting, image URLs, motion core).
-- `src/hooks/`: behaviour.
-- `src/components/`: presentation, split into `layout/`, `sections/` and `ui/`.
-- `src/styles/`: tokens, base styles, utilities.
-
-Repeated content (services, products, event types, projects, navigation, configurator options) is data-driven, never hard-coded in JSX.
-
-**Motion rules** (see `src/lib/motion.ts`):
-
-- Ornamental effects go through `motionSafe`. Content revealed on scroll goes through `revealSafe`.
-- Always `fromTo`, never `from`.
-- One property, one owner: if CSS animates a transform, GSAP animates a wrapper layer.
-- Animate `transform` and `opacity`.
-
-**Checks:** run `npm run lint` and `npm run typecheck` before calling work done. Use `npm run build` for anything touching routing, metadata or server code.
-
----
-
-## Scope & Phases
-
-- **Phase 1:** design, main pages, services, rental catalogue, contact, WhatsApp integration.
-- **Phase 2:** advanced quote configurator, automatic price calculation, stock management, reservations.
-
-The spec calls the configurator the central feature, so a basic version is expected before Phase 2 makes it advanced.
-
-**Future evolutions (don't implement unless asked):** online payment, equipment booking, automatic availability checks, client area, invoicing, PDF quote generation, contracts, booking calendar, advanced stock management, French/Arabic/English, blog, client testimonials, appointment booking, partner or supplier area.
-
----
-
-## Definition of Done
-
-Before delivery, test all links and buttons, desktop and mobile menus, forms and e-mail sending, the configurator, adding and removing products, WhatsApp and Instagram links, galleries, animations, responsive display, speed and basic security, in Chrome, Firefox, Safari and Edge.
-
-Launch also covers the domain, hosting, SSL, the production Supabase project, admin accounts, e-mail configuration, Search Console, analytics, the sitemap, a final check and a full backup. Deliverables include a short admin training session and maintenance documentation.
+Acceptance: every page and navigation works; responsive on all planned formats; catalogue administrable with working filters; add-to-quote and summary work; requests, notifications and acknowledgements tested; secure admin; optimised images and videos; no known blocking bug; content, links, forms and legal notices checked.
 
 ---
 
@@ -345,6 +234,4 @@ Launch also covers the domain, hosting, SSL, the production Supabase project, ad
 
 Before building anything, ask:
 
-> Does this present EVENTHEME as a premium, creative and reliable event partner, and does it make it easier for a visitor to request a quote?
-
-Then build it within the brand system above.
+> Does this present EVENTHEMES as a powerful, professional and innovative technical partner, and does it make it easier for a visitor to send a complete, qualified quote request?

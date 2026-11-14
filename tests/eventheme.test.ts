@@ -46,6 +46,7 @@ const input: InquiryInput = {
   duration: 0,
   rentalDays: 2,
   guests: 30,
+  budget: 0,
   contactMethod: "E-mail",
   consent: true,
   website: "",

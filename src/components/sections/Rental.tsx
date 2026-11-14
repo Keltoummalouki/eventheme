@@ -7,6 +7,7 @@ import { useEventheme } from '@/components/eventheme/Provider';
 import Button from '@/components/ui/Button';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { cx } from '@/lib/cx';
+import { productCategory } from '@/lib/eventheme/catalogue';
 import { priceLabel } from '@/lib/eventheme/types';
 import { DESKTOP, FULL_MOTION, gsap, motionSafe, useGSAP } from '@/lib/motion';
 import styles from './Rental.module.css';
@@ -32,7 +33,7 @@ export default function Rental() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
-  const { entries, add } = useEventheme();
+  const { entries, add, locale, t, href } = useEventheme();
   const products = entries.filter((e) => e.kind === 'products');
 
   const [pinned, setPinned] = useState(false);
@@ -147,18 +148,18 @@ export default function Rental() {
       <div className={styles.stage}>
         <div className={styles.head}>
           <SectionHeader
-            eyebrow="Matériel technique"
+            eyebrow={t.rental.eyebrow}
             title={
               <>
-                Le bon matériel.
+                {t.rental.titleStart}
                 <br />
-                <em>Au bon endroit.</em>
+                <em>{t.rental.titleEnd}</em>
               </>
             }
-            description="Écrans LED, sonorisation, éclairage, structures et effets : composez votre sélection et ajoutez-la directement à votre devis."
+            description={t.rental.description}
             action={
-              <Button href="/materiel" variant="link" icon={<ArrowUpRightIcon />}>
-                Tout le catalogue
+              <Button href={href('equipment')} variant="link" icon={<ArrowUpRightIcon />}>
+                {t.rental.all}
               </Button>
             }
           />
@@ -173,24 +174,24 @@ export default function Rental() {
           onDragStart={(event) => event.preventDefault()}
           {...(pinned
             ? {}
-            : { role: 'group', 'aria-label': 'Catalogue matériel — faire défiler horizontalement', tabIndex: 0 })}
+            : { role: 'group', 'aria-label': t.rental.region, tabIndex: 0 })}
         >
           <div className={styles.track} ref={trackRef}>
             {products.map((product, index) => (
               <article key={product.id} className={styles.card}>
-                <Link href={`/materiel/${product.id}`} className={styles.thumb} tabIndex={-1} aria-hidden="true">
+                <Link href={href('equipment', product.id)} className={styles.thumb} tabIndex={-1} aria-hidden="true">
                   <div className={styles.pan}>
                     <img src={product.image || '/eventheme.jpg'} alt="" loading="lazy" decoding="async" />
                   </div>
                   <span className={styles.index}>{String(index + 1).padStart(2, '0')}</span>
-                  {product.demo && <span className={styles.tag}>Exemple</span>}
+                  {product.demo && <span className={styles.tag}>{t.common.example}</span>}
                 </Link>
                 <div className={styles.meta}>
-                  <span>{product.category}</span>
-                  <span className={styles.price}>{priceLabel(product)}</span>
+                  <span>{productCategory(entries, product).category}</span>
+                  <span className={styles.price}>{priceLabel(product, locale)}</span>
                 </div>
                 <h3 className={styles.name}>
-                  <Link href={`/materiel/${product.id}`}>{product.title}</Link>
+                  <Link href={href('equipment', product.id)}>{product.title}</Link>
                 </h3>
                 <button
                   type="button"
@@ -199,17 +200,17 @@ export default function Rental() {
                   onClick={() => add(product)}
                 >
                   <span aria-hidden="true">+</span>
-                  {product.available === false ? 'Indisponible' : 'Ajouter au devis'}
+                  {product.available === false ? t.common.unavailable : t.common.addToQuote}
                   <span className="visually-hidden"> : {product.title}</span>
                 </button>
               </article>
             ))}
-            <Link href="/materiel" className={styles.more}>
-              <span className={styles.moreLabel}>Découvrir</span>
+            <Link href={href('equipment')} className={styles.more}>
+              <span className={styles.moreLabel}>{t.common.discover}</span>
               <span className={styles.moreTitle}>
-                Tout le
+                {t.rental.moreStart}
                 <br />
-                <em>catalogue</em>
+                <em>{t.rental.moreEnd}</em>
               </span>
               <span className={styles.moreArrow} aria-hidden="true">
                 <ArrowUpRightIcon />

@@ -8,6 +8,7 @@
    ========================================================================== */
 import { parseIsoDate, today } from "@/lib/dates";
 import { labels, money, statuses, type Entry, type Inquiry, type Kind } from "./types";
+import { categoryTrail } from "./catalogue";
 
 export type Status = Inquiry["status"];
 
@@ -107,17 +108,17 @@ export type Analytics = {
 };
 
 const DAY = 86_400_000;
-/** Au-delà de ce délai, une « Nouvelle demande » est signalée comme prioritaire. */
+/** Au-delà de ce délai, une demande « Nouveau » est signalée comme prioritaire. */
 export const STALE_DAYS = 3;
 /** Horizon des « événements à venir » mis en avant. */
 export const UPCOMING_DAYS = 30;
 /** Demandes encore ouvertes : elles composent le portefeuille en cours. */
 const openStatuses: Status[] = [
-  "Nouvelle demande",
+  "Nouveau",
   "En cours de traitement",
   "Devis envoyé",
 ];
-const wonStatuses: Status[] = ["Confirmé", "Terminé"];
+const wonStatuses: Status[] = ["Accepté", "Terminé"];
 
 /* L'axe porte le seul mois : douze libellés doivent tenir côte à côte sans se
    chevaucher. L'année est donnée par la lecture au-dessus du graphique. */
@@ -226,7 +227,7 @@ export function analytics(
     count: byStatus.get(status) ?? 0,
     share: inquiries.length ? (byStatus.get(status) ?? 0) / inquiries.length : 0,
   }));
-  const pendingList = inquiries.filter((i) => i.status === "Nouvelle demande");
+  const pendingList = inquiries.filter((i) => i.status === "Nouveau");
   const openList = inquiries.filter((i) => openStatuses.includes(i.status));
   const ageInDays = (inquiry: Inquiry) => {
     const date = receivedAt(inquiry);
@@ -236,10 +237,10 @@ export function analytics(
 
   /* --- Conversion -------------------------------------------------------- */
   const won = inquiries.filter((i) => wonStatuses.includes(i.status)).length;
-  const lost = byStatus.get("Annulé") ?? 0;
+  const lost = byStatus.get("Refusé") ?? 0;
   const decided = won + lost;
   const quotedOrBeyond = quotes.filter((i) =>
-    ["Devis envoyé", "Confirmé", "Terminé"].includes(i.status),
+    ["Devis envoyé", "Accepté", "Terminé"].includes(i.status),
   ).length;
   const callbacksCompleted = inquiries.filter((i) => Boolean(i.completedAt)).length;
 
@@ -257,7 +258,7 @@ export function analytics(
     .map((inquiry) => ({ inquiry, date: parseIsoDate(inquiry.date) }))
     .filter((item): item is { inquiry: Inquiry; date: Date } => item.date != null);
   const upcoming = dated
-    .filter(({ inquiry, date }) => date >= midnight && inquiry.status !== "Annulé")
+    .filter(({ inquiry, date }) => date >= midnight && inquiry.status !== "Refusé")
     .sort((a, b) => a.date.getTime() - b.date.getTime());
   const horizon = new Date(midnight.getTime() + UPCOMING_DAYS * DAY);
   const toClose = dated
@@ -302,7 +303,7 @@ export function analytics(
   }
   const seasonTotals = new Map<string, { value: number; amount: number }>();
   for (const { inquiry, date } of dated) {
-    if (inquiry.status === "Annulé") continue;
+    if (inquiry.status === "Refusé") continue;
     const key = monthKey(date);
     const entry = seasonTotals.get(key) ?? { value: 0, amount: 0 };
     seasonTotals.set(key, {
@@ -323,7 +324,7 @@ export function analytics(
       label: product.title,
       value: 0,
       share: 0,
-      caption: product.category,
+      caption: categoryTrail(entries, product),
     }))
     .sort((a, b) => a.label.localeCompare(b.label, "fr"));
 
@@ -399,7 +400,10 @@ export function analytics(
       products: ranked(
         productCounts,
         (id) => titleOf(id, "products"),
-        (id) => entries.find((e) => e.id === id && e.kind === "products")?.category,
+        (id) => {
+          const product = entries.find((e) => e.id === id && e.kind === "products");
+          return product && categoryTrail(entries, product);
+        },
       ),
       cities: ranked(cityCounts, (city) => city),
       contactMethods: ranked(methodCounts, (method) => method),
@@ -523,7 +527,7 @@ export function statisticsRows(stats: Analytics): string[][] {
     ["Rappels transformés en devis", percent(conversion.callbackRate)],
     ...section("Valeur estimée"),
     ["Portefeuille ouvert", money(value.pipeline)],
-    ["Confirmé et terminé", money(value.won)],
+    ["Accepté et terminé", money(value.won)],
     ["Total demandé", money(value.total)],
     ["Panier moyen", value.average == null ? "—" : money(value.average)],
     ["Demandes comportant des postes à chiffrer", percent(value.unpricedShare)],
@@ -532,7 +536,7 @@ export function statisticsRows(stats: Analytics): string[][] {
     ["Événements ce mois-ci", count(events.thisMonth)],
     ["Événements à venir", count(events.upcoming.length)],
     ["Événements à clôturer", count(events.toClose.length)],
-    ["Invités en moyenne", count(events.averageGuests)],
+    ["Participants en moyenne", count(events.averageGuests)],
     ["Durée moyenne (heures)", count(events.averageDuration, 1)],
     ["Jours de location en moyenne", count(events.averageRentalDays, 1)],
     ["Délai moyen entre la demande et l’événement", daysCount(events.leadTimeDays)],

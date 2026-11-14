@@ -19,12 +19,18 @@ import {
   priceLabel,
   followersLabel,
   socialNetworkOf,
+  participantsLabel,
+  referenceOf,
   type Entry,
+  type EntryTranslation,
   type Inquiry,
   type Kind,
   type Variant,
 } from "@/lib/eventheme/types";
 import { adminLogin } from "@/lib/eventheme/auth";
+import { categoryTrail, childCategories, topCategories } from "@/lib/eventheme/catalogue";
+import { sizeLabel } from "@/lib/eventheme/requests";
+import { brand, projectCategories } from "@/data/eventheme";
 import {
   analytics,
   compactMoney,
@@ -66,9 +72,14 @@ const sitePages = [
 ];
 type FormField =
   | "title"
-  | "eventType"
+  | "discipline"
+  | "catalogue"
+  | "identity"
+  | "parent"
+  | "projectType"
   | "subtitle"
   | "description"
+  | "items"
   | "image"
   | "gallery"
   | "price"
@@ -78,10 +89,11 @@ type FormField =
   | "demo";
 /** Each form shows only the fields the public site actually reads for that kind. */
 const formFields: Record<Kind, readonly FormField[]> = {
-  services: ["title", "eventType", "description", "image", "price"],
+  services: ["title", "discipline", "description", "items", "image", "price"],
   products: [
     "title",
-    "eventType",
+    "catalogue",
+    "identity",
     "description",
     "image",
     "gallery",
@@ -90,19 +102,26 @@ const formFields: Record<Kind, readonly FormField[]> = {
     "variants",
     "demo",
   ],
+  categories: ["title", "parent", "description", "image"],
   events: ["title", "description", "image", "price"],
   projects: [
     "title",
-    "eventType",
+    "projectType",
     "description",
+    "items",
     "image",
     "gallery",
     "project",
     "demo",
   ],
-  pages: ["title", "eventType", "subtitle", "description", "image", "gallery"],
+  pages: ["title", "subtitle", "description", "image", "gallery"],
   // Social links have their own form: network, link, account name, followers.
   socials: [],
+};
+const kindNames: Record<Inquiry["kind"], string> = {
+  quote: "Devis",
+  callback: "Rappel",
+  contact: "Message",
 };
 async function api(body: object, path = "/api/admin") {
   const response = await fetch(path, {
@@ -202,10 +221,13 @@ export default function Admin({
   initialInquiries,
   local,
   now,
+  mail,
 }: {
   initialEntries: Entry[];
   initialInquiries: Inquiry[];
   local: boolean;
+  /** E-mails automatiques : mode d’envoi et destinataires des alertes. */
+  mail: { mode: "provider" | "preview" | "off"; recipients: string[] };
   /**
    * Instant de référence des statistiques, daté par le serveur : la page rendue
    * et la page hydratée comptent ainsi les mêmes journées.
@@ -302,35 +324,51 @@ export default function Admin({
     URL.revokeObjectURL(url);
   }
   function exportCsv() {
+    const eventTitle = (id: string) =>
+      entries.find((e) => e.id === id && e.kind === "events")?.title ?? "";
     const rows = [
       [
         "Référence",
         "Type",
+        "Statut",
+        "Reçue le",
         "Nom",
         "Entreprise",
         "E-mail",
         "Téléphone",
-        "Ville",
-        "Adresse",
+        "Contact préféré",
+        "Événement",
         "Date événement",
-        "Statut",
+        "Ville",
+        "Lieu",
+        "Participants",
+        "Budget estimatif (MAD)",
+        "Montant indicatif (MAD)",
+        "Pièces jointes",
         "Message",
       ],
       ...inquiries.map((i) => [
-        i.id,
-        i.kind,
+        referenceOf(i),
+        kindNames[i.kind],
+        i.status,
+        new Date(i.createdAt).toLocaleDateString("fr-FR"),
         i.name,
         i.company,
         i.email,
         i.phone,
+        i.contactMethod,
+        eventTitle(i.event),
+        i.date,
         i.city,
         i.address ?? "",
-        i.date,
-        i.status,
+        i.guests ? String(i.guests) : "",
+        i.budget ? String(i.budget) : "",
+        i.estimate ? String(i.estimate) : "",
+        String(i.attachments?.length ?? 0),
         i.message,
       ]),
     ];
-    downloadCsv(rows, "eventheme-demandes.csv");
+    downloadCsv(rows, "eventhemes-demandes.csv");
   }
   return (
     <div className={s.admin}>
@@ -407,7 +445,7 @@ export default function Admin({
       <main className={s.adminMain}>
         <header className={s.adminHeader}>
           <div>
-            <span className={s.eyebrow}>EVENTHEME / {title}</span>
+            <span className={s.eyebrow}>{brand.name} / {title}</span>
             <h1>{title}</h1>
           </div>
           <span className={s.modeBadge}>
@@ -417,10 +455,18 @@ export default function Admin({
         {local && (
           <p className={s.adminBanner}>
             Les changements sont conservés sur cet ordinateur. Les formulaires
-            alimentent cette boîte de réception. Aucun e-mail n’est envoyé en
-            mode local.
+            alimentent cette boîte de réception.
           </p>
         )}
+        <p className={s.adminBanner}>
+          {mail.mode === "off"
+            ? "Les e-mails automatiques ne sont pas configurés : les nouvelles demandes n’arrivent que dans cette administration."
+            : mail.mode === "preview"
+              ? "Aperçu local : les e-mails (alertes et accusés de réception) sont enregistrés dans .eventheme/emails/ pour relecture, pas envoyés."
+              : mail.recipients.length
+                ? `Alertes e-mail envoyées à ${mail.recipients.join(", ")}. Les clients qui donnent leur e-mail reçoivent un accusé de réception.`
+                : "Aucune adresse ne reçoit les alertes : ajoutez un lien « E-mail » dans Contact & réseaux, ou définissez EMAIL_TEAM."}
+        </p>
         {error && (
           <p className={s.error} role="alert">
             {error}
@@ -497,11 +543,10 @@ export default function Admin({
             <div className={s.adminPanel}>
               <h2>Votre site, à votre rythme.</h2>
               <p>
-                Ajoutez vos réalisations, personnalisez les textes et renseignez
-                vos tarifs. Un prix vide signifie « sur devis ». Les tarifs
-                invités sont calculés par personne ; les lieux, types
-                d’événement et niveaux de prestation sont des montants fixes
-                additionnels.
+                Ajoutez votre matériel et vos réalisations, organisez les
+                catégories du catalogue et personnalisez les textes. Un prix
+                vide signifie « sur devis » ; le prix d’un type d’événement
+                s’ajoute comme montant fixe à l’estimation.
               </p>
               <div className={s.actions}>
                 <Button icon={<ArrowUpRightIcon />} onClick={() => navigate("projects")}>
@@ -534,7 +579,7 @@ export default function Admin({
                 onClick={() =>
                   downloadCsv(
                     statisticsRows(stats),
-                    "eventheme-statistiques.csv",
+                    "eventhemes-statistiques.csv",
                   )
                 }
               >
@@ -550,7 +595,7 @@ export default function Admin({
               <SearchInput
                 label="Rechercher les demandes"
                 className={s.toolbarSearch}
-                placeholder="Rechercher un nom, un e-mail, un statut…"
+                placeholder="Rechercher une référence, un nom, un e-mail, un statut…"
                 value={search}
                 onChange={setSearch}
               />
@@ -571,7 +616,7 @@ export default function Admin({
                   ? messages
                   : inquiries
               ).filter((i) =>
-                `${i.name} ${i.email} ${i.status}`
+                `${referenceOf(i)} ${i.name} ${i.company} ${i.email} ${i.phone} ${i.status}`
                   .toLowerCase()
                   .includes(search.toLowerCase()),
               )}
@@ -620,7 +665,13 @@ export default function Admin({
                 <thead>
                   <tr>
                     <th>Contenu</th>
-                    <th>{tab === "socials" ? "Lien" : "Catégorie / tarif"}</th>
+                    <th>
+                      {tab === "socials"
+                        ? "Lien"
+                        : tab === "categories"
+                          ? "Rangement"
+                          : "Catégorie / tarif"}
+                    </th>
                     <th>Publication</th>
                     <th>Actions</th>
                   </tr>
@@ -630,7 +681,7 @@ export default function Admin({
                     .filter(
                       (e) =>
                         e.kind === tab &&
-                        `${e.title} ${e.category}`
+                        `${e.title} ${e.kind === "products" ? `${categoryTrail(entries, e)} ${e.brand ?? ""} ${e.model ?? ""} ${e.reference ?? ""}` : e.category ?? ""}`
                           .toLowerCase()
                           .includes(search.toLowerCase()),
                     )
@@ -647,10 +698,29 @@ export default function Admin({
                               <small>{followersLabel(entry.followers)}</small>
                             )}
                           </td>
+                        ) : entry.kind === "categories" ? (
+                          <td>
+                            {entry.parent
+                              ? `Sous-catégorie de « ${entries.find((c) => c.id === entry.parent)?.title ?? entry.parent} »`
+                              : "Catégorie principale"}
+                            <small>
+                              {(() => {
+                                const used = entries.filter(
+                                  (product) =>
+                                    product.kind === "products" &&
+                                    (product.category === entry.id || product.subcategory === entry.id),
+                                ).length;
+                                return `${used} matériel${used > 1 ? "s" : ""}`;
+                              })()}
+                            </small>
+                          </td>
                         ) : (
                           <td>
-                            {entry.category || "—"}
-                            <small>{priceLabel(entry)}</small>
+                            {(entry.kind === "products" ? categoryTrail(entries, entry) : entry.category) || "—"}
+                            <small>
+                              {entry.kind === "products" && entry.reference ? `Réf. ${entry.reference} · ` : ""}
+                              {priceLabel(entry)}
+                            </small>
                           </td>
                         )}
                         <td>
@@ -701,9 +771,7 @@ export default function Admin({
           <EntryEditor
             entry={edit}
             setEntry={setEdit}
-            eventTypes={entries
-              .filter((e) => e.kind === "events")
-              .map((e) => e.title)}
+            entries={entries}
             siblings={entries.filter(
               (e) => e.kind === edit.kind && e.id !== edit.id,
             )}
@@ -720,7 +788,7 @@ export default function Admin({
             <div className={s.sectionHeading}>
               <div>
                 <span className={s.eyebrow}>
-                  DEMANDE {inquiry.id.slice(0, 8).toUpperCase()}
+                  {kindNames[inquiry.kind].toUpperCase()} · {referenceOf(inquiry)}
                 </span>
                 <h2>{inquiry.name}</h2>
               </div>
@@ -756,6 +824,12 @@ export default function Admin({
                   )}
                   <br />
                   Contact préféré : {inquiry.contactMethod}
+                  {inquiry.locale === "en" && (
+                    <>
+                      <br />
+                      <strong>Langue : anglais</strong> (demande envoyée depuis le site anglais)
+                    </>
+                  )}
                 </p>
                 <p>
                   Reçue le {new Date(inquiry.createdAt).toLocaleString("fr-FR")}
@@ -764,33 +838,65 @@ export default function Admin({
               <div>
                 <h3>Événement</h3>
                 <p>
-                  {inquiry.date}
+                  {entries.find((e) => e.id === inquiry.event && e.kind === "events")?.title ||
+                    "Type d’événement non précisé"}
+                  <br />
+                  {inquiry.date || "Date à préciser"}
                   {inquiry.duration > 0 && ` · ${hoursLabel(inquiry.duration)}`}
                   <br />
-                  {inquiry.guests} invités
+                  {participantsLabel(inquiry.guests)}
                   {inquiry.basket.products.length > 0 && (
                     <>
                       <br />
                       Location du matériel : {daysLabel(inquiry.rentalDays || 1)}
                     </>
                   )}
+                  {inquiry.budget > 0 && (
+                    <>
+                      <br />
+                      Budget estimatif : {money(inquiry.budget)}
+                    </>
+                  )}
                 </p>
               </div>
             </div>
-            <h3>Prestations et matériel</h3>
-            <ul className={s.requestSummary}>
-              {inquiry.summary.map((line, index) => (
-                <li key={index}>{line}</li>
-              ))}
-            </ul>
-            <p>
-              Montant indicatif : {money(inquiry.estimate)}{" "}
-              {inquiry.hasUnpriced && "(des postes restent à chiffrer)"}
-            </p>
+            {inquiry.kind === "quote" && (
+              <>
+                <h3>Prestations et matériel</h3>
+                <ul className={s.requestSummary}>
+                  {inquiry.summary.map((line, index) => (
+                    <li key={index}>{line}</li>
+                  ))}
+                </ul>
+                <p>
+                  Montant indicatif : {money(inquiry.estimate)}{" "}
+                  {inquiry.hasUnpriced && "(des postes restent à chiffrer)"}
+                </p>
+              </>
+            )}
             <h3>{inquiry.subject || "Message"}</h3>
             <p className={s.preserve}>
               {inquiry.message || "Aucun message complémentaire."}
             </p>
+            {!!inquiry.attachments?.length && (
+              <>
+                <h3>Pièces jointes</h3>
+                <ul className={s.requestSummary}>
+                  {inquiry.attachments.map((file) => (
+                    <li key={file.id}>
+                      <a
+                        href={`/api/admin/attachments?demande=${inquiry.id}&fichier=${file.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {file.name} <ArrowUpRightIcon className="inline-icon" />
+                      </a>{" "}
+                      <small>{sizeLabel(file.size)}</small>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
             <div className={s.formGrid}>
               <Select
                 label="Statut"
@@ -878,8 +984,11 @@ function RequestTable({
                 <small>{i.email}</small>
               </td>
               <td>
-                {i.kind === "quote" ? "Devis" : "Contact"}
-                <small>{i.city || i.subject}</small>
+                {kindNames[i.kind]}
+                <small>
+                  {[referenceOf(i), i.city || i.subject].filter(Boolean).join(" · ")}
+                  {!!i.attachments?.length && ` · ${i.attachments.length} pièce(s) jointe(s)`}
+                </small>
               </td>
               <td>
                 <span className={s.status}>{i.status}</span>
@@ -910,7 +1019,7 @@ function RequestTable({
 function EntryEditor({
   entry,
   setEntry,
-  eventTypes,
+  entries,
   siblings,
   isNew,
   busy,
@@ -919,7 +1028,8 @@ function EntryEditor({
 }: {
   entry: Entry;
   setEntry: Dispatch<SetStateAction<Entry | null>>;
-  eventTypes: string[];
+  /** Every entry: catalogue categories for the selects. */
+  entries: Entry[];
   /** The other entries of the same kind: pages and networks already in use. */
   siblings: Entry[];
   isNew: boolean;
@@ -983,24 +1093,41 @@ function EntryEditor({
   // Only the home page reads a gallery: the hero slideshow.
   const gallery =
     has("gallery") && (entry.kind !== "pages" || entry.id === "home");
-  const typeRequired = entry.kind === "projects";
-  // Keep a category saved before the list existed selectable, so it is never dropped silently.
-  const eventTypeOptions = [
-    ...(typeRequired ? [] : [{ value: "", label: "Aucun" }]),
-    ...(entry.category && !eventTypes.includes(entry.category)
-      ? [
-          {
-            value: entry.category,
-            label: entry.category,
-            description: "Absent des types d’événement : à remplacer",
-          },
-        ]
-      : []),
-    ...[...new Set(eventTypes)].map((title) => ({
-      value: title,
-      label: title,
-    })),
+  // A value saved before its list existed stays selectable, so it is never dropped silently.
+  const keep = (known: readonly string[], value: string | undefined, why: string) =>
+    value && !known.includes(value) ? [{ value, label: value, description: why }] : [];
+  const projectTypeOptions = [
+    ...keep(projectCategories, entry.category, "Absent du classement : à remplacer"),
+    ...projectCategories.map((title) => ({ value: title, label: title })),
   ];
+  const mainCategories = topCategories(entries);
+  const categoryOptions = [
+    ...keep(
+      mainCategories.map((c) => c.id),
+      entry.kind === "products" ? entry.category : undefined,
+      "Catégorie libre d’un contenu antérieur : choisissez-en une de la liste",
+    ),
+    ...mainCategories.map((c) => ({ value: c.id, label: c.title })),
+  ];
+  const subcategories = entry.category ? childCategories(entries, entry.category) : [];
+  const parentOptions = [
+    { value: "", label: "Aucune — catégorie principale" },
+    ...mainCategories
+      .filter((c) => c.id !== entry.id)
+      .map((c) => ({ value: c.id, label: c.title })),
+  ];
+  const hasChildren = entry.kind === "categories" && childCategories(entries, entry.id).length > 0;
+  // Version anglaise (site /en) : les champs traduisibles de ce type de contenu.
+  const english = entry.translations?.en ?? {};
+  const setEnglish = (field: keyof EntryTranslation, value: string) =>
+    setEntry(
+      (current) =>
+        current && {
+          ...current,
+          translations: { ...current.translations, en: { ...current.translations?.en, [field]: value } },
+        },
+    );
+  const translatable = has("title") || has("description") || entry.kind === "socials";
   const network = socialNetworkOf(entry);
   const networkInfo = socialNetworks.find((n) => n.key === network);
   const takenNetworks = siblings.map(socialNetworkOf);
@@ -1117,16 +1244,102 @@ function EntryEditor({
             onChange={(id) => set("id", id)}
           />
         )}
-        {has("eventType") && (
+        {has("discipline") && (
+          <Input
+            label="Discipline (surtitre)"
+            hint="Affichée au-dessus du titre, par exemple « Son » ou « Lumière »."
+            maxLength={60}
+            value={entry.category || ""}
+            onChange={(e) => set("category", e.target.value)}
+          />
+        )}
+        {has("projectType") && (
           <Select
             label="Type d’événement"
-            required={typeRequired}
-            hint="Liste gérée dans l’onglet « Types d’événement »."
-            emptyText="Ajoutez d’abord un type d’événement."
-            options={eventTypeOptions}
+            required
+            hint="Classement des réalisations : il alimente les filtres de la galerie."
+            options={projectTypeOptions}
             value={entry.category || ""}
             onChange={(category) => set("category", category)}
           />
+        )}
+        {has("parent") && (
+          <Select
+            label="Catégorie parente"
+            disabled={hasChildren}
+            hint={
+              hasChildren
+                ? "Cette catégorie a des sous-catégories : elle reste une catégorie principale."
+                : "Laisser « Aucune » pour une catégorie principale ; sinon, elle devient une sous-catégorie."
+            }
+            options={parentOptions}
+            value={entry.parent || ""}
+            onChange={(parent) => set("parent", parent || undefined)}
+          />
+        )}
+        {has("catalogue") && (
+          <>
+            <Select
+              label="Catégorie"
+              required
+              hint="Liste gérée dans l’onglet « Catégories du matériel »."
+              emptyText="Ajoutez d’abord une catégorie dans « Catégories du matériel »."
+              options={categoryOptions}
+              value={entry.category || ""}
+              onChange={(category) =>
+                setEntry(
+                  (current) =>
+                    current && {
+                      ...current,
+                      category,
+                      // A sub-category always belongs to the chosen category.
+                      subcategory: childCategories(entries, category).some((c) => c.id === current.subcategory)
+                        ? current.subcategory
+                        : undefined,
+                    },
+                )
+              }
+            />
+            <Select
+              label="Sous-catégorie (type de matériel)"
+              disabled={!subcategories.length}
+              hint={
+                subcategories.length
+                  ? "Facultative : elle affine le filtre du catalogue."
+                  : "Cette catégorie n’a pas de sous-catégorie."
+              }
+              options={[
+                { value: "", label: "Aucune" },
+                ...subcategories.map((c) => ({ value: c.id, label: c.title })),
+              ]}
+              value={entry.subcategory || ""}
+              onChange={(subcategory) => set("subcategory", subcategory || undefined)}
+            />
+          </>
+        )}
+        {has("identity") && (
+          <>
+            <Input
+              label="Marque"
+              hint="Lorsqu’elle est connue. Elle apparaît sur la fiche et dans le filtre « Marque »."
+              maxLength={250}
+              value={entry.brand || ""}
+              onChange={(e) => set("brand", e.target.value)}
+            />
+            <Input
+              label="Modèle"
+              maxLength={250}
+              value={entry.model || ""}
+              onChange={(e) => set("model", e.target.value)}
+            />
+            <Input
+              label="Référence interne (facultatif)"
+              hint="Affichée sur la fiche ; la recherche du catalogue la trouve."
+              maxLength={250}
+              value={entry.reference || ""}
+              onChange={(e) => set("reference", e.target.value)}
+            />
+          </>
         )}
         {has("subtitle") && (
           <Input
@@ -1144,6 +1357,24 @@ function EntryEditor({
             maxLength={10000}
             value={entry.description}
             onChange={(e) => set("description", e.target.value)}
+          />
+        )}
+        {has("items") && (
+          <Textarea
+            label={
+              entry.kind === "services"
+                ? "Prestations incluses (une par ligne)"
+                : "Prestations réalisées (une par ligne)"
+            }
+            hint={
+              entry.kind === "services"
+                ? "Vide : la liste du cahier des charges est affichée."
+                : "Facultatif : affichées sur la fiche du projet."
+            }
+            className={s.fullWidth}
+            rows={5}
+            value={entry.specifications || ""}
+            onChange={(e) => set("specifications", e.target.value)}
           />
         )}
         {has("image") && (
@@ -1289,6 +1520,7 @@ function EntryEditor({
             </div>
             <Textarea
               label="Caractéristiques techniques"
+              hint="Une par ligne. « Puissance : 1 000 W » s’affiche en tableau sur la fiche."
               className={s.fullWidth}
               value={entry.specifications || ""}
               onChange={(e) => set("specifications", e.target.value)}
@@ -1323,15 +1555,17 @@ function EntryEditor({
               checked={entry.available !== false}
               onChange={(available) => set("available", available)}
             >
-              Disponible à la demande
+              Disponible (à confirmer selon la date)
             </Checkbox>
           )}
-          <Checkbox
-            checked={entry.published}
-            onChange={(published) => set("published", published)}
-          >
-            Publié sur le site
-          </Checkbox>
+          {entry.kind !== "categories" && (
+            <Checkbox
+              checked={entry.published}
+              onChange={(published) => set("published", published)}
+            >
+              Publié sur le site
+            </Checkbox>
+          )}
           {has("demo") && (
             <Checkbox
               checked={entry.demo || false}
@@ -1422,6 +1656,105 @@ function EntryEditor({
             reste sur devis. Le mode « sur demande » prévaut sur tous les prix.
             Une longueur ou une largeur vide reprend celle du produit.
           </p>
+        </fieldset>
+      )}
+      {translatable && (
+        <fieldset className={s.translation} lang="en">
+          <legend lang="fr">Version anglaise (facultative)</legend>
+          <p className={s.caption} lang="fr">
+            Affichée sur le site anglais (/en). Un champ vide reprend le texte français, indiqué en gris.
+          </p>
+          <div className={s.formGrid}>
+            {entry.kind === "socials" && (
+              <Input
+                label="Accroche"
+                hint="Le nom du compte (@…) n’a pas besoin d’être traduit."
+                maxLength={250}
+                placeholder={entry.description}
+                value={english.description || ""}
+                onChange={(e) => setEnglish("description", e.target.value)}
+              />
+            )}
+            {has("title") && (
+              <Input
+                label="Titre"
+                maxLength={250}
+                placeholder={entry.title}
+                value={english.title || ""}
+                onChange={(e) => setEnglish("title", e.target.value)}
+              />
+            )}
+            {has("discipline") && (
+              <Input
+                label="Discipline (surtitre)"
+                maxLength={60}
+                placeholder={entry.category}
+                value={english.category || ""}
+                onChange={(e) => setEnglish("category", e.target.value)}
+              />
+            )}
+            {has("subtitle") && (
+              <Input
+                label="Sous-titre / surtitre"
+                className={s.fullWidth}
+                placeholder={entry.subtitle}
+                value={english.subtitle || ""}
+                onChange={(e) => setEnglish("subtitle", e.target.value)}
+              />
+            )}
+            {has("description") && (
+              <Textarea
+                label="Description"
+                className={s.fullWidth}
+                rows={4}
+                maxLength={10000}
+                placeholder={entry.description}
+                value={english.description || ""}
+                onChange={(e) => setEnglish("description", e.target.value)}
+              />
+            )}
+            {has("product") && (
+              <Input
+                label="Couleur / finition"
+                maxLength={250}
+                placeholder={entry.color}
+                value={english.color || ""}
+                onChange={(e) => setEnglish("color", e.target.value)}
+              />
+            )}
+            {has("variants") && !!entry.variants?.length && (
+              <Textarea
+                label="Noms des variantes (un par ligne)"
+                hint="Dans le même ordre que les variantes ci-dessus ; une ligne vide garde le nom français."
+                className={s.fullWidth}
+                rows={Math.min(6, entry.variants.length)}
+                placeholder={entry.variants.map((variant) => variant.name).join("\n")}
+                value={english.variants || ""}
+                onChange={(e) => setEnglish("variants", e.target.value)}
+              />
+            )}
+            {(has("items") || has("product")) && (
+              <Textarea
+                label={
+                  has("product")
+                    ? "Caractéristiques techniques"
+                    : entry.kind === "services"
+                      ? "Prestations incluses (une par ligne)"
+                      : "Prestations réalisées (une par ligne)"
+                }
+                hint={
+                  entry.kind === "services"
+                    ? "Vide : la liste par défaut, traduite, est affichée."
+                    : "Une par ligne, dans le même ordre que le français."
+                }
+                className={s.fullWidth}
+                rows={5}
+                placeholder={entry.specifications}
+                value={english.specifications || ""}
+                onChange={(e) => setEnglish("specifications", e.target.value)}
+              />
+            )}
+          </div>
         </fieldset>
       )}
       <div className={s.formActions}>

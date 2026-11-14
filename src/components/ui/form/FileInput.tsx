@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, type DragEvent } from 'react';
-import { formText } from '@/data/ui';
+import { useFormText } from './locale';
 import { cx } from '@/lib/cx';
 import { acceptsFile } from '@/lib/files';
 import Field, { useFieldIds, type FieldProps } from './Field';
@@ -39,9 +39,9 @@ export default function FileInput({
   accept,
   multiple,
   loading = false,
-  loadingText = formText.uploading,
-  buttonText = multiple ? formText.chooseFiles : formText.chooseFile,
-  placeholder = multiple ? formText.dropFiles : formText.dropFile,
+  loadingText: loadingTextProp,
+  buttonText: buttonTextProp,
+  placeholder: placeholderProp,
   id,
   disabled,
   label,
@@ -51,6 +51,10 @@ export default function FileInput({
   required,
   className,
 }: FileInputProps) {
+  const formText = useFormText();
+  const loadingText = loadingTextProp ?? formText.uploading;
+  const buttonText = buttonTextProp ?? (multiple ? formText.chooseFiles : formText.chooseFile);
+  const placeholder = placeholderProp ?? (multiple ? formText.dropFiles : formText.dropFile);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [rejected, setRejected] = useState(false);

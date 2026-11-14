@@ -76,7 +76,7 @@ function EventTable({
             <th>Date de l’événement</th>
             <th>Client</th>
             <th>Lieu</th>
-            <th>Invités</th>
+            <th>Participants</th>
             <th>Statut</th>
             <th />
           </tr>
@@ -226,7 +226,7 @@ export default function Statistics({
                 label: line.status,
                 value: line.count,
                 share: line.share,
-                muted: line.status === "Annulé",
+                muted: line.status === "Refusé",
               }))}
             />
           </div>
@@ -237,7 +237,7 @@ export default function Statistics({
               <Meter
                 label="Concrétisation"
                 value={conversion.winRate}
-                caption="Confirmées ou terminées, parmi les demandes décidées."
+                caption="Acceptées ou terminées, parmi les demandes décidées."
               />
               <Meter
                 label="Devis envoyés"
@@ -266,7 +266,7 @@ export default function Statistics({
         />
         <h3>À relancer</h3>
         <p className={s.caption}>
-          Demandes encore au statut « Nouvelle demande » depuis {STALE_DAYS} jours ou plus.
+          Demandes encore au statut « Nouveau » depuis {STALE_DAYS} jours ou plus.
         </p>
         {handling.stale.length ? (
           <div className={s.tableWrap}>
@@ -315,7 +315,7 @@ export default function Statistics({
         </p>
         <div className={s.statGrid}>
           <Tile label="Portefeuille ouvert" value={compactMoney(value.pipeline)} />
-          <Tile label="Confirmé et terminé" value={compactMoney(value.won)} />
+          <Tile label="Accepté et terminé" value={compactMoney(value.won)} />
           <Tile label="Total demandé" value={compactMoney(value.total)} />
           <Tile
             label="Panier moyen"
@@ -364,7 +364,7 @@ export default function Statistics({
             <Measures
               rows={[
                 [
-                  "Invités en moyenne",
+                  "Participants en moyenne",
                   events.averageGuests == null ? "—" : count(events.averageGuests),
                 ],
                 [
@@ -377,7 +377,7 @@ export default function Statistics({
                     ? "—"
                     : daysLabel(Math.round(events.averageRentalDays)),
                 ],
-                ["Invités attendus au total", count(events.totalGuests)],
+                ["Participants attendus au total", count(events.totalGuests)],
               ]}
             />
           </div>

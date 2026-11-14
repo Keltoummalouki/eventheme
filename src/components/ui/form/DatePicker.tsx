@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { CalendarIcon, ChevronIcon } from '@/components/ui/icons';
-import { formText } from '@/data/ui';
+import { useFormLocale, useFormText } from './locale';
 import { useDismiss, useFlip } from '@/hooks/usePopover';
 import { cx } from '@/lib/cx';
 import {
@@ -44,7 +44,6 @@ export type DatePickerProps = FieldProps & {
   'aria-label'?: string;
 };
 
-const WEEKDAYS = weekdayNames();
 
 /** Déplacements clavier dans la grille (motif « date picker dialog » du WAI-ARIA APG). */
 const KEY_MOVES: Record<string, (date: Date, shift: boolean) => Date> = {
@@ -70,7 +69,7 @@ export default function DatePicker({
   onChange,
   min,
   max,
-  placeholder = formText.datePlaceholder,
+  placeholder: placeholderProp,
   name,
   id,
   disabled,
@@ -82,6 +81,10 @@ export default function DatePicker({
   className,
   'aria-label': ariaLabel,
 }: DatePickerProps) {
+  const formText = useFormText();
+  const locale = useFormLocale();
+  const placeholder = placeholderProp ?? formText.datePlaceholder;
+  const weekdays = weekdayNames(locale);
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(() => today());
   const [missing, setMissing] = useState(false);
@@ -183,7 +186,7 @@ export default function DatePicker({
         >
           <CalendarIcon className={s.icon} />
           <span className={cx(s.value, !selected && s.placeholder)}>
-            {selected ? formatLongDate(selected) : placeholder}
+            {selected ? formatLongDate(selected, locale) : placeholder}
           </span>
           <ChevronIcon className={s.chevron} />
         </button>
@@ -216,7 +219,7 @@ export default function DatePicker({
                 <ChevronIcon className={c.previous} />
               </button>
               <span id={captionId} className={c.caption} aria-live="polite">
-                {formatMonth(focused)}
+                {formatMonth(focused, locale)}
               </span>
               <button
                 type="button"
@@ -238,7 +241,7 @@ export default function DatePicker({
             >
               <thead>
                 <tr>
-                  {WEEKDAYS.map((day) => (
+                  {weekdays.map((day) => (
                     <th key={day.long} scope="col" abbr={day.long}>
                       {day.short}
                     </th>
@@ -257,7 +260,7 @@ export default function DatePicker({
                             type="button"
                             className={c.day}
                             tabIndex={isSameDay(day, focused) ? 0 : -1}
-                            aria-label={formatLongDate(day)}
+                            aria-label={formatLongDate(day, locale)}
                             aria-current={isToday ? 'date' : undefined}
                             aria-disabled={unavailable || undefined}
                             data-outside={isSameMonth(day, focused) ? undefined : ''}

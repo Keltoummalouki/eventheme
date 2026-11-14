@@ -11,7 +11,7 @@ import styles from './CTA.module.css';
 
 export default function CTA() {
   const ref = useRef<HTMLElement>(null);
-  const { entries } = useEventheme();
+  const { entries, t } = useEventheme();
   const whatsapp = findSocial(entries, 'whatsapp');
   const instagram = findSocial(entries, 'instagram');
 
@@ -26,16 +26,16 @@ export default function CTA() {
     <section className={styles.cta} id="contact" ref={ref} aria-labelledby="contact-titre">
       <div className={styles.orbit} data-invitation-orbit aria-hidden="true" />
       <div className={styles.content}>
-        <div className={styles.topline}><span>Et maintenant, à vous.</span><span>{brand.name} · {brand.market}</span></div>
-        <a href="#devis" className={styles.invitation} aria-label="Votre scène vous attend : demander un devis">
-          <RevealText as="h2" id="contact-titre" className={styles.title}>Votre scène<br />{' '}vous attend.</RevealText>
+        <div className={styles.topline}><span>{t.homeCta.topline}</span><span>{brand.name} · {t.brand.market}</span></div>
+        <a href="#devis" className={styles.invitation} aria-label={t.homeCta.label}>
+          <RevealText as="h2" id="contact-titre" className={styles.title}>{t.homeCta.titleStart}<br />{' '}{t.homeCta.titleEnd}</RevealText>
           <span className={styles.arrow}><ArrowUpRightIcon /></span>
         </a>
         <div className={styles.bottom}>
-          <p>Un lieu, une date, un programme.<br />Nous concevons la technique qui va avec.</p>
+          <p>{t.homeCta.textStart}<br />{t.homeCta.textEnd}</p>
           <div className={styles.actions}>
-            {whatsapp?.url && <a href={whatsapp.url} target="_blank" rel="noreferrer">Parlons sur WhatsApp <ArrowUpRightIcon /></a>}
-            {instagram?.url && <a href={instagram.url} target="_blank" rel="noreferrer">Dans les coulisses <span>Instagram</span><ArrowUpRightIcon /></a>}
+            {whatsapp?.url && <a href={whatsapp.url} target="_blank" rel="noreferrer">{t.homeCta.whatsapp} <ArrowUpRightIcon /></a>}
+            {instagram?.url && <a href={instagram.url} target="_blank" rel="noreferrer">{t.homeCta.behind} <span>Instagram</span><ArrowUpRightIcon /></a>}
           </div>
         </div>
       </div>

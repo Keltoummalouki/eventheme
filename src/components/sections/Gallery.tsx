@@ -5,14 +5,18 @@ import Link from 'next/link';
 import { useEventheme } from '@/components/eventheme/Provider';
 import Button from '@/components/ui/Button';
 import RevealText from '@/components/ui/RevealText';
+import { brand } from '@/data/eventheme';
+import { projectCategoryLabel } from '@/data/locales';
 import { cx } from '@/lib/cx';
 import type { Entry } from '@/lib/eventheme/types';
+import { fill } from '@/lib/i18n';
 import { Flip, gsap, MOTION, prefersReducedMotion, revealSafe, useGSAP } from '@/lib/motion';
 import styles from './Gallery.module.css';
 import studio from './Studio.module.css';
 import { ArrowUpRightIcon } from '@/components/ui/icons';
 
-const ALL = 'Tous';
+/** Filtre « tous » : aucune réalisation n’a de type vide. */
+const ALL = '';
 
 /**
  * Réalisations — mosaïque filtrable et visionneuse.
@@ -23,7 +27,7 @@ const ALL = 'Tous';
  * description) que l'on parcourt au clavier.
  */
 export default function Gallery() {
-  const { entries } = useEventheme();
+  const { entries, locale, t, href } = useEventheme();
   const projects = entries.filter((e) => e.kind === 'projects');
   const categories = [ALL, ...new Set(projects.map((p) => p.category).filter((c): c is string => Boolean(c)))];
   const [category, setCategory] = useState(ALL);
@@ -95,14 +99,14 @@ export default function Gallery() {
   return (
     <section className={styles.root} id="realisations">
       <div className={styles.heading}>
-        <p className={studio.eyebrow}>Réalisations</p>
-        <RevealText as="h2" className={studio.heading}>Chaque format,<br />{' '}<em>sa technique.</em></RevealText>
-        <div className={styles.introduction}><p>Galas, concerts, festivals, conférences :<br />les ambiances, par type d’événement.</p><Link href="/realisations" className={studio.link}>Toute la galerie <ArrowUpRightIcon /></Link></div>
+        <p className={studio.eyebrow}>{t.gallery.eyebrow}</p>
+        <RevealText as="h2" className={studio.heading}>{t.gallery.titleStart}<br />{' '}<em>{t.gallery.titleEnd}</em></RevealText>
+        <div className={styles.introduction}><p>{t.gallery.introStart}<br />{t.gallery.introEnd}</p><Link href={href('projects')} className={studio.link}>{t.gallery.all} <ArrowUpRightIcon /></Link></div>
       </div>
 
       <div className={styles.toolbar}>
       {categories.length > 2 && (
-        <div className={styles.filters} role="group" aria-label="Filtrer les réalisations par type d’événement">
+        <div className={styles.filters} role="group" aria-label={t.gallery.filterLabel}>
           {categories.map((c) => (
             <button
               key={c}
@@ -111,18 +115,18 @@ export default function Gallery() {
               aria-pressed={c === category}
               onClick={() => changeCategory(c)}
             >
-              {c}
+              {c === ALL ? t.gallery.allFilter : projectCategoryLabel(locale, c)}
             </button>
           ))}
         </div>
       )}
         <div className={styles.reelControls}>
-          <button type="button" disabled={visible.length < 2} onClick={() => moveReel(-1)} aria-label="Faire défiler la galerie vers la gauche">←</button>
-          <button type="button" disabled={visible.length < 2} onClick={() => moveReel(1)} aria-label="Faire défiler la galerie vers la droite">→</button>
+          <button type="button" disabled={visible.length < 2} onClick={() => moveReel(-1)} aria-label={t.gallery.previous}>←</button>
+          <button type="button" disabled={visible.length < 2} onClick={() => moveReel(1)} aria-label={t.gallery.next}>→</button>
         </div>
       </div>
 
-      <div className={styles.grid} ref={gridRef} role="region" aria-label="Galerie d’inspiration — faire défiler horizontalement" tabIndex={0}>
+      <div className={styles.grid} ref={gridRef} role="region" aria-label={t.gallery.region} tabIndex={0}>
         {projects.map((project) => {
           const shown = visible.indexOf(project);
           return (
@@ -134,7 +138,7 @@ export default function Gallery() {
               <button
                 type="button"
                 className={styles.inner}
-                aria-label={`Voir ${project.title}`}
+                aria-label={fill(t.gallery.view, { title: project.title })}
                 onClick={(event) => {
                   trigger.current = event.currentTarget;
                   setOpen(shown);
@@ -142,9 +146,9 @@ export default function Gallery() {
                 tabIndex={shown < 0 ? -1 : undefined}
               >
                 <span className={styles.imageFrame}><img src={project.image || '/eventheme.jpg'} alt={project.title} loading="lazy" decoding="async" /></span>
-                {project.demo && <span className={styles.tag}>Inspiration</span>}
+                {project.demo && <span className={styles.tag}>{t.common.inspiration}</span>}
                 <span className={styles.caption}>
-                  <span className={styles.cat}>{project.category}</span>
+                  <span className={styles.cat}>{projectCategoryLabel(locale, project.category)}</span>
                   <span className={styles.title}>{project.title}</span>
                   {(project.location || project.date) && (
                     <span className={styles.where}>{[project.location, project.date].filter(Boolean).join(' · ')}</span>
@@ -159,10 +163,7 @@ export default function Gallery() {
         })}
       </div>
       {projects.some((p) => p.demo) && (
-        <p className={styles.note}>
-          Planches d’inspiration : ces visuels illustrent des ambiances et seront remplacés par les réalisations
-          EVENTHEMES.
-        </p>
+        <p className={styles.note}>{fill(t.gallery.note, { brand: brand.name })}</p>
       )}
 
       {open !== null && visible[open] && (
@@ -188,6 +189,7 @@ function Lightbox({
   onIndex: (index: number) => void;
   onClose: (restoreFocus?: boolean) => void;
 }) {
+  const { locale, t, href } = useEventheme();
   const project = projects[index];
   const dialogRef = useRef<HTMLDivElement>(null);
   const images = [project.image, ...(project.gallery || [])].filter((url): url is string => Boolean(url));
@@ -239,7 +241,7 @@ function Lightbox({
                 <button
                   key={url}
                   type="button"
-                  aria-label={`Photographie ${i + 1} sur ${images.length}`}
+                  aria-label={fill(t.gallery.photo, { index: i + 1, total: images.length })}
                   aria-current={i === image}
                   onClick={() => setImage(i)}
                 >
@@ -251,8 +253,8 @@ function Lightbox({
         </div>
         <div className={styles.details}>
           <span className={styles.cat}>
-            {project.category}
-            {project.demo && ' · Inspiration'}
+            {projectCategoryLabel(locale, project.category)}
+            {project.demo && ` · ${t.common.inspiration}`}
           </span>
           <h3 id="visionneuse-titre">{project.title}</h3>
           {(project.location || project.date) && (
@@ -260,29 +262,29 @@ function Lightbox({
           )}
           <p>{project.description}</p>
           <div className={styles.detailActions}>
-            <Button href={`/realisations/${project.id}`} variant="outline" size="sm" icon={<ArrowUpRightIcon />}>
-              Voir le projet
+            <Button href={href('projects', project.id)} variant="outline" size="sm" icon={<ArrowUpRightIcon />}>
+              {t.gallery.seeProject}
             </Button>
             <Button href="#devis" variant="link" size="sm" icon={<ArrowUpRightIcon />} onClick={() => onClose(false)}>
-              Demander un devis
+              {t.common.requestQuote}
             </Button>
           </div>
           {projects.length > 1 && (
             <div className={styles.pager}>
-              <button type="button" onClick={() => step(-1)} aria-label="Projet précédent">
+              <button type="button" onClick={() => step(-1)} aria-label={t.gallery.previousProject}>
                 ←
               </button>
               <span>
                 {String(index + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')}
               </span>
-              <button type="button" onClick={() => step(1)} aria-label="Projet suivant">
+              <button type="button" onClick={() => step(1)} aria-label={t.gallery.nextProject}>
                 →
               </button>
             </div>
           )}
         </div>
         {/* Le focus entre dans la visionneuse dès son ouverture. */}
-        <button type="button" className={styles.close} onClick={() => onClose()} aria-label="Fermer la visionneuse" autoFocus>
+        <button type="button" className={styles.close} onClick={() => onClose()} aria-label={t.gallery.close} autoFocus>
           ×
         </button>
       </div>

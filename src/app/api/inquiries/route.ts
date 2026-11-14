@@ -1,67 +1,85 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { after } from "next/server";
 import { continuationHash } from "@/lib/eventheme/continuation";
 import {
   getEntries,
   localMode,
   configured,
   rateLimit,
-  saveInquiry,
+  createInquiry,
   completeCallback,
 } from "@/lib/eventheme/server";
+import { clientMailExpected, notifyRequest } from "@/lib/eventheme/notifications";
 import { validateInquiry } from "@/lib/eventheme/validation";
 import { estimate } from "@/lib/eventheme/pricing";
-import { checkOrigin, readBody } from "@/lib/eventheme/http";
-import type { Inquiry } from "@/lib/eventheme/types";
+import { checkOrigin, clientAddress, readBody } from "@/lib/eventheme/http";
+import { translateServerError } from "@/data/locales/errors";
+import { localeOf } from "@/lib/i18n";
+import { MAX_ATTACHMENTS, referenceOf, type Inquiry } from "@/lib/eventheme/types";
+const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 export async function POST(request: Request) {
+  // Langue de la page d’origine : celle des messages d’erreur et de l’accusé de réception.
+  const locale = localeOf(request.headers.get("x-locale"));
   try {
     checkOrigin(request);
     if (!localMode() && !configured())
       return Response.json(
         {
-          error:
+          error: translateServerError(
             "Les demandes en ligne seront disponibles prochainement. Contactez-nous sur WhatsApp.",
+            locale,
+          ),
         },
         { status: 503 },
       );
     const entries = await getEntries();
     const body = await readBody(request);
     const input = validateInquiry(body, entries);
-    const key = createHash("sha256")
-      .update(input.phone.replace(/\D/g, ""))
-      .digest("hex");
-    await rateLimit(`submit:${key}`);
+    // Two independent limits: per phone number, and per network address (hashed, never stored raw).
+    await rateLimit(`submit:${hash(input.phone.replace(/\D/g, ""))}`);
+    const address = clientAddress(request);
+    if (address) await rateLimit(`submit-ip:${hash(address)}`, 20);
     const calculation = input.kind === "quote" ? estimate(entries, input, input.basket) : { total: 0, hasUnpriced: false, summary: [] as string[] };
     const token = input.kind === "callback" ? randomBytes(32).toString("hex") : undefined;
-    const inquiry = {
+    const inquiry: Omit<Inquiry, "reference"> = {
       ...input,
+      locale,
       id: randomUUID(),
       createdAt: new Date().toISOString(),
-      status: "Nouvelle demande" as const,
+      status: "Nouveau",
       notes: "",
       estimate: calculation.total,
       hasUnpriced: calculation.hasUnpriced,
       summary: calculation.summary,
       ...(token ? { continuationHash: continuationHash(token) } : {}),
     };
-    let saved: Inquiry = inquiry;
-    const continuation = body as { callbackId?: unknown; token?: unknown };
-    if (continuation.callbackId !== undefined) {
-      if (input.kind !== "quote" || typeof continuation.callbackId !== "string" || !/^[a-f0-9-]{36}$/.test(continuation.callbackId))
+    const extra = body as { callbackId?: unknown; token?: unknown; attachments?: unknown };
+    const completed = extra.callbackId !== undefined;
+    let saved: Inquiry;
+    let fresh = true;
+    if (completed) {
+      if (input.kind !== "quote" || typeof extra.callbackId !== "string" || !/^[a-f0-9-]{36}$/.test(extra.callbackId))
         throw new Error("Référence de demande invalide.");
-      saved = await completeCallback(continuation.callbackId, continuation.token, inquiry);
-    } else await saveInquiry(inquiry);
+      ({ inquiry: saved, fresh } = await completeCallback(extra.callbackId, extra.token, inquiry));
+    } else saved = await createInquiry(inquiry);
+    // E-mails après la réponse : ils ne ralentissent ni ne font échouer l'envoi du formulaire.
+    if (fresh) {
+      const pendingAttachments = Math.max(0, Math.min(MAX_ATTACHMENTS, Math.floor(Number(extra.attachments) || 0)));
+      after(() => notifyRequest(saved, entries, { completed, pendingAttachments }));
+    }
     return Response.json(
-      { id: saved.id, local: localMode(), ...(token ? { token } : {}),
+      { id: saved.id, reference: referenceOf(saved), local: localMode(), emailed: fresh && clientMailExpected(saved),
+        ...(token ? { token } : {}),
         ...(input.kind === "quote" ? { estimate: saved.estimate, hasUnpriced: saved.hasUnpriced, summary: saved.summary } : {}) },
       { status: 201 },
     );
   } catch (error) {
     return Response.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Impossible d’enregistrer la demande.",
+        error: translateServerError(
+          error instanceof Error ? error.message : "Impossible d’enregistrer la demande.",
+          locale,
+        ),
       },
       { status: 400 },
     );

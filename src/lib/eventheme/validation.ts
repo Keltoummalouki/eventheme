@@ -1,7 +1,17 @@
 import { isMoroccanCity } from "@/data/moroccanCities";
 import { isSocialNetwork } from "@/data/socials";
 import { isHexColor } from "@/lib/colors";
-import { kinds, MAX_DURATION_HOURS, MAX_RENTAL_DAYS, type Entry, type InquiryInput } from "./types";
+import {
+  kinds,
+  MAX_DURATION_HOURS,
+  MAX_PARTICIPANTS,
+  MAX_RENTAL_DAYS,
+  translatableFields,
+  type Entry,
+  type EntryTranslation,
+  type InquiryInput,
+} from "./types";
+const ENTRY_ID = /^[a-zA-Z0-9_-]{1,100}$/;
 export function safeUrl(value: unknown, local = false): value is string {
   return (
     typeof value === "string" &&
@@ -32,14 +42,15 @@ function dimension(value: unknown) {
 export function validateEntry(value: unknown): Entry {
   if (!value || typeof value !== "object") throw new Error("Contenu invalide.");
   const v = value as Entry;
-  if (!kinds.includes(v.kind) || !/^[a-zA-Z0-9_-]{1,100}$/.test(v.id))
+  if (!kinds.includes(v.kind) || !ENTRY_ID.test(v.id))
     throw new Error("Type ou identifiant invalide.");
   const result: Entry = {
     id: v.id,
     kind: v.kind,
     title: text(v.title, 250),
     description: text(v.description, 10000),
-    published: v.published === true,
+    // Une catégorie n’a pas d’état brouillon : masquée, elle rendrait ses fiches orphelines.
+    published: v.kind === "categories" || v.published === true,
   };
   if (!result.title) throw new Error("Le titre est obligatoire.");
   for (const field of [
@@ -51,6 +62,14 @@ export function validateEntry(value: unknown): Entry {
     "subtitle",
   ] as const)
     if (v[field] != null) result[field] = text(v[field], 3000);
+  for (const field of ["brand", "model", "reference"] as const)
+    if (v[field] != null) result[field] = text(v[field], 250) || undefined;
+  for (const field of ["subcategory", "parent"] as const)
+    if (v[field]) {
+      if (typeof v[field] !== "string" || !ENTRY_ID.test(v[field]))
+        throw new Error("Catégorie invalide.");
+      result[field] = v[field];
+    }
   if (v.swatch) {
     if (!isHexColor(v.swatch)) throw new Error("Teinte invalide.");
     result.swatch = v.swatch.toLowerCase();
@@ -128,7 +147,30 @@ export function validateEntry(value: unknown): Entry {
   }
   result.demo = v.demo === true;
   result.available = v.available !== false;
+  const english = translation(v.translations);
+  if (english) result.translations = { en: english };
   return result;
+}
+/**
+ * Version anglaise facultative d’un contenu : seuls les champs traduisibles,
+ * mêmes limites que le français ; les champs vides sont omis (le français s’affiche).
+ */
+function translation(value: unknown): EntryTranslation | undefined {
+  if (value == null) return undefined;
+  const object = (candidate: unknown): candidate is Record<string, unknown> =>
+    typeof candidate === "object" && candidate !== null && !Array.isArray(candidate);
+  if (!object(value)) throw new Error("Version anglaise invalide.");
+  const english = value.en;
+  if (english == null) return undefined;
+  if (!object(english)) throw new Error("Version anglaise invalide.");
+  const result: EntryTranslation = {};
+  for (const field of translatableFields) {
+    const raw = english[field];
+    if (raw == null) continue;
+    const content = text(raw, field === "title" ? 250 : field === "description" ? 10000 : 3000);
+    if (content) result[field] = content;
+  }
+  return Object.keys(result).length ? result : undefined;
 }
 export function validateInquiry(
   value: unknown,
@@ -175,27 +217,28 @@ export function validateInquiry(
     throw new Error("Ajoutez votre e-mail ou choisissez un contact par téléphone.");
   if (result.kind === "callback" && !entries.some(e => e.kind === "events" && e.id === result.event))
     throw new Error("Choisissez le type de votre événement.");
+  // Nombre estimé de participants et budget : facultatifs, 0 = non précisé.
   result.guests = Number(v.guests) || 0;
-  if (!Number.isFinite(result.guests) || result.guests < 0 || result.guests > 1e8)
-    throw new Error("Nombre d’invités invalide.");
+  if (!Number.isInteger(result.guests) || result.guests < 0 || result.guests > MAX_PARTICIPANTS)
+    throw new Error(`Indiquez un nombre de participants entre 1 et ${new Intl.NumberFormat("fr-FR").format(MAX_PARTICIPANTS)}.`);
+  result.budget = Number(v.budget) || 0;
+  if (!Number.isFinite(result.budget) || result.budget < 0 || result.budget > 1e9)
+    throw new Error("Budget estimatif invalide.");
+  result.budget = Math.round(result.budget);
   result.duration = Number(v.duration) || 0;
   if (!Number.isFinite(result.duration) || result.duration < 0 || result.duration > MAX_DURATION_HOURS)
     throw new Error(`La durée de l’événement ne peut dépasser ${MAX_DURATION_HOURS} heures.`);
   result.rentalDays = Number(v.rentalDays) || 1;
   if (!Number.isInteger(result.rentalDays) || result.rentalDays < 1 || result.rentalDays > MAX_RENTAL_DAYS)
     throw new Error(`Indiquez entre 1 et ${MAX_RENTAL_DAYS} jours de location.`);
+  // Champs obligatoires réduits au strict nécessaire (cahier des charges §04 F).
   if (result.kind === "quote") {
     if (
       !isMoroccanCity(result.city) ||
-      !Number.isInteger(result.guests) ||
-      result.guests < 1 ||
-      result.guests > 10000 ||
       !validDate(result.date) ||
       result.date < new Date().toISOString().slice(0, 10)
     )
-      throw new Error(
-        "Précisez une date future, une ville et un nombre d’invités valide.",
-      );
+      throw new Error("Précisez une date à venir et la ville de l’événement.");
     if (!entries.some((e) => e.kind === "events" && e.id === result.event))
       throw new Error(
         "Une option sélectionnée n’est plus disponible. Actualisez la page.",

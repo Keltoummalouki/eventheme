@@ -12,7 +12,20 @@ import {
 } from "@/components/ui/form";
 import { ArrowUpRightIcon, CheckIcon } from "@/components/ui/icons";
 import ProcessTimeline from "@/components/sections/ProcessTimeline";
-import { activities, brand } from "@/data/eventheme";
+import { brand, serviceItems } from "@/data/eventheme";
+import { projectCategoryLabel } from "@/data/locales";
+import { fill } from "@/lib/i18n";
+import { cx } from "@/lib/cx";
+import {
+  brandsOf,
+  categoryTrail,
+  childCategories,
+  inCategory,
+  matchesSearch,
+  productIdentity,
+  topCategories,
+  usedCategories,
+} from "@/lib/eventheme/catalogue";
 import {
   centimetres,
   findSocial,
@@ -31,111 +44,172 @@ export function PageIntro({ id, eyebrow }: { id: string; eyebrow: string }) {
     </section>
   );
 }
-export function Catalog({ projects = false }: { projects?: boolean }) {
-  const { entries, add } = useEventheme();
-  const [category, setCategory] = useState("Tous");
-  const [search, setSearch] = useState("");
-  const [color, setColor] = useState("Toutes");
-  const [available, setAvailable] = useState(false);
-  const [max, setMax] = useState<number | null>(null);
+export function Catalog({
+  projects = false,
+  initialCategory = "",
+}: {
+  projects?: boolean;
+  /** Catégorie présélectionnée par l’adresse : /materiel?categorie=… */
+  initialCategory?: string;
+}) {
+  const { entries, add, locale, t, href } = useEventheme();
   const items = entries.filter(
     (e) => e.kind === (projects ? "projects" : "products"),
   );
+  const projectLabel = (value?: string) => projectCategoryLabel(locale, value);
+  // Matériel : catégories gérées dans l’administration. Réalisations : classement par type d’événement.
+  const categories = projects
+    ? [...new Set(items.map((e) => e.category).filter((c): c is string => Boolean(c)))].map((title) => ({
+        value: title,
+        label: projectLabel(title),
+      }))
+    : usedCategories(topCategories(entries), items).map((c) => ({ value: c.id, label: c.title }));
+  const [category, setCategory] = useState(() =>
+    categories.some((c) => c.value === initialCategory) ? initialCategory : "",
+  );
+  const [subcategory, setSubcategory] = useState("");
+  const [brandFilter, setBrandFilter] = useState("");
+  const [search, setSearch] = useState("");
+  const [color, setColor] = useState("");
+  const [available, setAvailable] = useState(false);
+  const [max, setMax] = useState<number | null>(null);
+  const subcategories =
+    !projects && category ? usedCategories(childCategories(entries, category), items) : [];
+  const brands = projects ? [] : brandsOf(items);
+  const colors = projects
+    ? []
+    : [...new Set(items.map((e) => e.color).filter((c): c is string => Boolean(c)))];
+  const priced = !projects && items.some((e) => e.price != null && e.pricing !== "request");
   const filtered = items.filter(
     (e) =>
-      (category === "Tous" || e.category === category) &&
-      (!search ||
-        `${e.title} ${e.description}`
-          .toLowerCase()
-          .includes(search.toLowerCase())) &&
-      (color === "Toutes" || e.color === color) &&
-      (!available || e.available === true) &&
+      (!category || (projects ? e.category === category : inCategory(e, category))) &&
+      (!subcategory || e.subcategory === subcategory) &&
+      (!brandFilter || e.brand === brandFilter) &&
+      matchesSearch(entries, e, search) &&
+      (!color || e.color === color) &&
+      (!available || e.available !== false) &&
       (max === null || (e.price != null && e.price <= max)),
   );
+  const chooseCategory = (value: string) => {
+    setCategory(value);
+    setSubcategory("");
+  };
+  const reset = () => {
+    chooseCategory("");
+    setBrandFilter("");
+    setColor("");
+    setSearch("");
+    setMax(null);
+    setAvailable(false);
+  };
+  const page = projects ? "projects" : "equipment";
   return (
     <>
       <PageIntro
         id={projects ? "projects-page" : "location-page"}
-        eyebrow={projects ? "NOS RÉALISATIONS" : "CATALOGUE MATÉRIEL"}
+        eyebrow={projects ? t.catalog.projectsEyebrow : t.catalog.equipmentEyebrow}
       />
       <section className={s.section}>
-        <div className={s.filters}>
-          {[
-            "Tous",
-            ...new Set(items.map((e) => e.category).filter(Boolean)),
-          ].map((c) => (
-            <Button
-              key={c}
-              variant="ghost"
-              size="sm"
-              aria-pressed={category === c}
-              onClick={() => setCategory(c!)}
-            >
-              {c}
-            </Button>
-          ))}
-        </div>
+        {categories.length > 1 && (
+          <div
+            className={s.filters}
+            role="group"
+            aria-label={projects ? t.catalog.byEventType : t.catalog.byCategory}
+          >
+            {[{ value: "", label: projects ? t.catalog.allProjects : t.catalog.allEquipment }, ...categories].map((c) => (
+              <Button
+                key={c.value || "tous"}
+                variant="ghost"
+                size="sm"
+                aria-pressed={category === c.value}
+                onClick={() => chooseCategory(c.value)}
+              >
+                {c.label}
+              </Button>
+            ))}
+          </div>
+        )}
+        {subcategories.length > 0 && (
+          <div className={cx(s.filters, s.subfilters)} role="group" aria-label={t.catalog.byType}>
+            {[{ id: "", title: t.catalog.allTypes }, ...subcategories].map((c) => (
+              <Button
+                key={c.id || "tous"}
+                variant="ghost"
+                size="sm"
+                aria-pressed={subcategory === c.id}
+                onClick={() => setSubcategory(c.id)}
+              >
+                {c.title}
+              </Button>
+            ))}
+          </div>
+        )}
         <div className={s.catalogTools}>
           <SearchInput
-            label="Rechercher dans le catalogue"
+            label={projects ? t.catalog.searchProjects : t.catalog.searchEquipment}
             className={s.toolSearch}
-            placeholder={
-              projects
-                ? "Rechercher un projet…"
-                : "Rechercher un matériel…"
-            }
+            placeholder={projects ? t.catalog.searchProjectsPlaceholder : t.catalog.searchEquipmentPlaceholder}
             value={search}
             onChange={setSearch}
           />
+          {brands.length > 0 && (
+            <Select
+              label={t.catalog.byBrand}
+              hideLabel
+              className={s.toolField}
+              options={[
+                { value: "", label: t.catalog.allBrands },
+                ...brands.map((b) => ({ value: b, label: b })),
+              ]}
+              value={brandFilter}
+              onChange={setBrandFilter}
+            />
+          )}
+          {colors.length > 1 && (
+            <Select
+              label={t.catalog.byColor}
+              hideLabel
+              className={s.toolField}
+              options={[
+                { value: "", label: t.catalog.allColors },
+                ...colors.map((c) => ({ value: c, label: c })),
+              ]}
+              value={color}
+              onChange={setColor}
+            />
+          )}
+          {priced && (
+            <NumberInput
+              label={t.catalog.maxPrice}
+              hideLabel
+              className={s.toolField}
+              min={0}
+              step={100}
+              controls={false}
+              placeholder={t.catalog.maxPricePlaceholder}
+              suffix="MAD"
+              value={max}
+              onChange={setMax}
+            />
+          )}
           {!projects && (
-            <>
-              <Select
-                label="Filtrer par couleur"
-                hideLabel
-                className={s.toolField}
-                options={[
-                  { value: "Toutes", label: "Toutes les couleurs" },
-                  ...[
-                    ...new Set(items.map((e) => e.color).filter(Boolean)),
-                  ].map((c) => ({ value: c!, label: c! })),
-                ]}
-                value={color}
-                onChange={setColor}
-              />
-              <NumberInput
-                label="Prix maximum"
-                hideLabel
-                className={s.toolField}
-                min={0}
-                step={100}
-                controls={false}
-                placeholder="Prix max."
-                suffix="MAD"
-                value={max}
-                onChange={setMax}
-              />
-              <Checkbox
-                className={s.check}
-                checked={available}
-                onChange={setAvailable}
-              >
-                Disponible
-              </Checkbox>
-            </>
+            <Checkbox
+              className={s.check}
+              checked={available}
+              onChange={setAvailable}
+            >
+              {t.catalog.available}
+            </Checkbox>
           )}
         </div>
         <p className={s.caption}>
-          {filtered.length} {projects ? "projet(s)" : "article(s)"} · Les
-          contenus marqués « exemple » ou « inspiration » sont à remplacer par
-          le catalogue et les réalisations {brand.name}.
+          {fill(projects ? t.catalog.countProjects : t.catalog.countEquipment, { count: filtered.length })} ·{" "}
+          {fill(t.catalog.demoNote, { brand: brand.name })}
         </p>
         <div className={s.catalogGrid}>
           {filtered.map((item) => (
             <article key={item.id} className={s.productCard}>
-              <Link
-                href={`/${projects ? "realisations" : "materiel"}/${item.id}`}
-                className={s.productImage}
-              >
+              <Link href={href(page, item.id)} className={s.productImage}>
                 <img
                   src={item.image || "/eventheme.jpg"}
                   alt={item.title}
@@ -143,22 +217,29 @@ export function Catalog({ projects = false }: { projects?: boolean }) {
                 />
                 {item.demo && (
                   <span className={s.imageTag}>
-                    {projects ? "INSPIRATION" : "EXEMPLE DE CATALOGUE"}
+                    {projects ? t.catalog.inspirationTag : t.catalog.exampleTag}
                   </span>
                 )}
               </Link>
               <div className={s.productBody}>
-                <span className={s.eyebrow}>{item.category}</span>
-                <Link
-                  href={`/${projects ? "realisations" : "materiel"}/${item.id}`}
-                >
+                <span className={s.eyebrow}>
+                  {projects ? projectLabel(item.category) : categoryTrail(entries, item)}
+                </span>
+                <Link href={href(page, item.id)}>
                   <h3>{item.title}</h3>
                 </Link>
+                {!projects && (productIdentity(item) || item.reference) && (
+                  <span className={s.identity}>
+                    {[productIdentity(item), item.reference && fill(t.catalog.reference, { reference: item.reference })]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                )}
                 <p>{item.description}</p>
                 <div className={s.productActions}>
                   {!projects && (
                     <>
-                      <span>{priceLabel(item)}</span>
+                      <span>{priceLabel(item, locale)}</span>
                       <Button
                         variant="link"
                         size="sm"
@@ -167,19 +248,19 @@ export function Catalog({ projects = false }: { projects?: boolean }) {
                         onClick={() => add(item)}
                       >
                         {item.available === false
-                          ? "Indisponible"
-                          : "Ajouter au devis"}
+                          ? t.common.unavailable
+                          : t.common.addToQuote}
                       </Button>
                     </>
                   )}
                   {projects && (
                     <Button
-                      href={`/realisations/${item.id}`}
+                      href={href("projects", item.id)}
                       variant="link"
                       size="sm"
                       icon={<ArrowUpRightIcon />}
                     >
-                      Découvrir
+                      {t.common.discover}
                     </Button>
                   )}
                 </div>
@@ -189,19 +270,9 @@ export function Catalog({ projects = false }: { projects?: boolean }) {
         </div>
         {!filtered.length && (
           <div className={s.empty}>
-            Aucun résultat pour ces critères.
-            <Button
-              variant="link"
-              icon="→"
-              onClick={() => {
-                setCategory("Tous");
-                setColor("Toutes");
-                setSearch("");
-                setMax(null);
-                setAvailable(false);
-              }}
-            >
-              Réinitialiser les filtres
+            {t.catalog.empty}
+            <Button variant="link" icon="→" onClick={reset}>
+              {t.catalog.reset}
             </Button>
           </div>
         )}
@@ -211,10 +282,10 @@ export function Catalog({ projects = false }: { projects?: boolean }) {
   );
 }
 export function Services() {
-  const { entries, add, basket, setBasket } = useEventheme();
+  const { entries, add, basket, setBasket, locale, t } = useEventheme();
   return (
     <>
-      <PageIntro id="services-page" eyebrow="NOS EXPERTISES" />
+      <PageIntro id="services-page" eyebrow={t.servicesPage.eyebrow} />
       <section className={s.section}>
         {entries
           .filter((e) => e.kind === "services")
@@ -233,7 +304,14 @@ export function Services() {
                   </span>
                   <h2>{e.title}</h2>
                   <p>{e.description}</p>
-                  <span className={s.price}>{priceLabel(e)}</span>
+                  {serviceItems(e, t.serviceDetails).length > 0 && (
+                    <ul className={s.specList}>
+                      {serviceItems(e, t.serviceDetails).map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <span className={s.price}>{priceLabel(e, locale)}</span>
                   <Button
                     variant={chosen ? "outline" : "fill"}
                     icon={chosen ? <CheckIcon /> : "+"}
@@ -250,7 +328,7 @@ export function Services() {
                         : add(e)
                     }
                   >
-                    {chosen ? "Dans mon devis" : "Ajouter au devis"}
+                    {chosen ? t.common.inQuote : t.common.addToQuote}
                   </Button>
                 </div>
               </article>
@@ -267,28 +345,28 @@ export function Services() {
  * visuels d’EVENTHEMES.
  */
 export function About() {
-  const { entries } = useEventheme();
+  const { entries, t } = useEventheme();
   const about = entries.find((e) => e.id === "about");
   const values = entries.find((e) => e.id === "values");
   return (
     <>
-      <PageIntro id="about" eyebrow={`À PROPOS D’${brand.name}`} />
+      <PageIntro id="about" eyebrow={fill(t.about.eyebrow, { brand: brand.name })} />
       <section className={`${s.section} ${s.aboutSplit}`}>
         <img
           src={about?.image || "/eventheme.jpg"}
-          alt="Scène équipée d’écrans LED et de projecteurs — photographie d’illustration"
+          alt={t.about.imageAlt}
         />
         <div>
-          <span className={s.eyebrow}>NOS VALEURS</span>
+          <span className={s.eyebrow}>{t.about.values}</span>
           <h2>{values?.title}</h2>
           <p>{values?.description}</p>
         </div>
       </section>
       <section className={s.section}>
-        <span className={s.eyebrow}>EXPERTISE TECHNIQUE</span>
-        <h2>De la fourniture à l’exploitation.</h2>
+        <span className={s.eyebrow}>{t.about.expertise}</span>
+        <h2>{t.about.expertiseTitle}</h2>
         <div className={s.process}>
-          {activities.map(([title, description], i) => (
+          {t.activities.map(([title, description], i) => (
             <div key={title}>
               <span>0{i + 1}</span>
               <h3>{title}</h3>
@@ -302,9 +380,19 @@ export function About() {
     </>
   );
 }
+/** « Puissance : 1 000 W » → ligne de tableau ; sinon, simple ligne de liste. */
+function specRows(text?: string) {
+  const lines = (text || "").split("\n").map((line) => line.trim()).filter(Boolean);
+  const pairs = lines.map((line) => {
+    const at = line.indexOf(":");
+    return at > 0 && at < 60 ? [line.slice(0, at).trim(), line.slice(at + 1).trim()] as const : null;
+  });
+  return { lines, pairs: pairs.every(Boolean) ? (pairs as (readonly [string, string])[]) : null };
+}
 export function Detail({ entry }: { entry: Entry }) {
-  const { add, entries } = useEventheme();
+  const { add, entries, locale, t, href } = useEventheme();
   const [variant, setVariant] = useState(entry.variants?.[0]?.name || "");
+  const [quantity, setQuantity] = useState<number | null>(1);
   const [zoom, setZoom] = useState(false);
   const [image, setImage] = useState(entry.image);
   const product = entry.kind === "products";
@@ -312,17 +400,33 @@ export function Detail({ entry }: { entry: Entry }) {
   const length = selectedVariant?.length ?? entry.length;
   const width = selectedVariant?.width ?? entry.width;
   const whatsapp = findSocial(entries, "whatsapp");
+  const specs = specRows(entry.specifications);
+  // Fiche matériel : identité et dimensions avant les caractéristiques techniques.
+  const facts: [string, string][] = product
+    ? ([
+        [t.detail.brand, entry.brand],
+        [t.detail.model, entry.model],
+        [t.detail.reference, entry.reference],
+        [t.detail.color, entry.color],
+        [t.detail.length, length != null ? centimetres(length, locale) : undefined],
+        [t.detail.width, width != null ? centimetres(width, locale) : undefined],
+      ].filter((row): row is [string, string] => Boolean(row[1])))
+    : ([
+        [t.detail.place, entry.location],
+        [t.detail.year, entry.date],
+      ].filter((row): row is [string, string] => Boolean(row[1])));
+  const projectLabel = (value?: string) => projectCategoryLabel(locale, value);
   return (
     <section className={s.section}>
-      <Button variant="link" href={product ? "/materiel" : "/realisations"}>
-        ← Retour {product ? "au catalogue" : "aux réalisations"}
+      <Button variant="link" href={href(product ? "equipment" : "projects")}>
+        {product ? t.detail.backEquipment : t.detail.backProjects}
       </Button>
       <div className={s.detail}>
         <div>
           <button
             className={s.detailImage}
             onClick={() => setZoom(true)}
-            aria-label="Agrandir la photographie"
+            aria-label={t.detail.zoom}
           >
             <img src={image || "/eventheme.jpg"} alt={entry.title} />
           </button>
@@ -333,7 +437,7 @@ export function Detail({ entry }: { entry: Entry }) {
                 <button
                   key={url}
                   onClick={() => setImage(url)}
-                  aria-label="Afficher cette photographie"
+                  aria-label={t.detail.show}
                 >
                   <img src={url} alt={entry.title} />
                 </button>
@@ -342,62 +446,102 @@ export function Detail({ entry }: { entry: Entry }) {
         </div>
         <div>
           <span className={s.eyebrow}>
-            {entry.category} {entry.demo && "· ILLUSTRATION"}
+            {product ? categoryTrail(entries, entry) : projectLabel(entry.category)}{" "}
+            {entry.demo && t.detail.illustration}
           </span>
           <h1>{entry.title}</h1>
           <p>{entry.description}</p>
-          {entry.location && <p>Lieu : {entry.location}</p>}
-          {entry.date && <p>Date : {entry.date}</p>}
-          {entry.specifications && <p>{entry.specifications}</p>}
-          {length != null && <p>Longueur : {centimetres(length)}</p>}
-          {width != null && <p>Largeur : {centimetres(width)}</p>}
-          {entry.color && (
-            <p className={s.colorLine}>
-              {entry.swatch && (
-                <span
-                  className={s.swatchDot}
-                  style={{ backgroundColor: entry.swatch }}
-                  aria-hidden="true"
-                />
+          {facts.length > 0 && (
+            <dl className={s.facts}>
+              {facts.map(([term, value]) => (
+                <div key={term}>
+                  <dt>{term}</dt>
+                  <dd>
+                    {term === t.detail.color && entry.swatch && (
+                      <span
+                        className={s.swatchDot}
+                        style={{ backgroundColor: entry.swatch }}
+                        aria-hidden="true"
+                      />
+                    )}
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {specs.lines.length > 0 && (
+            <>
+              <h2 className={s.factsTitle}>
+                {product ? t.detail.specs : t.detail.delivered}
+              </h2>
+              {specs.pairs ? (
+                <dl className={s.facts}>
+                  {specs.pairs.map(([term, value], index) => (
+                    <div key={`${term}-${index}`}>
+                      <dt>{term}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <ul className={s.specList}>
+                  {specs.lines.map((line, index) => (
+                    <li key={`${line}-${index}`}>{line}</li>
+                  ))}
+                </ul>
               )}
-              Couleur : {entry.color}
-            </p>
+            </>
           )}
           {product && (
-            <span className={s.price}>
-              {priceLabel({
-                ...entry,
-                price: selectedVariant ? selectedVariant.price : entry.price,
-              })}
-            </span>
+            <>
+              <span className={s.price}>
+                {priceLabel(
+                  { ...entry, price: selectedVariant ? selectedVariant.price : entry.price },
+                  locale,
+                )}
+              </span>
+              <p className={s.availability}>
+                {entry.available === false ? t.detail.unavailable : t.detail.availability}
+              </p>
+            </>
           )}
           <div className={s.detailActions}>
             {product && !!entry.variants?.length && (
               <Select
-                label="Variante"
+                label={t.detail.variant}
                 className={s.variantField}
                 options={entry.variants.map((v) => ({
                   value: v.name,
-                  label: v.name,
+                  label: v.label || v.name,
                 }))}
                 value={variant}
                 onChange={setVariant}
+              />
+            )}
+            {product && entry.available !== false && (
+              <NumberInput
+                label={t.detail.quantity}
+                className={s.variantField}
+                min={1}
+                max={1000}
+                decimals={0}
+                value={quantity}
+                onChange={setQuantity}
               />
             )}
             {product && (
               <Button
                 icon="+"
                 disabled={entry.available === false}
-                onClick={() => add(entry, variant)}
+                onClick={() => add(entry, variant, quantity ?? 1)}
               >
-                {entry.available === false
-                  ? "Indisponible"
-                  : "Ajouter au devis"}
+                {entry.available === false ? t.common.unavailable : t.common.addToQuote}
               </Button>
             )}
             {!product && (
-              <Button href="/devis" icon={<ArrowUpRightIcon />}>
-                Demander un devis
+              <Button href={href("quote")} icon={<ArrowUpRightIcon />}>
+                {t.common.requestQuote}
               </Button>
             )}
             {whatsapp?.url && (
@@ -408,7 +552,7 @@ export function Detail({ entry }: { entry: Entry }) {
                 rel="noreferrer"
                 icon={<ArrowUpRightIcon />}
               >
-                En parler sur WhatsApp
+                {t.common.whatsapp}
               </Button>
             )}
             {entry.video && (
@@ -419,7 +563,7 @@ export function Detail({ entry }: { entry: Entry }) {
                 rel="noreferrer"
                 icon={<ArrowUpRightIcon />}
               >
-                Voir la vidéo
+                {t.detail.video}
               </Button>
             )}
           </div>
@@ -439,7 +583,7 @@ export function Detail({ entry }: { entry: Entry }) {
           <button
             autoFocus
             onClick={() => setZoom(false)}
-            aria-label="Fermer la photographie"
+            aria-label={t.detail.close}
           >
             ×
           </button>
@@ -450,25 +594,18 @@ export function Detail({ entry }: { entry: Entry }) {
   );
 }
 export function Legal({ privacy = false }: { privacy?: boolean }) {
-  const { entries } = useEventheme();
+  const { entries, t } = useEventheme();
   const content = entries.find((e) => e.id === (privacy ? "privacy" : "legal"));
   return (
     <section className={`${s.section} ${s.legal}`}>
       <span className={s.eyebrow}>{brand.name}</span>
-      <h1>{privacy ? "Politique de confidentialité" : "Mentions légales"}</h1>
+      <h1>{privacy ? t.legal.privacy : t.legal.legal}</h1>
       {content ? (
         <p>{content.description}</p>
       ) : (
         <>
-          <p>
-            Page en préparation. Les informations légales et la politique de
-            confidentialité doivent être complétées et validées par {brand.name}
-            avant la mise en ligne.
-          </p>
-          <p>
-            La version locale sert uniquement à la démonstration. Utilisez des
-            coordonnées fictives pour tester les formulaires.
-          </p>
+          <p>{fill(t.legal.pending, { brand: brand.name })}</p>
+          <p>{t.legal.demo}</p>
         </>
       )}
     </section>

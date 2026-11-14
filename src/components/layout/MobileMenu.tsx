@@ -17,6 +17,10 @@ type MobileMenuProps = {
   action: ReactNode;
   socials: { id: string; title: string; url?: string }[];
   onNavigate: () => void;
+  /** Libellé de la navigation, dans la langue de la page. */
+  label: string;
+  /** Lien vers l’autre langue. */
+  language?: ReactNode;
 };
 
 /**
@@ -27,10 +31,10 @@ type MobileMenuProps = {
  * tabulation et des lecteurs d'écran, le `clip-path` ne les masquant que
  * visuellement.
  */
-export default function MobileMenu({ id, open, links, current, action, socials, onNavigate }: MobileMenuProps) {
+export default function MobileMenu({ id, open, links, current, action, socials, onNavigate, label, language }: MobileMenuProps) {
   return (
     <div id={id} className={cx(styles.menu, open && styles.open)} inert={!open}>
-      <nav aria-label="Navigation mobile">
+      <nav aria-label={label}>
         <ol className={styles.links}>
           {links.map(([label, href], index) => (
             <li key={href} style={{ ['--i' as string]: index }}>
@@ -51,6 +55,7 @@ export default function MobileMenu({ id, open, links, current, action, socials, 
             </a>
           ))}
         </div>
+        {language}
         <p className={styles.signature} lang="en">{brand.signature}</p>
       </div>
     </div>

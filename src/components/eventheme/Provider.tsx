@@ -11,6 +11,9 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
+import { FormLocaleProvider } from "@/components/ui/form/locale";
+import { dictionaries, type Dictionary } from "@/data/locales";
+import { fill, pathFor, type Locale, type PageKey } from "@/lib/i18n";
 import type { Basket, Entry, QuoteState } from "@/lib/eventheme/types";
 const empty: Basket = { services: [], products: [] };
 let memory = "";
@@ -33,19 +36,27 @@ const Context = createContext<{
   entries: Entry[];
   basket: Basket;
   setBasket: (basket: Basket) => void;
-  add: (entry: Entry, variant?: string) => void;
+  add: (entry: Entry, variant?: string, quantity?: number) => void;
   notice: string;
   local: boolean;
+  /** Langue de la page, ses textes d’interface et ses adresses. */
+  locale: Locale;
+  t: Dictionary;
+  href: (key: PageKey, id?: string) => string;
 } | null>(null);
 export function EventhemeProvider({
   entries,
   local,
+  locale,
   children,
 }: {
   entries: Entry[];
   local: boolean;
+  locale: Locale;
   children: ReactNode;
 }) {
+  const t = dictionaries[locale];
+  const href = (key: PageKey, id?: string) => pathFor(locale, key, id);
   const stored = useSyncExternalStore(subscribe, snapshot, () => "");
   const basket = useMemo<Basket>(() => {
     try {
@@ -81,7 +92,8 @@ export function EventhemeProvider({
     } catch {}
     window.dispatchEvent(new Event("eventheme-basket"));
   }
-  function add(entry: Entry, variant = "") {
+  function add(entry: Entry, variant = "", quantity = 1) {
+    const amount = Math.max(1, Math.min(1000, Math.round(quantity) || 1));
     if (entry.kind === "services")
       setBasket({
         ...basket,
@@ -97,22 +109,24 @@ export function EventhemeProvider({
         products: existing
           ? basket.products.map((p) =>
               p === existing
-                ? { ...p, quantity: Math.min(1000, p.quantity + 1) }
+                ? { ...p, quantity: Math.min(1000, p.quantity + amount) }
                 : p,
             )
           : [
               ...basket.products,
-              { id: entry.id, quantity: 1, variant: selected },
+              { id: entry.id, quantity: amount, variant: selected },
             ],
       });
     }
-    setNotice(`${entry.title} ajouté à votre devis`);
+    setNotice(fill(t.common.added, { title: `${entry.title}${amount > 1 && entry.kind !== "services" ? ` × ${amount}` : ""}` }));
   }
   return (
     <Context.Provider
-      value={{ entries, basket, setBasket, add, notice, local }}
+      value={{ entries, basket, setBasket, add, notice, local, locale, t, href }}
     >
-      <QuoteProvider>{children}</QuoteProvider>
+      <FormLocaleProvider language={locale}>
+        <QuoteProvider>{children}</QuoteProvider>
+      </FormLocaleProvider>
     </Context.Provider>
   );
 }
@@ -125,7 +139,7 @@ export function useEventheme() {
 export const initialQuote = (): QuoteState => ({
   phase: "lead",
   step: 0,
-  contact: { name: "", phone: "", email: "", contactMethod: "Téléphone", consent: false },
+  contact: { name: "", company: "", phone: "", email: "", contactMethod: "Téléphone", consent: false },
   details: {
     event: "",
     date: "",
@@ -133,9 +147,11 @@ export const initialQuote = (): QuoteState => ({
     rentalDays: 1,
     city: "",
     address: "",
-    guests: 50,
+    guests: 0,
+    budget: 0,
     message: "",
   },
+  files: [],
   lead: null,
   result: null,
 });

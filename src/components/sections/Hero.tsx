@@ -7,6 +7,7 @@ import { useEventheme } from '@/components/eventheme/Provider';
 import Button from '@/components/ui/Button';
 import { ArrowUpRightIcon, SocialIcon } from '@/components/ui/icons';
 import { brand, heroSlides, isSignature } from '@/data/eventheme';
+import { fill } from '@/lib/i18n';
 import { cx } from '@/lib/cx';
 import { onCurtainOpen } from '@/lib/intro';
 import { gsap, revealSafe, ScrollTrigger, useGSAP } from '@/lib/motion';
@@ -15,12 +16,6 @@ import { findSocial } from '@/lib/eventheme/types';
 import styles from './Hero.module.css';
 
 const HeroSculpture = dynamic(() => import('./HeroSculpture'), { ssr: false });
-/** Les trois temps d’un projet, joués par la structure 3D : étude, montage, direct. */
-const WORLDS = [
-  { label: 'Concevoir', caption: 'Tout commence par une étude.', detail: 'Le lieu, le public, le programme.' },
-  { label: 'Installer', caption: 'Chaque structure à sa place.', detail: 'Scène, truss, écrans, son et lumière.' },
-  { label: 'Exploiter', caption: 'Le direct, maîtrisé.', detail: 'Une régie technique aux commandes.' },
-] as const;
 
 export default function Hero() {
   const ref = useRef<HTMLElement>(null);
@@ -31,7 +26,9 @@ export default function Hero() {
   const [paused, setPaused] = useState(false);
   const [settled, setSettled] = useState(false);
   const onSettled = useCallback(() => setSettled(true), []);
-  const { entries } = useEventheme();
+  const { entries, t } = useEventheme();
+  /** Les trois temps d’un projet, joués par la structure 3D : étude, montage, direct. */
+  const worlds = t.hero.worlds;
   const home = entries.find((entry) => entry.id === 'home');
   const whatsapp = findSocial(entries, 'whatsapp');
   const candidates = [home?.image, ...(home?.gallery?.length ? home.gallery : heroSlides)];
@@ -138,8 +135,8 @@ export default function Hero() {
     <section ref={ref} className={styles.hero} id="accueil" aria-labelledby="accueil-titre">
       <div className={styles.architecture} aria-hidden="true"><span /><span /><span /></div>
       <div className={styles.topline} data-hero-reveal>
-        <span>{home?.subtitle || `${brand.sector} · ${brand.market}`}</span>
-        <span className={styles.topNote}>{brand.disciplines.join(' · ')}</span>
+        <span>{home?.subtitle || `${brand.sector} · ${t.brand.market}`}</span>
+        <span className={styles.topNote}>{t.brand.disciplines.join(' · ')}</span>
       </div>
       <div className={styles.composition}>
         <div className={styles.content}>
@@ -148,10 +145,10 @@ export default function Hero() {
               {index === lines.length - 1 && lines.length > 1 ? <em data-hero-line>{line}</em> : <span data-hero-line>{line}</span>}
             </span>)}
           </h1>
-          <p className={styles.lede} data-hero-reveal>{home?.description || brand.summary}</p>
+          <p className={styles.lede} data-hero-reveal>{home?.description || t.brand.summary}</p>
           <div className={styles.actions} data-hero-reveal>
-            <Button href="#devis" icon={<ArrowUpRightIcon />} className={styles.primary} magnetic>Demander un devis</Button>
-            <a href="#services" className={styles.secondary}>Nos expertises <ArrowUpRightIcon /></a>
+            <Button href="#devis" icon={<ArrowUpRightIcon />} className={styles.primary} magnetic>{t.common.requestQuote}</Button>
+            <a href="#services" className={styles.secondary}>{t.hero.expertise} <ArrowUpRightIcon /></a>
           </div>
         </div>
         <div className={styles.stage} data-hero-stage>
@@ -161,7 +158,7 @@ export default function Hero() {
               {images.slice(0, 3).map((src, index) => <img key={src} src={src} alt="" className={cx(styles.photo, active % Math.min(images.length, 3) === index && styles.photoActive)} loading={index === 0 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : undefined} decoding="async" />)}
             </div>
             {images[1] && <div className={styles.insetPhoto}><img src={images[1]} alt="" loading="eager" decoding="async" /></div>}
-            <span className={styles.photoSignature}>{brand.name} · {brand.sector} · Photographie d’illustration</span>
+            <span className={styles.photoSignature}>{brand.name} · {brand.sector} · {t.common.illustration}</span>
           </div>
           <div className={styles.sculpture} data-stage-scroll aria-hidden="true">
             {/* Repli tant que WebGL n’a pas rendu : le portique truss au trait. */}
@@ -173,16 +170,16 @@ export default function Hero() {
             <HeroSculpture active={active} paused={paused} scrollScene={scrollScene} onSettled={onSettled} />
           </div>
           <span className={styles.stageIndex} aria-hidden="true">0{active + 1} / 03</span>
-          <div className={styles.sceneMeta} ref={worldRef} aria-live="polite" aria-atomic="true"><span>{WORLDS[active].caption}</span><span>{WORLDS[active].detail}</span></div>
-          {!settled && <button className={styles.pause} onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Reprendre l’animation de la structure' : 'Mettre l’animation de la structure en pause'} aria-pressed={paused} type="button"><span aria-hidden="true">{paused ? '▷' : 'Ⅱ'}</span><span>{paused ? 'Reprendre' : 'Pause'}</span></button>}
+          <div className={styles.sceneMeta} ref={worldRef} aria-live="polite" aria-atomic="true"><span>{worlds[active].caption}</span><span>{worlds[active].detail}</span></div>
+          {!settled && <button className={styles.pause} onClick={() => setPaused((value) => !value)} aria-label={paused ? t.hero.resumeLabel : t.hero.pauseLabel} aria-pressed={paused} type="button"><span aria-hidden="true">{paused ? '▷' : 'Ⅱ'}</span><span>{paused ? t.hero.resume : t.hero.pause}</span></button>}
         </div>
       </div>
       <div className={styles.bottom} data-hero-reveal>
-        <a href="#a-propos" className={styles.scroll}><span aria-hidden="true">↓</span><span>Découvrir {brand.name}</span></a>
-        <div className={styles.worlds} role="group" aria-label="Explorer les trois temps d’un projet">
-          {WORLDS.map((world, index) => <button key={world.label} type="button" className={cx(styles.world, active === index && styles.selected)} aria-pressed={active === index} onClick={() => chooseWorld(index)}><span className={styles.worldNumber}>0{index + 1}</span><span>{world.label}</span><span className={styles.worldArrow} aria-hidden="true">↗</span></button>)}
+        <a href="#a-propos" className={styles.scroll}><span aria-hidden="true">↓</span><span>{fill(t.hero.discover, { brand: brand.name })}</span></a>
+        <div className={styles.worlds} role="group" aria-label={t.hero.worldsLabel}>
+          {worlds.map((world, index) => <button key={world.label} type="button" className={cx(styles.world, active === index && styles.selected)} aria-pressed={active === index} onClick={() => chooseWorld(index)}><span className={styles.worldNumber}>0{index + 1}</span><span>{world.label}</span><span className={styles.worldArrow} aria-hidden="true">↗</span></button>)}
         </div>
-        {whatsapp?.url && <a href={whatsapp.url} className={styles.whatsapp} target="_blank" rel="noreferrer" aria-label="Nous contacter sur WhatsApp (nouvel onglet)"><SocialIcon name="whatsapp" /></a>}
+        {whatsapp?.url && <a href={whatsapp.url} className={styles.whatsapp} target="_blank" rel="noreferrer" aria-label={t.hero.whatsapp}><SocialIcon name="whatsapp" /></a>}
       </div>
       <div className={styles.scrollMeter} aria-hidden="true"><span data-scroll-meter /></div>
       <div className={styles.filmstrip} aria-hidden="true">{images.slice(0, 3).map((src, index) => <img key={src} src={src} alt="" className={cx(styles.filmImage, active === index && styles.filmActive)} loading="lazy" decoding="async" />)}</div>

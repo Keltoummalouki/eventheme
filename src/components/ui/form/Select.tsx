@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { CheckIcon, ChevronIcon } from '@/components/ui/icons';
-import { formText } from '@/data/ui';
+import { useFormText } from './locale';
 import { useDismiss, useFlip } from '@/hooks/usePopover';
 import { useTypeahead } from '@/hooks/useTypeahead';
 import { cx } from '@/lib/cx';
@@ -37,11 +37,15 @@ export type SelectProps<V extends string = string> = FieldProps & {
 
 /** Controlled, single-value dropdown. Search is optional; only explicit choices are saved. */
 export default function Select<V extends string = string>({
-  options, value, onChange, placeholder = formText.selectPlaceholder,
+  options, value, onChange, placeholder: placeholderProp,
   name, id, disabled, label, hideLabel, hint, error, required, className,
   'aria-label': ariaLabel, searchable = false, loading = false,
-  loadingText = formText.loading, emptyText = formText.noOptions,
+  loadingText: loadingTextProp, emptyText: emptyTextProp,
 }: SelectProps<V>) {
+  const formText = useFormText();
+  const placeholder = placeholderProp ?? formText.selectPlaceholder;
+  const loadingText = loadingTextProp ?? formText.loading;
+  const emptyText = emptyTextProp ?? formText.noOptions;
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [query, setQuery] = useState('');

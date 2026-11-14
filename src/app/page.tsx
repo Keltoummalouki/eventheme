@@ -1,9 +1,3 @@
-import Shell from "@/components/eventheme/Shell";
-import Home from "@/components/eventheme/Home";
-export default function Page() {
-  return (
-    <Shell>
-      <Home />
-    </Shell>
-  );
-}
+import { homePage, pageMetadata } from "@/components/eventheme/Routes";
+export const generateMetadata = () => pageMetadata("fr", "home");
+export default homePage;

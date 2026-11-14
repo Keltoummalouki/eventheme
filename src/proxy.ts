@@ -6,10 +6,20 @@ import {
   authConfigured,
   hasAdminRole,
 } from "@/lib/eventheme/auth";
-// First gate for the back office. Pages and API routes re-check with getUser(), so a
+import { LOCALE_HEADER, routeOf } from "@/lib/i18n";
+// Public pages: the root layout reads the page language from this header
+// (<html lang>, metadata, content), set here from the address (/en/… or not).
+// Back office: first gate. Pages and API routes re-check with getUser(), so a
 // revoked admin is refused even while their access token is still valid.
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const within = (prefix: string) =>
+    pathname === prefix || pathname.startsWith(`${prefix}/`);
+  if (!within("/admin") && !within("/api/admin") && !within("/api/auth")) {
+    const headers = new Headers(request.headers);
+    headers.set(LOCALE_HEADER, routeOf(pathname).locale);
+    return NextResponse.next({ request: { headers } });
+  }
   let response = NextResponse.next({ request });
   let admin = false;
   if (authConfigured()) {
@@ -42,8 +52,6 @@ export async function proxy(request: NextRequest) {
     next.headers.set("Cache-Control", "private, no-store");
     return next;
   };
-  const within = (prefix: string) =>
-    pathname === prefix || pathname.startsWith(`${prefix}/`);
   if (within("/api/admin") && !admin)
     return finish(
       NextResponse.json(
@@ -62,5 +70,6 @@ export async function proxy(request: NextRequest) {
   return finish(response);
 }
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*", "/api/auth/:path*"],
+  // Every page (no file extension, no internal asset), plus the back-office APIs.
+  matcher: ["/((?!api|_next|.*\\..*).*)", "/api/admin/:path*", "/api/auth/:path*"],
 };

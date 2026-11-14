@@ -4,6 +4,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import MobileMenu from "@/components/layout/MobileMenu";
 import { brand, navigation } from "@/data/eventheme";
+import { dictionaries } from "@/data/locales";
+import { fill, locales, routeOf, translatePath } from "@/lib/i18n";
 import { useScrolled } from "@/hooks/useScrolled";
 import { cx } from "@/lib/cx";
 import { findSocial } from "@/lib/eventheme/types";
@@ -13,11 +15,11 @@ import Button from "@/components/ui/Button";
 import s from "./Eventheme.module.css";
 import homeHeader from "./HomeHeader.module.css";
 import { ArrowUpRightIcon } from "@/components/ui/icons";
-export function Logo() {
+export function Logo({ alt = `${brand.name} — accueil` }: { alt?: string }) {
   return (
     <img
       src="/eventheme_logo_png.webp"
-      alt={`${brand.name} — accueil`}
+      alt={alt}
       className={s.logo}
       width={150}
       height={68}
@@ -29,18 +31,33 @@ export function Arrow() {
 }
 export default function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
-  const home = path === "/";
+  const route = routeOf(path);
+  const home = route.key === "home";
   const [open, setOpen] = useState(false);
   const scrolled = useScrolled(40);
   const header = useRef<HTMLElement>(null);
-  const { entries, basket, notice } = useEventheme();
+  const { entries, basket, notice, locale, t, href } = useEventheme();
+  const links = navigation.map((key) => [t.nav[key], href(key)] as const);
+  // L’autre langue : un lien simple, pour recharger la page dans sa langue (<html lang>, contenus).
+  const other = locales.find((item) => item !== locale) ?? locale;
+  const languageLink = (className: string) => (
+    <a
+      href={translatePath(path, other)}
+      hrefLang={other}
+      lang={other}
+      className={className}
+      aria-label={dictionaries[other].languageName}
+    >
+      {other.toUpperCase()}
+    </a>
+  );
   const socials = entries.filter((e) => e.kind === "socials");
   const services = entries.filter((e) => e.kind === "services");
   const count =
     basket.services.length +
     basket.products.reduce((n, p) => n + p.quantity, 0);
   // Sur l'accueil, « Mon devis » mène à la section ; ailleurs, à sa page.
-  const quoteHref = home ? "#devis" : "/devis";
+  const quoteHref = home ? "#devis" : href("quote");
 
   // Menu ouvert : le focus reste dans la navigation et le reste de la page
   // est inert. Échap et le retour au format bureau referment le menu.
@@ -125,14 +142,14 @@ export default function Shell({ children }: { children: ReactNode }) {
       className={cx(s.quoteButton, home && homeHeader.quote)}
       onClick={() => setOpen(false)}
     >
-      Mon devis {count > 0 && <span className={s.count}>{count}</span>}
+      {t.nav.quote} {count > 0 && <span className={s.count}>{count}</span>}
     </Button>
   );
 
   return (
     <div className={s.site}>
       <a className={s.skip} href="#main" inert={open}>
-        Aller au contenu
+        {t.nav.skip}
       </a>
       <header
         ref={header}
@@ -148,20 +165,21 @@ export default function Shell({ children }: { children: ReactNode }) {
         data-menu-open={open}
       >
         <Link href="/" onClick={() => setOpen(false)} className={cx(s.brand, home && homeHeader.brand)}>
-          <Logo />
+          <Logo alt={fill(t.nav.logoAlt, { brand: brand.name })} />
         </Link>
-        <nav className={cx(s.nav, home && homeHeader.navigation)} aria-label="Navigation principale">
-          {navigation.map(([label, href]) => (
+        <nav className={cx(s.nav, home && homeHeader.navigation)} aria-label={t.nav.main}>
+          {navigation.map((key) => (
             <Link
-              key={href}
-              href={href}
-              className={path === href ? s.active : ""}
-              aria-current={path === href ? "page" : undefined}
+              key={key}
+              href={href(key)}
+              className={route.key === key ? s.active : ""}
+              aria-current={route.key === key ? "page" : undefined}
             >
-              {label}
+              {t.nav[key]}
             </Link>
           ))}
         </nav>
+        {languageLink(s.language)}
         {quoteButton}
         <button
           id="menu-toggle"
@@ -169,7 +187,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           className={cx(s.menuToggle, open && s.menuToggleOpen, home && homeHeader.toggle)}
           aria-expanded={open}
           aria-controls="menu-mobile"
-          aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-label={open ? t.nav.closeMenu : t.nav.openMenu}
           onClick={() => setOpen(!open)}
         >
           <span />
@@ -180,13 +198,15 @@ export default function Shell({ children }: { children: ReactNode }) {
       <MobileMenu
         id="menu-mobile"
         open={open}
-        links={navigation}
+        links={links}
         current={path}
         socials={socials}
         onNavigate={() => setOpen(false)}
+        label={t.nav.mobile}
+        language={languageLink(s.menuLanguage)}
         action={
           <Button href={quoteHref} icon={<ArrowUpRightIcon />} onClick={() => setOpen(false)}>
-            Mon devis {count > 0 && `(${count})`}
+            {t.nav.quote} {count > 0 && `(${count})`}
           </Button>
         }
       />
@@ -199,42 +219,42 @@ export default function Shell({ children }: { children: ReactNode }) {
             <em>the experience.</em>
           </p>
           <Button href={quoteHref} icon={<ArrowUpRightIcon />}>
-            Demander un devis
+            {t.common.requestQuote}
           </Button>
         </div>}
         <div className={s.footerTop}>
           <div>
-            <Link href="/">
-              <Logo />
+            <Link href={href("home")}>
+              <Logo alt={fill(t.nav.logoAlt, { brand: brand.name })} />
             </Link>
             <p>
-              {brand.name} — {brand.baseline}.
+              {brand.name} — {t.brand.baseline}.
             </p>
             <span className={s.eyebrow}>
-              {brand.disciplines.join(" · ").toUpperCase()}
+              {t.brand.disciplines.join(" · ").toUpperCase()}
             </span>
           </div>
           <div>
-            <h3>Explorer</h3>
-            {navigation.slice(1).map(([title, href]) => (
-              <Link key={href} href={href}>
+            <h3>{t.footer.explore}</h3>
+            {links.slice(1).map(([title, target]) => (
+              <Link key={target} href={target}>
                 {title}
               </Link>
             ))}
           </div>
           <div>
-            <h3>Services</h3>
+            <h3>{t.footer.services}</h3>
             {services.map((service) => (
-              <Link key={service.id} href="/services">
+              <Link key={service.id} href={href("services")}>
                 {service.title}
               </Link>
             ))}
-            <Link href="/materiel">Catalogue matériel</Link>
+            <Link href={href("equipment")}>{t.footer.catalogue}</Link>
           </div>
           <div>
-            <h3>Rencontrons-nous</h3>
-            <Link href="/contact">Parlons de votre projet</Link>
-            <Link href={quoteHref}>Mon devis</Link>
+            <h3>{t.footer.meet}</h3>
+            <Link href={href("contact")}>{t.footer.talk}</Link>
+            <Link href={quoteHref}>{t.nav.quote}</Link>
             {socials.map((e) => (
               <a
                 key={e.id}
@@ -249,12 +269,12 @@ export default function Shell({ children }: { children: ReactNode }) {
         </div>
         <div className={s.footerBottom}>
           <span>
-            © {new Date().getFullYear()} {brand.name}. Tous droits réservés.
+            © {new Date().getFullYear()} {brand.name}. {t.footer.rights}
           </span>
-          <Link href="/mentions-legales">Mentions légales</Link>
-          <Link href="/politique-de-confidentialite">Confidentialité</Link>
+          <Link href={href("legal")}>{t.footer.legal}</Link>
+          <Link href={href("privacy")}>{t.footer.privacy}</Link>
           <Link href="/admin">
-            Administration <ArrowUpRightIcon className="inline-icon" />
+            {t.footer.admin} <ArrowUpRightIcon className="inline-icon" />
           </Link>
         </div>
       </footer>
@@ -263,25 +283,25 @@ export default function Shell({ children }: { children: ReactNode }) {
         role="status"
         inert={open}
       >
-        {notice} {notice && <Link href={quoteHref}>Voir mon devis →</Link>}
+        {notice} {notice && <Link href={quoteHref}>{t.nav.viewQuote}</Link>}
       </div>
     </div>
   );
 }
 export function CTA() {
-  const { entries } = useEventheme();
+  const { entries, t, href } = useEventheme();
   const whatsapp = findSocial(entries, "whatsapp");
   return (
     <section className={s.cta}>
-      <span className={s.eyebrow}>VOTRE PROJET, NOTRE TECHNIQUE</span>
+      <span className={s.eyebrow}>{t.cta.eyebrow}</span>
       <h2>
-        Parlons de votre
+        {t.cta.titleStart}
         <br />
-        <em>prochain événement.</em>
+        <em>{t.cta.titleEnd}</em>
       </h2>
       <div className={s.actions}>
-        <Button href="/devis" icon={<ArrowUpRightIcon />} magnetic>
-          Demander un devis
+        <Button href={href("quote")} icon={<ArrowUpRightIcon />} magnetic>
+          {t.common.requestQuote}
         </Button>
         {whatsapp?.url && (
           <Button
@@ -291,7 +311,7 @@ export function CTA() {
             rel="noreferrer"
             icon={<ArrowUpRightIcon />}
           >
-            Nous contacter sur WhatsApp
+            {t.cta.whatsapp}
           </Button>
         )}
       </div>

@@ -116,6 +116,7 @@ try {
     "Price must be recomputed on the server",
   );
   assert.equal(inquiry.basket.products[0].quantity, 2);
+  assert.match(inquiry.reference, /^EVT-\d{4}-\d{4,}$/, "Every request gets a readable reference");
   await admin({
     action: "inquiry",
     id: inquiry.id,

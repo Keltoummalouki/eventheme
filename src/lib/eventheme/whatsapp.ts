@@ -1,4 +1,7 @@
+import { brand } from "@/data/eventheme";
+import { dictionaries } from "@/data/locales";
 import { formatLongDate, parseIsoDate } from "@/lib/dates";
+import { fill, intlLocale, type Locale } from "@/lib/i18n";
 
 export type QuoteMessageInput = {
   event: string;
@@ -11,16 +14,19 @@ export type QuoteMessageInput = {
   reference?: string;
 };
 
-/** Message de demande de devis prévu par le cahier des charges, crochets remplis. */
-export function quoteMessage(input: QuoteMessageInput) {
+/** Message de demande de devis prévu par le cahier des charges, crochets remplis, dans la langue de la page. */
+export function quoteMessage(input: QuoteMessageInput, locale: Locale = "fr") {
+  const t = dictionaries[locale].whatsapp;
   const date = parseIsoDate(input.date);
-  const contact = [input.name, input.phone, input.email].filter(Boolean).join(", ");
   return (
-    `Bonjour EVENTHEMES, je souhaite demander un devis pour un événement de type ${input.event || "à définir"}, ` +
-    `prévu le ${date ? formatLongDate(date) : "(date à définir)"}, à ${input.city || "(ville à définir)"}. ` +
-    `Les services souhaités sont : ${input.services.join(", ") || "à définir ensemble"}. ` +
-    `Voici mes informations : ${contact}.` +
-    (input.reference ? ` Référence de ma demande : ${input.reference}.` : "")
+    fill(t.message, {
+      brand: brand.name,
+      type: input.event || t.noType,
+      date: date ? formatLongDate(date, intlLocale[locale]) : t.noDate,
+      city: input.city || t.noCity,
+      services: input.services.join(", ") || t.noServices,
+      contact: [input.name, input.phone, input.email].filter(Boolean).join(", "),
+    }) + (input.reference ? fill(t.reference, { reference: input.reference }) : "")
   );
 }
 

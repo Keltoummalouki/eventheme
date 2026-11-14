@@ -80,7 +80,7 @@ src/
 │   ├── layout/     Intro curtain, mobile menu, motion root
 │   ├── sections/   Home sections (hero, services, gallery, equipment, why us, CTA…)
 │   └── ui/         Buttons, forms, dialogs, Truss ornament, icons
-├── data/           Brand constants, navigation, service details, demo seed
+├── data/           Brand constants, navigation, demo seed; locales/ (French and English interface texts)
 ├── hooks/          Behaviour
 ├── lib/            Pure logic: pricing, validation, WhatsApp, dates, motion, server data layer
 └── styles/         Tokens, base, utilities
@@ -90,8 +90,8 @@ src/
 
 ## Status
 
-**Done:** multi-page site, EVENTHEMES rebrand (palette, typography, copy, truss motif, technical demo content), catalogue with filters and product sheets, quote basket and quote studio, admin with request management and CSV export, Supabase schema with RLS and rate limiting.
+**Done:** multi-page site; EVENTHEMES rebrand (palette, typography, copy, truss motif, technical demo content); catalogue with managed categories and sub-categories, brand, model and reference, filters and search; quote basket and five-step quote request with optional budget and private attachments; readable request references (`EVT-2026-0001`) and the specified statuses; admin with request management and CSV export; automatic e-mails (team alert and client acknowledgement) through Resend or Brevo, previewed locally until a provider is configured; Supabase schema with RLS and rate limiting; French and English versions (`/` and `/en/…`), with optional English fields for every piece of content in the admin and acknowledgements in the visitor's language.
 
-**Next:** catalogue brands, models, references and sub-categories; quote attachments, reference numbers and the specified statuses; e-mail notifications; French/English (then Arabic) versions; service and city SEO pages, structured data and analytics.
+**Next:** service and city SEO pages, structured data and analytics; Arabic (optional). The English texts are drafts to be validated by EVENTHEMES. To configure before launch: the e-mail provider account and `EMAIL_*` variables (see [docs/SETUP.md](docs/SETUP.md)).
 
 All photography and catalogue entries are illustrations marked « Exemple » or « Inspiration ». They must be replaced by EVENTHEMES’ own media, equipment and authorised projects before launch, together with the contact details and the validated legal texts.
