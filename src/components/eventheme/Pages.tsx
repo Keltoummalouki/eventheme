@@ -282,7 +282,7 @@ export function Catalog({
   );
 }
 export function Services() {
-  const { entries, add, basket, setBasket, locale, t } = useEventheme();
+  const { entries, add, basket, setBasket, locale, t, href } = useEventheme();
   return (
     <>
       <PageIntro id="services-page" eyebrow={t.servicesPage.eyebrow} />
@@ -302,7 +302,9 @@ export function Services() {
                   <span className={s.eyebrow}>
                     0{i + 1} — {e.category}
                   </span>
-                  <h2>{e.title}</h2>
+                  <h2>
+                    <Link href={href("services", e.id)}>{e.title}</Link>
+                  </h2>
                   <p>{e.description}</p>
                   {serviceItems(e, t.serviceDetails).length > 0 && (
                     <ul className={s.specList}>
@@ -329,6 +331,9 @@ export function Services() {
                     }
                   >
                     {chosen ? t.common.inQuote : t.common.addToQuote}
+                  </Button>
+                  <Button href={href("services", e.id)} variant="link" icon={<ArrowUpRightIcon />}>
+                    {t.service.more}
                   </Button>
                 </div>
               </article>

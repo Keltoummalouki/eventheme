@@ -1,13 +1,16 @@
-/* Poutre truss : calque décoratif, jamais interactif. */
+/* Poutre truss : calque décoratif, jamais interactif.
+   Spécificité nulle (:where) : la classe passée par le parent (placement,
+   largeur) l’emporte toujours, quel que soit l’ordre de chargement des
+   feuilles de style, qui diffère entre développement et production. */
 
-.truss {
+:where(.truss) {
   display: block;
   width: 100%;
   height: var(--truss-size);
   pointer-events: none;
 }
 
-.vertical {
+:where(.vertical) {
   width: var(--truss-size);
   height: 100%;
 }

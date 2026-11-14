@@ -36,6 +36,10 @@ export async function generateMetadata(): Promise<Metadata> {
     icons: {
       icon: [{ url: "/eventheme_icon.ico", sizes: "32x32" }],
     },
+    // Search Console : jeton de vérification de la propriété (variable GOOGLE_SITE_VERIFICATION).
+    ...(process.env.GOOGLE_SITE_VERIFICATION?.trim()
+      ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION.trim() } }
+      : {}),
     openGraph: {
       title: `${brand.name} — ${brand.signature}`,
       description: t.brand.summary,

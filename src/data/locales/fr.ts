@@ -53,6 +53,11 @@ export const fr = {
     },
     legal: { title: "Mentions légales", description: "Mentions légales du site {brand}." },
     privacy: { title: "Politique de confidentialité", description: "Politique de confidentialité du site {brand}." },
+    cities: {
+      title: "Zones d’intervention",
+      description:
+        "Les villes du Maroc où {brand} intervient : scènes, structures, écrans LED, sonorisation, éclairage et régie technique pour vos événements.",
+    },
   },
 
   nav: {
@@ -83,6 +88,8 @@ export const fr = {
     legal: "Mentions légales",
     privacy: "Confidentialité",
     admin: "Administration",
+    areas: "Zones d’intervention",
+    cookies: "Gérer les cookies",
   },
 
   common: {
@@ -270,6 +277,43 @@ export const fr = {
   },
 
   servicesPage: { eyebrow: "NOS EXPERTISES" },
+
+  /** Fil d’Ariane des pages intérieures. */
+  breadcrumb: { label: "Fil d’Ariane" },
+
+  /** Page d’un service (cahier des charges §10 : une page par service). */
+  service: {
+    eyebrow: "NOS EXPERTISES",
+    items: "Prestations incluses",
+    equipment: "Le matériel associé",
+    equipmentIntro: "Une sélection du catalogue pour ce service. La disponibilité et le tarif sont confirmés par notre équipe.",
+    allEquipment: "Tout le matériel « {category} »",
+    others: "Nos autres expertises",
+    more: "Découvrir le service",
+    areas: "Nous intervenons à",
+  },
+
+  /** Zones d’intervention : une page par ville publiée (référencement local). */
+  cities: {
+    eyebrow: "ZONES D’INTERVENTION",
+    title: "Production technique événementielle à {city}",
+    intro: "Les villes où notre équipe intervient. Votre ville n’y figure pas ? Décrivez-nous votre projet : nous étudions chaque demande.",
+    services: "Nos expertises à {city}",
+    servicesIntro: "Choisissez les prestations utiles à votre événement : chaque service se compose à la carte, de l’étude technique au démontage.",
+    equipment: "Le matériel, par catégorie",
+    quote: "Demander un devis à {city}",
+    others: "Autres zones d’intervention",
+    discover: "Découvrir",
+  },
+
+  /** Mesure d’audience : consentement préalable (loi 09-08), affiché seulement si un outil est configuré. */
+  consent: {
+    label: "Mesure d’audience",
+    text: "Avec votre accord, nous mesurons la fréquentation du site avec Google Analytics afin de l’améliorer. Vous pouvez changer d’avis à tout moment depuis le pied de page.",
+    accept: "Accepter",
+    refuse: "Refuser",
+    more: "Politique de confidentialité",
+  },
 
   about: {
     eyebrow: "À PROPOS D’{brand}",

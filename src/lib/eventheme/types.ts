@@ -11,6 +11,7 @@ export const kinds = [
   "events",
   "projects",
   "pages",
+  "cities",
   "socials",
 ] as const;
 export type Kind = (typeof kinds)[number];
@@ -41,6 +42,8 @@ export type Entry = {
   subcategory?: string;
   /** Catégorie : identifiant de la catégorie parente ; absente pour une catégorie principale. */
   parent?: string;
+  /** Service : catégories du catalogue présentées sur sa page (« Le matériel associé »). */
+  related?: string[];
   /** Matériel : marque, modèle et référence interne, lorsqu’ils sont connus. */
   brand?: string;
   model?: string;
@@ -238,6 +241,7 @@ export const labels: Record<Kind, string> = {
   events: "Types d’événement",
   projects: "Réalisations",
   pages: "Contenu des pages",
+  cities: "Zones d’intervention",
   socials: "Contact & réseaux",
 };
 export const money = (value: number, locale: Locale = "fr") =>

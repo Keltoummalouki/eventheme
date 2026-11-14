@@ -1,7 +1,6 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { animate } from 'animejs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEventheme } from '@/components/eventheme/Provider';
 import Button from '@/components/ui/Button';
@@ -116,15 +115,15 @@ export default function Hero() {
     setActive(index);
   };
 
-  // Anime.js owns the scene caption; GSAP owns the separate entrance layers.
+  // This effect alone owns the scene caption (opacity, y); the entrance timeline animates other layers.
   useEffect(() => {
     const element = worldRef.current;
     if (!element) return;
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let transition: ReturnType<typeof animate> | undefined;
+    let transition: gsap.core.Tween | undefined;
     const run = () => {
       transition?.revert();
-      if (!preference.matches && !paused) transition = animate(element, { opacity: [0.3, 1], translateY: [8, 0], duration: 240, ease: 'outCubic' });
+      if (!preference.matches && !paused) transition = gsap.fromTo(element, { opacity: 0.3, y: 8 }, { opacity: 1, y: 0, duration: 0.24, ease: 'power3.out' });
     };
     run();
     preference.addEventListener('change', run);

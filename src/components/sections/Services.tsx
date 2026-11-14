@@ -117,7 +117,7 @@ export default function Services() {
                   >
                     {chosen ? t.common.inQuote : t.common.addToQuote}
                   </Button>
-                  <Button href={href('services')} variant="link" size="sm" icon={<ArrowUpRightIcon />}>
+                  <Button href={href('services', service.id)} variant="link" size="sm" icon={<ArrowUpRightIcon />}>
                     {t.common.learnMore}
                   </Button>
                 </div>

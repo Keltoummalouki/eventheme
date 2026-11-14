@@ -51,6 +51,11 @@ export const en: Dictionary = {
     },
     legal: { title: "Legal notice", description: "Legal notice of the {brand} website." },
     privacy: { title: "Privacy policy", description: "Privacy policy of the {brand} website." },
+    cities: {
+      title: "Service areas",
+      description:
+        "The cities in Morocco where {brand} works: stages, structures, LED screens, sound, lighting and technical control for your events.",
+    },
   },
 
   nav: {
@@ -81,6 +86,8 @@ export const en: Dictionary = {
     legal: "Legal notice",
     privacy: "Privacy",
     admin: "Admin",
+    areas: "Service areas",
+    cookies: "Cookie settings",
   },
 
   common: {
@@ -264,6 +271,39 @@ export const en: Dictionary = {
   },
 
   servicesPage: { eyebrow: "OUR EXPERTISE" },
+
+  breadcrumb: { label: "Breadcrumb" },
+
+  service: {
+    eyebrow: "OUR EXPERTISE",
+    items: "Included services",
+    equipment: "Related equipment",
+    equipmentIntro: "A selection from the catalogue for this service. Availability and price are confirmed by our team.",
+    allEquipment: "All “{category}” equipment",
+    others: "Our other areas of expertise",
+    more: "Discover the service",
+    areas: "We work in",
+  },
+
+  cities: {
+    eyebrow: "SERVICE AREAS",
+    title: "Event technical production in {city}",
+    intro: "The cities where our team works. Not seeing yours? Tell us about your project: we consider every request.",
+    services: "Our expertise in {city}",
+    servicesIntro: "Choose the services your event needs: each one can be booked à la carte, from the technical survey to the get-out.",
+    equipment: "Equipment, by category",
+    quote: "Request a quote in {city}",
+    others: "Other service areas",
+    discover: "Discover",
+  },
+
+  consent: {
+    label: "Audience measurement",
+    text: "With your consent, we measure visits to the site with Google Analytics to improve it. You can change your mind at any time from the footer.",
+    accept: "Accept",
+    refuse: "Decline",
+    more: "Privacy policy",
+  },
 
   about: {
     eyebrow: "ABOUT {brand}",

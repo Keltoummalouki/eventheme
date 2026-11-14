@@ -7,3 +7,13 @@ export async function requestLocale(): Promise<Locale> {
   const value = (await headers()).get(LOCALE_HEADER);
   return isLocale(value) ? value : defaultLocale;
 }
+
+/** Adresse absolue du site (données structurées) : APP_URL, sinon l’hôte de la requête. */
+export async function siteUrl() {
+  const configured = process.env.APP_URL?.trim().replace(/\/$/, "");
+  if (configured) return configured;
+  const list = await headers();
+  const host = list.get("x-forwarded-host") ?? list.get("host") ?? "localhost:3000";
+  const protocol = list.get("x-forwarded-proto") ?? (/^(localhost|127\.0\.0\.1)(:|$)/.test(host) ? "http" : "https");
+  return `${protocol}://${host}`;
+}

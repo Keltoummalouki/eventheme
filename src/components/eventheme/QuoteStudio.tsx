@@ -9,6 +9,8 @@ import { contactMethodLabel } from "@/data/locales";
 import { cx } from "@/lib/cx";
 import { findSocial, type QuoteContact, type QuotePhase } from "@/lib/eventheme/types";
 import { gsap, MOTION, prefersReducedMotion, revealSafe, useGSAP } from "@/lib/motion";
+import { isMoroccanCity } from "@/data/moroccanCities";
+import { track } from "@/lib/eventheme/audience";
 import { fill } from "@/lib/i18n";
 import { isValidPhone } from "@/lib/phone";
 import { useEventheme, useQuote } from "./Provider";
@@ -41,9 +43,12 @@ const journeyIndex: Record<QuotePhase, number> = { lead: 0, invite: 1, waiting: 
 export default function QuoteStudio({
   as: Heading = "h2",
   eventId = "",
+  city = "",
 }: {
   as?: "h1" | "h2";
   eventId?: string;
+  /** Ville préremplie (/devis?ville=Marrakech, depuis une page ville). */
+  city?: string;
 }) {
   const ref = useRef<HTMLElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -69,6 +74,14 @@ export default function QuoteStudio({
     applied.current = eventId;
     if (events.some((e) => e.id === eventId)) pickEvent(eventId);
   }, [eventId, events, pickEvent]);
+
+  // Ville transmise par l’adresse : appliquée une fois, sans remplacer une ville déjà choisie.
+  const cityApplied = useRef(false);
+  useEffect(() => {
+    if (cityApplied.current || !isMoroccanCity(city)) return;
+    cityApplied.current = true;
+    setQuote((q) => (q.details.city ? q : { ...q, details: { ...q.details, city } }));
+  }, [city, setQuote]);
 
   // À chaque changement d'étape du parcours, le titre reprend le focus et la
   // section revient à l'écran si elle en était sortie.
@@ -154,6 +167,7 @@ export default function QuoteStudio({
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
+      track("generate_lead", { lead_type: "callback" });
       setQuote((q) => ({
         ...q,
         phase: "invite",

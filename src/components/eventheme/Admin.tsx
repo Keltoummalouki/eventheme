@@ -28,6 +28,8 @@ import {
   type Variant,
 } from "@/lib/eventheme/types";
 import { adminLogin } from "@/lib/eventheme/auth";
+import { pathFor, type PageKey } from "@/lib/i18n";
+import { isGeneratedId, slugify, uniqueSlug } from "@/lib/slug";
 import { categoryTrail, childCategories, topCategories } from "@/lib/eventheme/catalogue";
 import { sizeLabel } from "@/lib/eventheme/requests";
 import { brand, projectCategories } from "@/data/eventheme";
@@ -67,9 +69,24 @@ const sitePages = [
   { id: "services-page", label: "Page Services" },
   { id: "location-page", label: "Page Matériel" },
   { id: "projects-page", label: "Page Réalisations" },
+  { id: "cities-page", label: "Page Zones d’intervention" },
   { id: "legal", label: "Mentions légales" },
   { id: "privacy", label: "Politique de confidentialité" },
 ];
+/** Contenus qui ont une adresse publique : un nouveau contenu prend un identifiant lisible, tiré de son titre. */
+const addressed: readonly Kind[] = ["services", "products", "categories", "events", "projects", "cities"];
+/** Page publique de chaque type de fiche (aperçu de l’adresse dans le formulaire). */
+const pageOf: Partial<Record<Kind, PageKey>> = {
+  services: "services",
+  products: "equipment",
+  projects: "projects",
+  cities: "cities",
+};
+/** Nouveau contenu : identifiant lisible et libre (« marrakech », « marrakech-2 »…) à la place de l’identifiant aléatoire. */
+const withReadableId = (entry: Entry, entries: Entry[]): Entry =>
+  addressed.includes(entry.kind) && isGeneratedId(entry.id) && !entries.some((e) => e.id === entry.id)
+    ? { ...entry, id: uniqueSlug(slugify(entry.title), entries.map((e) => e.id)) }
+    : entry;
 type FormField =
   | "title"
   | "discipline"
@@ -86,10 +103,11 @@ type FormField =
   | "product"
   | "variants"
   | "project"
+  | "related"
   | "demo";
 /** Each form shows only the fields the public site actually reads for that kind. */
 const formFields: Record<Kind, readonly FormField[]> = {
-  services: ["title", "discipline", "description", "items", "image", "price"],
+  services: ["title", "discipline", "description", "items", "related", "image", "price"],
   products: [
     "title",
     "catalogue",
@@ -115,6 +133,8 @@ const formFields: Record<Kind, readonly FormField[]> = {
     "demo",
   ],
   pages: ["title", "subtitle", "description", "image", "gallery"],
+  // One page per city: the name, an optional page title, a text proper to that city, a photo.
+  cities: ["title", "subtitle", "description", "image"],
   // Social links have their own form: network, link, account name, followers.
   socials: [],
 };
@@ -653,6 +673,14 @@ export default function Admin({
                 Ajouter
               </Button>
             </div>
+            {tab === "cities" && (
+              <p className={s.caption}>
+                Une page par ville où EVENTHEMES intervient (référencement
+                local). Les villes proposées sont des brouillons non publiés :
+                rédigez un texte propre à chaque ville, puis publiez seulement
+                les villes réellement desservies.
+              </p>
+            )}
             {tab === "pages" && (
               <p className={s.caption}>
                 Chaque contenu correspond à une page, choisie dans la liste
@@ -778,7 +806,7 @@ export default function Admin({
             isNew={!entries.some((e) => e.id === edit.id)}
             busy={busy}
             save={() =>
-              mutate({ action: "save", value: edit }, () => setEdit(null))
+              mutate({ action: "save", value: withReadableId(edit, entries) }, () => setEdit(null))
             }
             close={() => setEdit(null)}
           />
@@ -1117,6 +1145,9 @@ function EntryEditor({
       .map((c) => ({ value: c.id, label: c.title })),
   ];
   const hasChildren = entry.kind === "categories" && childCategories(entries, entry.id).length > 0;
+  // Adresse publique de la fiche ; pour un nouveau contenu, celle que donnera son titre.
+  const page = pageOf[entry.kind];
+  const address = page && pathFor("fr", page, isNew && isGeneratedId(entry.id) ? slugify(entry.title) || "…" : entry.id);
   // Version anglaise (site /en) : les champs traduisibles de ce type de contenu.
   const english = entry.translations?.en ?? {};
   const setEnglish = (field: keyof EntryTranslation, value: string) =>
@@ -1210,12 +1241,19 @@ function EntryEditor({
         )}
         {has("title") && (
           <Input
-            label="Titre"
+            label={entry.kind === "cities" ? "Ville" : "Titre"}
             required
             maxLength={250}
+            hint={entry.kind === "cities" ? "Le nom de la ville, tel qu’il doit apparaître sur le site." : undefined}
             value={entry.title}
             onChange={(e) => set("title", e.target.value)}
           />
+        )}
+        {address && (
+          <p className={cx(s.caption, s.fullWidth)}>
+            Adresse de la page : <code>{address}</code>
+            {isNew && isGeneratedId(entry.id) ? " (fixée à l’enregistrement, d’après le titre)" : ""}
+          </p>
         )}
         {entry.kind === "pages" && (
           <Select
@@ -1343,7 +1381,12 @@ function EntryEditor({
         )}
         {has("subtitle") && (
           <Input
-            label="Sous-titre / surtitre"
+            label={entry.kind === "cities" ? "Titre de la page (facultatif)" : "Sous-titre / surtitre"}
+            hint={
+              entry.kind === "cities"
+                ? `Vide : « Production technique événementielle à ${entry.title || "…"} ».`
+                : undefined
+            }
             className={s.fullWidth}
             value={entry.subtitle || ""}
             onChange={(e) => set("subtitle", e.target.value)}
@@ -1351,13 +1394,41 @@ function EntryEditor({
         )}
         {has("description") && (
           <Textarea
-            label="Description"
+            label={entry.kind === "cities" ? "Texte de la page" : "Description"}
+            hint={
+              entry.kind === "cities"
+                ? "Propre à cette ville : lieux, types d’événements, délais, logistique. Un texte copié d’une ville à l’autre nuit au référencement."
+                : undefined
+            }
             className={s.fullWidth}
-            rows={4}
+            rows={entry.kind === "cities" ? 7 : 4}
             maxLength={10000}
             value={entry.description}
             onChange={(e) => set("description", e.target.value)}
           />
+        )}
+        {has("related") && (
+          <fieldset className={cx(s.fullWidth, s.relatedField)}>
+            <legend>Matériel associé (affiché sur la page du service)</legend>
+            <div className={s.checkGrid}>
+              {mainCategories.map((category) => (
+                <Checkbox
+                  key={category.id}
+                  checked={entry.related?.includes(category.id) ?? false}
+                  onChange={(on) =>
+                    set(
+                      "related",
+                      on
+                        ? [...(entry.related ?? []), category.id]
+                        : (entry.related ?? []).filter((id) => id !== category.id),
+                    )
+                  }
+                >
+                  {category.title}
+                </Checkbox>
+              ))}
+            </div>
+          </fieldset>
         )}
         {has("items") && (
           <Textarea

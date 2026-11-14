@@ -27,6 +27,7 @@ export const pageKeys = [
   "quote",
   "legal",
   "privacy",
+  "cities",
 ] as const;
 export type PageKey = (typeof pageKeys)[number];
 const slugs: Record<Locale, Record<PageKey, string>> = {
@@ -40,6 +41,7 @@ const slugs: Record<Locale, Record<PageKey, string>> = {
     quote: "devis",
     legal: "mentions-legales",
     privacy: "politique-de-confidentialite",
+    cities: "villes",
   },
   en: {
     home: "",
@@ -51,10 +53,11 @@ const slugs: Record<Locale, Record<PageKey, string>> = {
     quote: "quote",
     legal: "legal-notice",
     privacy: "privacy-policy",
+    cities: "cities",
   },
 };
-/** Pages qui ont des fiches : le matériel et les réalisations. */
-export const detailPages: readonly PageKey[] = ["equipment", "projects"];
+/** Pages qui ont des fiches : le matériel, les réalisations, les services et les villes. */
+export const detailPages: readonly PageKey[] = ["equipment", "projects", "services", "cities"];
 
 /** Adresse d’une page (et d’une fiche) dans une langue. */
 export function pathFor(locale: Locale, key: PageKey, id?: string) {

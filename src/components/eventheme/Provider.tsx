@@ -14,6 +14,7 @@ import {
 import { FormLocaleProvider } from "@/components/ui/form/locale";
 import { dictionaries, type Dictionary } from "@/data/locales";
 import { fill, pathFor, type Locale, type PageKey } from "@/lib/i18n";
+import { track } from "@/lib/eventheme/audience";
 import type { Basket, Entry, QuoteState } from "@/lib/eventheme/types";
 const empty: Basket = { services: [], products: [] };
 let memory = "";
@@ -93,6 +94,7 @@ export function EventhemeProvider({
     window.dispatchEvent(new Event("eventheme-basket"));
   }
   function add(entry: Entry, variant = "", quantity = 1) {
+    track("add_to_quote", { item_id: entry.id, item_kind: entry.kind });
     const amount = Math.max(1, Math.min(1000, Math.round(quantity) || 1));
     if (entry.kind === "services")
       setBasket({

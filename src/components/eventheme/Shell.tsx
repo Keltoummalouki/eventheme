@@ -5,6 +5,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import MobileMenu from "@/components/layout/MobileMenu";
 import { brand, navigation } from "@/data/eventheme";
 import { dictionaries } from "@/data/locales";
+import { measurementId, reopenConsent } from "@/lib/eventheme/audience";
+import Consent from "./Consent";
+
+/** Mesure d’audience : active seulement si l’identifiant Google Analytics est configuré (au build). */
+const audience = measurementId(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
 import { fill, locales, routeOf, translatePath } from "@/lib/i18n";
 import { useScrolled } from "@/hooks/useScrolled";
 import { cx } from "@/lib/cx";
@@ -53,6 +58,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   );
   const socials = entries.filter((e) => e.kind === "socials");
   const services = entries.filter((e) => e.kind === "services");
+  const cities = entries.filter((e) => e.kind === "cities");
   const count =
     basket.services.length +
     basket.products.reduce((n, p) => n + p.quantity, 0);
@@ -164,7 +170,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         data-scrolled={scrolled}
         data-menu-open={open}
       >
-        <Link href="/" onClick={() => setOpen(false)} className={cx(s.brand, home && homeHeader.brand)}>
+        <Link href={href("home")} onClick={() => setOpen(false)} className={cx(s.brand, home && homeHeader.brand)}>
           <Logo alt={fill(t.nav.logoAlt, { brand: brand.name })} />
         </Link>
         <nav className={cx(s.nav, home && homeHeader.navigation)} aria-label={t.nav.main}>
@@ -245,7 +251,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           <div>
             <h3>{t.footer.services}</h3>
             {services.map((service) => (
-              <Link key={service.id} href={href("services")}>
+              <Link key={service.id} href={href("services", service.id)}>
                 {service.title}
               </Link>
             ))}
@@ -254,6 +260,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           <div>
             <h3>{t.footer.meet}</h3>
             <Link href={href("contact")}>{t.footer.talk}</Link>
+            {cities.length > 0 && <Link href={href("cities")}>{t.footer.areas}</Link>}
             <Link href={quoteHref}>{t.nav.quote}</Link>
             {socials.map((e) => (
               <a
@@ -273,11 +280,17 @@ export default function Shell({ children }: { children: ReactNode }) {
           </span>
           <Link href={href("legal")}>{t.footer.legal}</Link>
           <Link href={href("privacy")}>{t.footer.privacy}</Link>
+          {audience && (
+            <button type="button" className={s.footerButton} onClick={reopenConsent}>
+              {t.footer.cookies}
+            </button>
+          )}
           <Link href="/admin">
             {t.footer.admin} <ArrowUpRightIcon className="inline-icon" />
           </Link>
         </div>
       </footer>
+      {audience && <Consent id={audience} />}
       <div
         className={`${s.toast} ${notice ? s.toastVisible : ""}`}
         role="status"

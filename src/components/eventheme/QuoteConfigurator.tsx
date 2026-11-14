@@ -28,6 +28,7 @@ import {
   type QuoteDetails,
   type SentAttachment,
 } from "@/lib/eventheme/types";
+import { track } from "@/lib/eventheme/audience";
 import { uploadAttachment } from "@/lib/eventheme/upload";
 import { fill, intlLocale } from "@/lib/i18n";
 import { gsap, MOTION, prefersReducedMotion } from "@/lib/motion";
@@ -205,6 +206,7 @@ export default function QuoteConfigurator() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
+      track("generate_lead", { lead_type: "quote" });
       // La demande est enregistrée : les fichiers suivent, un par un. Un échec
       // n’annule pas la demande, il est signalé sur le devis estimatif.
       const sent: SentAttachment[] = [];

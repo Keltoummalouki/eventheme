@@ -13,6 +13,7 @@ import {
   Textarea,
 } from "@/components/ui/form";
 import { contactMethodLabel } from "@/data/locales";
+import { track } from "@/lib/eventheme/audience";
 import { followersLabel } from "@/lib/eventheme/types";
 import { fill } from "@/lib/i18n";
 import s from "./Eventheme.module.css";
@@ -60,6 +61,7 @@ export default function InquiryForm() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
+      track("generate_lead", { lead_type: "contact" });
       setSent(result.reference || String(result.id).slice(0, 8).toUpperCase());
       setEmailed(result.emailed === true);
     } catch (error) {

@@ -70,6 +70,15 @@ export function validateEntry(value: unknown): Entry {
         throw new Error("Catégorie invalide.");
       result[field] = v[field];
     }
+  if (v.related != null) {
+    if (
+      !Array.isArray(v.related) ||
+      v.related.length > 30 ||
+      v.related.some((id) => typeof id !== "string" || !ENTRY_ID.test(id))
+    )
+      throw new Error("Catégories associées invalides.");
+    if (v.related.length) result.related = [...new Set(v.related)];
+  }
   if (v.swatch) {
     if (!isHexColor(v.swatch)) throw new Error("Teinte invalide.");
     result.swatch = v.swatch.toLowerCase();

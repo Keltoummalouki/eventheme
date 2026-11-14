@@ -939,6 +939,178 @@
   max-width: 1000px;
   min-height: 65vh;
 }
+/* Pages service et ville : fil d’Ariane, visuel, titres de section, cartes de liens. */
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gris);
+}
+.breadcrumb li + li::before {
+  content: "/";
+  margin-inline-end: 8px;
+  color: var(--or);
+}
+.breadcrumb a {
+  color: var(--argent);
+  transition: color 0.2s;
+}
+.breadcrumb a:hover {
+  color: var(--or);
+}
+.breadcrumb [aria-current] {
+  color: var(--blanc);
+}
+.pageVisual {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 4 / 5;
+  max-height: 640px;
+  overflow: hidden;
+  border: 1px solid var(--ligne-argent);
+}
+.pageVisual figcaption {
+  position: absolute;
+  inset-inline-start: 16px;
+  inset-block-end: 14px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--argent);
+  background: rgba(8, 9, 11, 0.72);
+  padding: 6px 10px;
+}
+.sectionTitle {
+  max-width: 900px;
+  margin-block-end: 18px;
+}
+.sectionIntro {
+  max-width: 640px;
+  margin-block-end: 30px;
+  font-size: 14px;
+}
+.inlineLink {
+  color: var(--argent);
+  text-decoration: underline;
+  text-decoration-color: var(--ligne);
+  text-underline-offset: 3px;
+}
+.inlineLink:hover {
+  color: var(--or);
+}
+.preserveLines {
+  white-space: pre-line;
+}
+.linkGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.linkGrid a {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-height: 132px;
+  padding-block: 24px;
+  padding-inline: 24px 52px;
+  border: 1px solid var(--ligne-argent);
+  background: var(--noir);
+  transition: border-color 0.25s, background-color 0.25s;
+}
+.linkGrid a:hover,
+.linkGrid a:focus-visible {
+  border-color: var(--or);
+  background: var(--noir-2);
+}
+.linkGrid strong {
+  font-family: var(--ff-display);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--blanc);
+}
+.linkGrid span:not(.eyebrow) {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--argent);
+}
+.linkGridArrow {
+  position: absolute;
+  inset-inline-end: 22px;
+  inset-block-start: 24px;
+  width: 14px;
+  height: 14px;
+  color: var(--or);
+}
+/* Consentement à la mesure d’audience : discret, en bas de l’écran, sans bloquer la page. */
+.consent {
+  position: fixed;
+  inset-inline: 16px auto;
+  inset-block-end: 16px;
+  z-index: 60;
+  max-width: 440px;
+  padding: 20px 22px;
+  border: 1px solid var(--ligne);
+  background: rgba(8, 9, 11, 0.96);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.consent p {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--argent);
+}
+.consent strong {
+  display: block;
+  margin-block-end: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--or);
+}
+.consent a {
+  color: var(--argent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.consentActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.footerButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.footerButton:hover {
+  color: var(--or);
+}
+@media (max-width: 600px) {
+  .pageVisual {
+    aspect-ratio: 4 / 3;
+  }
+  .consent {
+    inset-inline: 12px;
+    inset-block-end: 12px;
+    max-width: none;
+  }
+}
 .legal h1 {
   font-size: 60px;
   margin-bottom: 40px;
@@ -1623,6 +1795,15 @@
 /* « Variantes » : une section à part, détachée des cases qui la précèdent. */
 .adminPanel .formGrid + fieldset {
   margin-top: 44px;
+}
+/* Matériel associé à un service : cases à cocher sur plusieurs colonnes. */
+.adminPanel .relatedField {
+  margin-block-end: 0;
+}
+.checkGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px 24px;
 }
 /* « Version anglaise » : section à part, séparée par un filet. */
 .adminPanel .translation {

@@ -64,7 +64,7 @@ test("product and project sheets keep their identifier across languages", () => 
 test("addresses outside the site map keep their language but name no page", () => {
   assert.deepEqual(routeOf("/admin"), { locale: "fr" });
   assert.deepEqual(routeOf("/en/materiel"), { locale: "en" }, "a French slug under /en is not an English page");
-  assert.deepEqual(routeOf("/services/scenes"), { locale: "fr" }, "services have no sheet");
+  assert.deepEqual(routeOf("/contact/equipe"), { locale: "fr" }, "the contact page has no sheet");
   assert.deepEqual(routeOf("/fr/materiel"), { locale: "fr" }, "French has no prefix");
   // The language switcher falls back to the home page of the other language.
   assert.equal(translatePath("/bientot", "en"), "/en");

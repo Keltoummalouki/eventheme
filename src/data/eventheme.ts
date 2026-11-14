@@ -94,6 +94,16 @@ const exampleNoteEn = "Example listing, to be replaced with EVENTHEMES equipment
 const inspirationNoteEn =
   "Inspiration board. This photograph illustrates an atmosphere and does not show an EVENTHEMES project.";
 const en = (translation: EntryTranslation): Pick<Entry, "translations"> => ({ translations: { en: translation } });
+/** Catégories du catalogue présentées sur la page de chaque service. */
+const relatedCategories: Record<string, string[]> = {
+  scenes: ["cat-scenes"],
+  structures: ["cat-structures"],
+  "led-video": ["cat-image"],
+  sonorisation: ["cat-son"],
+  eclairage: ["cat-lumiere"],
+  regie: ["cat-regie"],
+  complementaires: ["cat-effets"],
+};
 
 /** Contenu initial : remplacé par l’administration (fichier local ou Supabase). */
 export const seed: Entry[] = [
@@ -182,6 +192,17 @@ export const seed: Entry[] = [
       description: "Galas, corporate events, concerts, festivals, conferences: our projects, sorted by type of event.",
     }),
   ),
+  entry(
+    "cities-page",
+    "pages",
+    "Nos zones\nd’intervention.",
+    "Les villes où notre équipe intervient pour vos événements : scène, structures, écrans LED, son, lumière et régie technique.",
+    en({
+      title: "Our service\nareas.",
+      description:
+        "The cities where our team works on your events: stage, structures, LED screens, sound, lighting and technical control.",
+    }),
+  ),
   ...(
     [
       ["scenes", "Scènes & podiums", "Scène", imagery.stageRoof,
@@ -219,6 +240,7 @@ export const seed: Entry[] = [
       image,
       pricing: "request",
       price: null,
+      related: relatedCategories[id],
       ...en({ title: titleEn, category: categoryEn, description: descriptionEn }),
     }),
   ),
@@ -461,6 +483,35 @@ export const seed: Entry[] = [
       image,
       demo: true,
       ...en({ title: titleEn, description: inspirationNoteEn }),
+    }),
+  ),
+  // Zones d’intervention : brouillons NON publiés (cahier des charges §10). EVENTHEMES complète
+  // le texte de chaque ville et ne publie que les villes réellement desservies.
+  ...(
+    [
+      ["casablanca", "Casablanca", "Casablanca",
+        "Capitale économique du Maroc, Casablanca accueille conventions, salons, lancements de produits et soirées d’entreprise. Pour chacun de ces formats, notre équipe conçoit la technique adaptée : scène, structures, écrans LED, sonorisation, éclairage et régie.",
+        "Morocco’s economic capital, Casablanca hosts conventions, trade shows, product launches and corporate parties. For each of these formats, our team designs the right technical set-up: stage, structures, LED screens, sound, lighting and control."],
+      ["rabat", "Rabat", "Rabat",
+        "À Rabat, conférences, cérémonies et événements institutionnels demandent une technique précise et discrète : sonorisation des interventions, écrans, éclairage et régie, préparés avec méthode.",
+        "In Rabat, conferences, ceremonies and institutional events call for precise, discreet technical production: speech reinforcement, screens, lighting and control, prepared with method."],
+      ["marrakech", "Marrakech", "Marrakech",
+        "Galas, soirées privées et séminaires à Marrakech : nous composons la scène, la lumière, l’image et le son de votre événement, en intérieur comme en plein air.",
+        "Galas, private parties and seminars in Marrakech: we put together the stage, lighting, video and sound of your event, indoors or in the open air."],
+      ["tanger", "Tanger", "Tangier",
+        "À Tanger, nous accompagnons vos événements d’entreprise, concerts et soirées : étude technique du lieu, installation, exploitation et démontage.",
+        "In Tangier, we support your corporate events, concerts and parties: technical survey of the venue, installation, operation and get-out."],
+      ["agadir", "Agadir", "Agadir",
+        "Séminaires, soirées et événements en plein air à Agadir : scène, structures, sonorisation et éclairage dimensionnés pour votre lieu et votre public.",
+        "Seminars, parties and open-air events in Agadir: stage, structures, sound and lighting sized for your venue and your audience."],
+      ["fes", "Fès", "Fez",
+        "Festivals, cérémonies et événements culturels à Fès : une technique au service du lieu et du programme, de l’étude au direct.",
+        "Festivals, ceremonies and cultural events in Fez: technical production that serves the venue and the programme, from survey to showtime."],
+    ] as const
+  ).map(([id, title, titleEn, description, descriptionEn]) =>
+    entry(id, "cities", title, description, {
+      published: false,
+      ...en({ ...(titleEn !== title ? { title: titleEn } : {}), description: descriptionEn }),
     }),
   ),
   entry("instagram", "socials", "Instagram", "@eventhemes", {

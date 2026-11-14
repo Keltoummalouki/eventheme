@@ -33,18 +33,21 @@ Découvrir → Explorer le catalogue → Sélectionner (matériel + prestations)
 
 **Built and working:**
 
-- Multi-page App Router site: `/`, `/a-propos`, `/services`, `/materiel`, `/materiel/[id]`, `/realisations`, `/realisations/[id]`, `/contact`, `/devis`, `/mentions-legales`, `/politique-de-confidentialite`, `/bientot` (coming soon, not enforced). `/location*` and `/evenements` redirect (308) to their replacements.
+- Multi-page App Router site: `/`, `/a-propos`, `/services`, `/services/[id]`, `/materiel`, `/materiel/[id]`, `/realisations`, `/realisations/[id]`, `/villes`, `/villes/[id]`, `/contact`, `/devis`, `/mentions-legales`, `/politique-de-confidentialite`, `/bientot` (coming soon, not enforced). `/location*` and `/evenements` redirect (308) to their replacements.
 - Rebrand to EVENTHEMES: tokens, Space Grotesk + Inter, copy, technical demo content, truss motif (`src/components/ui/Truss.tsx`), 3D truss rig in the hero (`HeroSculpture.tsx`, three.js, lazy-loaded with an SVG fallback).
 - Home in spec order: hero → introduction → expertises → réalisations → matériel → « Pourquoi EVENTHEMES » → quote studio → final CTA.
 - Catalogue: categories and sub-categories managed as content (`kind: "categories"`, products reference them by id; helpers in `src/lib/eventheme/catalogue.ts`), filters by category, sub-category, brand, colour, price and availability, search by name, brand, model and reference, `?categorie=` preselection. Product sheets: brand, model, reference, specs table, variants, quantity, availability note, WhatsApp link. « Ajouter au devis » basket persisted across pages.
 - Quote studio (`QuoteStudio.tsx`): callback request first (name, optional company, phone, optional e-mail, event type, consent), then an optional five-step configuration (événement, prestations, matériel, détails, récapitulatif) with live indicative estimate and a printable summary. Only event type, date and city are required; participants and budget are optional. Up to 3 attachments (PDF/JPG/PNG/WebP, 4 MB each, type checked on content, large photos shrunk in the browser) go to `/api/inquiries/attachments` under the request's continuation token. Every request gets a readable reference `EVT-AAAA-NNNN` (Postgres sequence in production). WhatsApp message prefilled when the business number is configured.
-- Admin at `/admin` (Supabase Auth, `app_metadata.role = "admin"`): dashboard, statistics, requests (reference, budget, participants, attachments downloaded through `/api/admin/attachments`), messages, clients, CRUD for services, products, catalogue categories, event types, projects, page texts, socials; CSV export.
+- Admin at `/admin` (Supabase Auth, `app_metadata.role = "admin"`): dashboard, statistics, requests (reference, budget, participants, attachments downloaded through `/api/admin/attachments`), messages, clients, CRUD for services (with related catalogue categories), products, catalogue categories, event types, projects, page texts, service areas (cities), socials; optional English version of each; CSV export.
 - Data layer `src/lib/eventheme/server.ts`: local JSON store in development (`.eventheme/data.json`, git-ignored), Supabase when `EVENTHEME_DATA_MODE=supabase`. Migrations and a generated public seed in `supabase/`. RLS on every table, server-side validation, origin checks, DB rate limiting.
 - Automatic e-mails after each request (`after()` in `/api/inquiries`): team alert and client acknowledgement. Templates and provider payloads are pure (`src/lib/eventheme/emails.ts`); sending in `mailer.ts` through Resend or Brevo HTTP APIs with `fetch` (no SDK), chosen by `EMAIL_PROVIDER`; recipients and anti-abuse limits in `notifications.ts`. Without a provider: previews in `.eventheme/emails/` locally, nothing in production. A failed e-mail never fails a request; a retried completion never re-sends.
 - Languages: French at `/`, English under `/en/…` with English slugs (`/en/equipment`, `/en/quote`…). Routing helpers in `src/lib/i18n.ts` (`pathFor`, `routeOf`, `translatePath`, `alternatesFor`); the proxy passes the page language to the root layout (`<html lang>`, metadata, content); hreflang alternates on every page and in the sitemap; language switcher in the header and mobile menu. Interface texts live in `src/data/locales/fr.ts` (reference) and `en.ts` (English draft, to be validated by EVENTHEMES); components read `t`, `locale` and `href(key, id)` from `useEventheme()`. Staff content has an optional « Version anglaise » in the admin (`entry.translations.en`: title, subtitle, description, specifications, service discipline, colour, option names), merged server-side by `localizeEntries`; an empty field falls back to French. Each request records its language (`inquiry.locale`, from the `X-Locale` header): API errors (`translateServerError`) and the client acknowledgement follow it; the team alert stays French and flags English requests.
 - `npm test` (node:test via tsx), lint, typecheck; smoke scripts in `tests/*.mjs`.
 
-**Not built yet (see Roadmap):** the Settings admin module, Arabic (optional, right-to-left), service and city SEO pages, structured data, analytics. « Archiver » a product is unpublishing it: it stays in the admin.
+- SEO (spec §10): one page per service (`ServicePages.tsx`: included services, related catalogue categories chosen in the admin, other services, cities served) and one page per published city (« Zones d’intervention », content kind `cities`, migration `20261114200000`; the `/villes` index exists only when a city is published; the city drafts in the seed are unpublished). JSON-LD from `src/lib/eventheme/structured.ts` (Organization and WebSite on the home page, BreadcrumbList on service, city and detail pages, Service on service and city pages; nothing for demo content). Sitemap with both languages, services and published cities, without demo entries; demo sheets are `noindex, follow`. New content gets a readable id from its title (`src/lib/slug.ts`), which becomes its address.
+- Analytics with consent (`audience.ts`, `Consent.tsx`): off unless `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set at build time; then a consent banner, Google Analytics loaded only after « Accepter » (Google signals and ad personalisation off), withdrawal from the footer (« Gérer les cookies »), and events without personal data (`generate_lead`, `add_to_quote`, `contact_click`). Search Console verification through `GOOGLE_SITE_VERIFICATION`.
+
+**Not built yet (see Roadmap):** the Settings admin module, Arabic (optional, right-to-left), Safari/Firefox and performance audits on the deployed site. « Archiver » a product is unpublishing it: it stays in the admin.
 
 **Inherited, unused modules** (AURÉLYS single-page era; nothing imports them): `src/data/{site,hero,services,stats,testimonials,calculator}.ts`, `src/lib/pricing.ts`, `src/components/sections/{EventCalculator,Stats,StatCounter,Testimonials,EventTypes}.*`. Ask before deleting or repurposing them; never present their figures as EVENTHEMES facts.
 
@@ -97,12 +100,13 @@ Polished French: precise, technical, premium, reassuring. The English tagline is
 | --- | --- | --- |
 | Home | `/` | |
 | About | `/a-propos` | |
-| Services | `/services` | Future: one page per service (`/services/[slug]`) |
+| Services | `/services`, `/services/[id]` | One page per service |
 | Equipment | `/materiel`, `/materiel/[id]` | Content id of the page text: `location-page` (kept for data stability) |
 | Projects | `/realisations`, `/realisations/[id]` | |
 | Request a Quote | `/devis` | « Mon devis » button in the header and mobile menu |
 | Contact | `/contact` | |
 | Legal | `/mentions-legales`, `/politique-de-confidentialite` | |
+| Service areas | `/villes`, `/villes/[id]` | One page per published city; drafts stay hidden |
 | Back office | `/admin` | Authenticated |
 
 English: the same pages under `/en` with English slugs (`/en/about`, `/en/services`, `/en/equipment`, `/en/projects`, `/en/contact`, `/en/quote`, `/en/legal-notice`, `/en/privacy-policy`). The admin stays in French.
@@ -175,7 +179,8 @@ Supabase rules: RLS on every table (visitors read published content; only server
 - **Animation (spec §08):** smooth scrolling, reveal on scroll, light cinematic transitions, discreet hovers, subtle parallax, animated counters only for real figures, micro-interactions. Never slow the site or block low-power devices; honour `prefers-reduced-motion`.
 - **Accessibility:** semantic HTML, keyboard navigation, visible focus, sufficient contrast, labelled inputs, meaningful alt text.
 - **SEO (spec §10):** clean URLs, unique meta titles and descriptions, dedicated pages for services and relevant service areas (cities), XML sitemap, robots.txt, relevant structured data, Search Console and a compliant analytics tool.
-- **Performance:** WebP/AVIF images, compressed video, lazy-loaded non-critical media, few dependencies (`animejs` duplicates GSAP: candidate for removal).
+- **Performance:** WebP/AVIF images, compressed video, lazy-loaded non-critical media, few dependencies (`animejs` was removed: GSAP covers every animation).
+- **CSS order:** development and production load CSS Modules in different orders. A primitive whose parent passes a `className` (for example `Truss`) keeps its base rules under `:where()`, so the parent's class always wins.
 - **Security and privacy:** SSL, validated and spam-protected forms, backups and updates, data-protection rules; client data visible only to authorised staff.
 
 ---
@@ -209,7 +214,7 @@ Repeated content is data-driven, never hard-coded in JSX. Anything staff must ed
 | 2 | Catalogue and quote: brand/model/reference, categories and sub-categories, private attachments, reference numbers, new statuses, « participants », minimal required fields | Done |
 | 3 | E-mails: admin notification and client acknowledgement | Done (provider account and `EMAIL_*` variables to configure) |
 | 4 | Languages: FR/EN routing and content model, then optional AR with RTL | FR/EN done (English texts to validate by EVENTHEMES); Arabic optional, later |
-| 5 | SEO and launch: service and city pages, structured data, analytics with consent, legal pages, performance and cross-browser checks | Next |
+| 5 | SEO and launch: service and city pages, structured data, analytics with consent, legal pages, performance and cross-browser checks | Service and city pages, structured data, sitemap, analytics with consent and Search Console done; cities, legal texts, Analytics ID and Search Console token await EVENTHEMES; audits after deployment |
 
 ---
 
