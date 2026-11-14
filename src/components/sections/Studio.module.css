@@ -1,0 +1,8 @@
+.eyebrow.eyebrow { display: flex; align-items: center; gap: 12px; color: #dbc18a; font-size: 10px; font-weight: 500; line-height: 1.5; letter-spacing: .16em; text-transform: uppercase; }
+.eyebrow::before { content: ''; width: 6px; height: 6px; background: currentColor; border-radius: 50%; flex: none; }
+.heading.heading { font-family: var(--ff-body); font-size: clamp(44px, 5.8vw, 90px); font-weight: 400; line-height: 1.04; letter-spacing: -.065em; color: #f0eee7; }
+.heading.heading em { font-family: inherit; font-style: normal; color: #dbc18a; }
+.link { display: inline-flex; align-items: center; gap: 22px; min-height: 44px; font-size: 12px; color: #e7ddc8; }
+.link svg { width: 18px; height: 18px; transition: transform 200ms ease; }
+@media (hover: hover) and (pointer: fine) { .link:hover svg { transform: translate(3px, -3px); } }
+@media (prefers-reduced-motion: reduce) { .link svg { transition: none; } }

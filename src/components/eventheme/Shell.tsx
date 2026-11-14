@@ -11,6 +11,7 @@ import { gsap, motionSafe, useGSAP } from "@/lib/motion";
 import { useEventheme } from "./Provider";
 import Button from "@/components/ui/Button";
 import s from "./Eventheme.module.css";
+import homeHeader from "./HomeHeader.module.css";
 import { ArrowUpRightIcon } from "@/components/ui/icons";
 export function Logo() {
   return (
@@ -41,21 +42,60 @@ export default function Shell({ children }: { children: ReactNode }) {
   // Sur l'accueil, « Mon devis » mène à la section ; ailleurs, à sa page.
   const quoteHref = home ? "#devis" : "/devis";
 
-  // Menu ouvert : la page ne défile plus, Échap le referme.
+  // Menu ouvert : le focus reste dans la navigation et le reste de la page
+  // est inert. Échap et le retour au format bureau referment le menu.
   useEffect(() => {
     if (!open) return;
     const root = document.documentElement;
     const before = root.style.overflow;
+    const menu = document.getElementById("menu-mobile");
+    const headerElement = header.current;
+    const toggle = document.getElementById("menu-toggle");
     root.style.overflow = "hidden";
+    menu?.querySelector<HTMLElement>("a[href]")?.focus({ preventScroll: true });
+
+    const focusable = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '#menu-mobile a[href], #menu-mobile button:not([disabled]), header a[href], header button:not([disabled])',
+        ),
+      ).filter((element) => element.getClientRects().length > 0 && !element.closest("[inert]"));
+
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setOpen(false);
-      document.getElementById("menu-toggle")?.focus();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        toggle?.focus({ preventScroll: true });
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const elements = focusable();
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (!first || !last) return;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !elements.includes(active as HTMLElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !elements.includes(active as HTMLElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    const desktop = window.matchMedia("(min-width: 961px)");
+    const onDesktop = () => {
+      if (desktop.matches) setOpen(false);
     };
     window.addEventListener("keydown", onKey);
+    desktop.addEventListener("change", onDesktop);
     return () => {
       root.style.overflow = before;
       window.removeEventListener("keydown", onKey);
+      desktop.removeEventListener("change", onDesktop);
+      if (menu?.contains(document.activeElement)) {
+        const destination = desktop.matches ? headerElement?.querySelector<HTMLElement>('a[href]') : toggle;
+        destination?.focus({ preventScroll: true });
+      }
     };
   }, [open]);
 
@@ -82,7 +122,7 @@ export default function Shell({ children }: { children: ReactNode }) {
       variant="outline"
       size="sm"
       icon={<ArrowUpRightIcon />}
-      className={s.quoteButton}
+      className={cx(s.quoteButton, home && homeHeader.quote)}
       onClick={() => setOpen(false)}
     >
       Mon devis {count > 0 && <span className={s.count}>{count}</span>}
@@ -91,7 +131,7 @@ export default function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className={s.site}>
-      <a className={s.skip} href="#main">
+      <a className={s.skip} href="#main" inert={open}>
         Aller au contenu
       </a>
       <header
@@ -101,12 +141,16 @@ export default function Shell({ children }: { children: ReactNode }) {
           home && s.overlay,
           scrolled && s.scrolled,
           open && s.menuOpen,
+          home && homeHeader.header,
         )}
+        data-home-header={home || undefined}
+        data-scrolled={scrolled}
+        data-menu-open={open}
       >
-        <Link href="/" onClick={() => setOpen(false)} className={s.brand}>
+        <Link href="/" onClick={() => setOpen(false)} className={cx(s.brand, home && homeHeader.brand)}>
           <Logo />
         </Link>
-        <nav className={s.nav} aria-label="Navigation principale">
+        <nav className={cx(s.nav, home && homeHeader.navigation)} aria-label="Navigation principale">
           {navigation.map(([label, href]) => (
             <Link
               key={href}
@@ -122,7 +166,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         <button
           id="menu-toggle"
           type="button"
-          className={cx(s.menuToggle, open && s.menuToggleOpen)}
+          className={cx(s.menuToggle, open && s.menuToggleOpen, home && homeHeader.toggle)}
           aria-expanded={open}
           aria-controls="menu-mobile"
           aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
@@ -146,9 +190,9 @@ export default function Shell({ children }: { children: ReactNode }) {
           </Button>
         }
       />
-      <main id="main">{children}</main>
-      <footer className={s.footer}>
-        <div className={s.footerSignature}>
+      <main id="main" inert={open}>{children}</main>
+      <footer className={s.footer} inert={open}>
+        {home ? <div className={homeHeader.footerMark} aria-hidden="true">EVENTHEME<span>®</span></div> : <div className={s.footerSignature}>
           <p>
             Votre événement. Votre vision.
             <br />
@@ -157,7 +201,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           <Button href={quoteHref} icon={<ArrowUpRightIcon />}>
             Demander un devis
           </Button>
-        </div>
+        </div>}
         <div className={s.footerTop}>
           <div>
             <Link href="/">
@@ -217,6 +261,7 @@ export default function Shell({ children }: { children: ReactNode }) {
       <div
         className={`${s.toast} ${notice ? s.toastVisible : ""}`}
         role="status"
+        inert={open}
       >
         {notice} {notice && <Link href={quoteHref}>Voir mon devis →</Link>}
       </div>

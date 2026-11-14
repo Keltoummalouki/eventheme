@@ -1,90 +1,71 @@
 'use client';
 
-import { useRef } from 'react';
-import Button from '@/components/ui/Button';
-import Reveal from '@/components/ui/Reveal';
-import SectionHeader from '@/components/ui/SectionHeader';
-import { methodSteps } from '@/data/eventheme';
-import { gsap, revealSafe, useGSAP } from '@/lib/motion';
-import styles from './ProcessTimeline.module.css';
+import { useRef, useState } from 'react';
+import RevealText from '@/components/ui/RevealText';
+import { imagery, methodSteps } from '@/data/eventheme';
+import { cx } from '@/lib/cx';
+import { gsap, motionSafe, ScrollTrigger, useGSAP } from '@/lib/motion';
 import { ArrowUpRightIcon } from '@/components/ui/icons';
+import styles from './ProcessTimeline.module.css';
+import studio from './Studio.module.css';
 
-/**
- * « Notre méthode » — les sept temps de la collaboration.
- *
- * Un filet doré se trace entre les numéros et les intitulés au fil du
- * défilement (`scrub`) : c'est le visiteur qui mène la lecture, pas une durée.
- * Sur grand écran, l'en-tête reste à l'écran pendant que les étapes défilent.
- */
+const chapters = [
+  { title: 'Imaginer.', note: 'L’intention', image: imagery.flowers, steps: methodSteps.slice(0, 3) },
+  { title: 'Orchestrer.', note: 'La précision', image: imagery.tables, steps: methodSteps.slice(3, 5) },
+  { title: 'Faire vibrer.', note: 'L’émotion', image: imagery.party, steps: methodSteps.slice(5) },
+];
+
 export default function ProcessTimeline() {
   const ref = useRef<HTMLElement>(null);
+  const [active, setActive] = useState(0);
 
-  useGSAP(
-    () =>
-      revealSafe(ref, (full) => {
-        const find = gsap.utils.selector(ref);
-        const spine = find(`.${styles.spineFill}`);
-        const list = find(`.${styles.list}`)[0];
-        if (!list) return;
-        if (!full) {
-          gsap.set(spine, { scaleY: 1 });
-          return;
-        }
-        gsap.fromTo(
-          spine,
-          { scaleY: 0 },
-          {
-            scaleY: 1,
-            ease: 'none',
-            scrollTrigger: { trigger: list, start: 'top 70%', end: 'bottom 70%', scrub: 0.6 },
-          },
-        );
-      }),
-    { scope: ref },
-  );
+  useGSAP(() => {
+    const sections = gsap.utils.toArray<HTMLElement>('[data-method-chapter]', ref.current);
+    let previous = -1;
+    const updateChapter = () => {
+      let next = 0;
+      sections.forEach((chapter, index) => {
+        if (chapter.getBoundingClientRect().top <= window.innerHeight * .58) next = index;
+      });
+      if (next !== previous) { previous = next; setActive(next); }
+    };
+    ScrollTrigger.create({ trigger: ref.current, start: 'top bottom', end: 'bottom top', onUpdate: updateChapter, onRefresh: updateChapter });
+    updateChapter();
+    return motionSafe(ref, () => {
+      gsap.fromTo('[data-method-orbit]', { rotation: -30 }, {
+        rotation: 60, ease: 'none',
+        scrollTrigger: { trigger: ref.current, start: 'top bottom', end: 'bottom top', scrub: 1 },
+      });
+    });
+  }, { scope: ref });
 
   return (
-    <section className={styles.timeline} id="methode" ref={ref}>
+    <section className={styles.timeline} id="methode" ref={ref} aria-labelledby="methode-titre">
+      <div className={styles.heading}>
+        <p className={studio.eyebrow}>De l’idée à l’instant</p>
+        <RevealText as="h2" id="methode-titre" className={studio.heading}>Vous rêvez.<br />{' '}<em>Nous créons.</em></RevealText>
+        <p className={styles.introduction}>Trois temps pour donner vie à votre vision. Un même souci du détail, du premier échange au dernier invité.</p>
+      </div>
       <div className={styles.layout}>
-        <div className={styles.aside}>
-          <SectionHeader
-            eyebrow="Notre méthode"
-            title={
-              <>
-                Ensemble,
-                <br />
-                <em>à chaque étape.</em>
-              </>
-            }
-            description="Un accompagnement structuré, du premier échange au suivi après l’événement."
-          />
-          <Button href="#devis" variant="outline" icon={<ArrowUpRightIcon />}>
-            Commencer l’échange
-          </Button>
+        <div className={styles.stage} aria-hidden="true">
+          <div className={styles.orbit} data-method-orbit />
+          <div className={styles.photographs}>
+            {chapters.map((chapter, index) => <img key={chapter.title} src={chapter.image} alt="" loading="lazy" decoding="async" className={cx(styles.photo, active === index && styles.activePhoto)} />)}
+          </div>
+          <span className={styles.largeNumber}>0{active + 1}</span>
+          <div className={styles.stageCaption}><span>{chapters[active].note}</span><span>Photographie d’illustration</span></div>
+          <div className={styles.meter}>{chapters.map((chapter, index) => <span key={chapter.title} className={active >= index ? styles.filled : ''} />)}</div>
         </div>
-
-        <ol className={styles.list}>
-          <li className={styles.spine} aria-hidden="true">
-            <div className={styles.spineFill} />
-          </li>
-          {methodSteps.map(([title, description], index) => (
-            <li key={title}>
-              <Reveal className={styles.item}>
-                <div className={styles.num} aria-hidden="true">
-                  {String(index + 1).padStart(2, '0')}
-                </div>
-                <div className={styles.body}>
-                  <h3>
-                    <span className="visually-hidden">Étape {index + 1} : </span>
-                    {title}
-                  </h3>
-                  <p>{description}</p>
-                </div>
-                <div className={styles.bar} />
-              </Reveal>
-            </li>
+        <div className={styles.chapters}>
+          {chapters.map((chapter, index) => (
+            <article key={chapter.title} data-method-chapter className={cx(styles.chapter, active === index && styles.activeChapter)}>
+              <span className={styles.chapterLabel}>0{index + 1} — {chapter.note}</span>
+              <h3>{chapter.title}</h3>
+              <dl>{chapter.steps.map(([title, description]) => <div key={title}><dt>{title}</dt><dd>{description}</dd></div>)}</dl>
+            </article>
           ))}
-        </ol>
+          <a href="#devis" className={studio.link}>Votre histoire commence ici <ArrowUpRightIcon /></a>
+        </div>
       </div>
     </section>
   );

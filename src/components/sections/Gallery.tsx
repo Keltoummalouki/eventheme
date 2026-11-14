@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useEventheme } from '@/components/eventheme/Provider';
 import Button from '@/components/ui/Button';
-import SectionHeader from '@/components/ui/SectionHeader';
+import RevealText from '@/components/ui/RevealText';
 import { cx } from '@/lib/cx';
 import type { Entry } from '@/lib/eventheme/types';
 import { Flip, gsap, MOTION, prefersReducedMotion, revealSafe, useGSAP } from '@/lib/motion';
 import styles from './Gallery.module.css';
+import studio from './Studio.module.css';
 import { ArrowUpRightIcon } from '@/components/ui/icons';
 
 const ALL = 'Tous';
@@ -31,10 +33,16 @@ export default function Gallery() {
   const trigger = useRef<HTMLElement | null>(null);
   const visible = projects.filter((p) => category === ALL || p.category === category);
 
+  const moveReel = (direction: number) => {
+    const reel = gridRef.current;
+    if (reel) reel.scrollBy({ left: direction * reel.clientWidth * .72, behavior: prefersReducedMotion() ? 'instant' : 'smooth' });
+  };
+
   const changeCategory = (next: string) => {
     if (next === category) return;
     // Le relevé précède le rendu : ensuite, les anciennes positions n'existent plus.
     if (gridRef.current) previous.current = Flip.getState(Array.from(gridRef.current.children));
+    gridRef.current?.scrollTo({ left: 0, behavior: 'instant' });
     setCategory(next);
   };
 
@@ -86,23 +94,13 @@ export default function Gallery() {
 
   return (
     <section className={styles.root} id="realisations">
-      <SectionHeader
-        eyebrow="Réalisations"
-        title={
-          <>
-            Des instants.
-            <br />
-            <em>Des émotions.</em>
-          </>
-        }
-        description="Découvrez nos univers et imaginez l’ambiance de votre prochain événement."
-        action={
-          <Button href="/realisations" variant="link" icon={<ArrowUpRightIcon />}>
-            Toute la galerie
-          </Button>
-        }
-      />
+      <div className={styles.heading}>
+        <p className={studio.eyebrow}>Les univers Eventheme</p>
+        <RevealText as="h2" className={studio.heading}>L’instant passe.<br />{' '}<em>L’émotion reste.</em></RevealText>
+        <div className={styles.introduction}><p>Des atmosphères à explorer.<br />Et la vôtre à inventer.</p><Link href="/realisations" className={studio.link}>Toute la galerie <ArrowUpRightIcon /></Link></div>
+      </div>
 
+      <div className={styles.toolbar}>
       {categories.length > 2 && (
         <div className={styles.filters} role="group" aria-label="Filtrer les réalisations par type d’événement">
           {categories.map((c) => (
@@ -118,8 +116,13 @@ export default function Gallery() {
           ))}
         </div>
       )}
+        <div className={styles.reelControls}>
+          <button type="button" disabled={visible.length < 2} onClick={() => moveReel(-1)} aria-label="Faire défiler la galerie vers la gauche">←</button>
+          <button type="button" disabled={visible.length < 2} onClick={() => moveReel(1)} aria-label="Faire défiler la galerie vers la droite">→</button>
+        </div>
+      </div>
 
-      <div className={styles.grid} ref={gridRef}>
+      <div className={styles.grid} ref={gridRef} role="region" aria-label="Galerie d’inspiration — faire défiler horizontalement" tabIndex={0}>
         {projects.map((project) => {
           const shown = visible.indexOf(project);
           return (
@@ -131,13 +134,14 @@ export default function Gallery() {
               <button
                 type="button"
                 className={styles.inner}
+                aria-label={`Voir ${project.title}`}
                 onClick={(event) => {
                   trigger.current = event.currentTarget;
                   setOpen(shown);
                 }}
                 tabIndex={shown < 0 ? -1 : undefined}
               >
-                <img src={project.image || '/eventheme.jpg'} alt={project.title} loading="lazy" decoding="async" />
+                <span className={styles.imageFrame}><img src={project.image || '/eventheme.jpg'} alt={project.title} loading="lazy" decoding="async" /></span>
                 {project.demo && <span className={styles.tag}>Inspiration</span>}
                 <span className={styles.caption}>
                   <span className={styles.cat}>{project.category}</span>
@@ -147,7 +151,7 @@ export default function Gallery() {
                   )}
                 </span>
                 <span className={styles.zoom} aria-hidden="true">
-                  +
+                  <ArrowUpRightIcon />
                 </span>
               </button>
             </div>
@@ -185,6 +189,7 @@ function Lightbox({
   onClose: (restoreFocus?: boolean) => void;
 }) {
   const project = projects[index];
+  const dialogRef = useRef<HTMLDivElement>(null);
   const images = [project.image, ...(project.gallery || [])].filter((url): url is string => Boolean(url));
   const [image, setImage] = useState(0);
   const step = (delta: number) => {
@@ -204,11 +209,19 @@ function Lightbox({
 
   return (
     <div
+      ref={dialogRef}
       className={styles.lightbox}
       role="dialog"
       aria-modal="true"
       aria-labelledby="visionneuse-titre"
       onKeyDown={(event) => {
+        if (event.key === 'Tab') {
+          const elements = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button, a[href]') || []).filter((element) => element.getClientRects().length > 0);
+          const first = elements[0];
+          const last = elements[elements.length - 1];
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+        }
         if (event.key === 'Escape') onClose();
         if (event.key === 'ArrowRight' && projects.length > 1) step(1);
         if (event.key === 'ArrowLeft' && projects.length > 1) step(-1);

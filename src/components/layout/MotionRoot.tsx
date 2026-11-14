@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect } from 'react';
-import { refreshOnAssetsReady } from '@/lib/motion';
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
+import { gsap, refreshOnAssetsReady, ScrollTrigger } from '@/lib/motion';
+
+const SMOOTH_SCROLL =
+  '(min-width: 960px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)';
+const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ', 'Tab']);
 
 /**
  * Point d'entrée du moteur d'animation, monté une seule fois par page.
@@ -13,5 +19,114 @@ import { refreshOnAssetsReady } from '@/lib/motion';
  */
 export default function MotionRoot() {
   useEffect(refreshOnAssetsReady, []);
+
+  useEffect(() => {
+    let frame = 0;
+    const navigate = (event: MouseEvent) => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.composedPath().find((node) => node instanceof HTMLAnchorElement);
+      if (!(link instanceof HTMLAnchorElement) || link.target || link.hasAttribute('download')) return;
+      if (link.origin !== location.origin || link.pathname !== location.pathname || link.search !== location.search || !link.hash) return;
+      let target: HTMLElement | null;
+      try { target = document.getElementById(decodeURIComponent(link.hash.slice(1))); } catch { return; }
+      if (!target) return;
+      event.preventDefault();
+      if (location.hash !== link.hash) window.history.pushState(null, '', link.hash);
+      window.cancelAnimationFrame(frame);
+      // Let menu state settle, then measure with every pin spacer in place.
+      // Native smooth anchor scrolling can be interrupted by an image-triggered refresh.
+      frame = window.requestAnimationFrame(() => {
+        ScrollTrigger.refresh();
+        const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 80;
+        window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - headerHeight - 16, behavior: 'instant' });
+        const previousTabIndex = target.getAttribute('tabindex');
+        target.setAttribute('tabindex', '-1');
+        target.focus({ preventScroll: true });
+        if (previousTabIndex === null) target.removeAttribute('tabindex');
+        else target.setAttribute('tabindex', previousTabIndex);
+      });
+    };
+    document.addEventListener('click', navigate, true);
+    return () => { document.removeEventListener('click', navigate, true); window.cancelAnimationFrame(frame); };
+  }, []);
+
+  useEffect(() => {
+    const media = gsap.matchMedia();
+
+    media.add(SMOOTH_SCROLL, () => {
+      const root = document.documentElement;
+      let locked = false;
+      const lenis = new Lenis({
+        autoRaf: false,
+        smoothWheel: true,
+        syncTouch: false,
+        lerp: 0.1,
+        anchors: false,
+        allowNestedScroll: true,
+        // Les menus et dialogues gardent leur défilement natif, même lorsque
+        // la page située derrière est arrêtée.
+        prevent: (node) => locked || node.matches('dialog[open], [role="dialog"], [role="listbox"]'),
+      });
+
+      const syncScrollLock = () => {
+        // Shell et les dialogues posent leurs verrous en style inline. Ne pas
+        // lire le style calculé : la classe lenis-stopped masque aussi overflow.
+        locked = document.body.classList.contains('swal2-shown') || [root, document.body].some((element) =>
+          ['hidden', 'clip'].includes(element.style.overflowY || element.style.overflow),
+        );
+        if (locked) lenis.stop();
+        else lenis.start();
+      };
+      const lockObserver = new MutationObserver(syncScrollLock);
+      lockObserver.observe(root, { attributes: true, attributeFilter: ['style'] });
+      lockObserver.observe(document.body, { attributes: true, attributeFilter: ['style', 'class'] });
+      syncScrollLock();
+
+      // Une seule horloge d'affichage avec GSAP. L'heure réelle évite de
+      // modifier le lagSmoothing global des autres animations de la page.
+      const tick = () => lenis.raf(performance.now());
+      const unsubscribe = lenis.on('scroll', ScrollTrigger.update);
+      gsap.ticker.add(tick);
+
+      const cancelInertia = () => {
+        if (!locked && lenis.isScrolling === 'smooth') {
+          lenis.scrollTo(lenis.actualScroll, { immediate: true });
+        }
+      };
+      const onLink = (event: MouseEvent) => {
+        const link = event.composedPath().find((node) => node instanceof HTMLAnchorElement);
+        if (link instanceof HTMLAnchorElement && link.origin === window.location.origin) {
+          cancelInertia();
+        }
+      };
+      const onKey = (event: KeyboardEvent) => {
+        if (SCROLL_KEYS.has(event.key)) cancelInertia();
+      };
+      const onVisibility = () => {
+        if (document.hidden) cancelInertia();
+      };
+
+      // On interrompt seulement l'inertie avant que Next ou le navigateur
+      // gère le lien, la touche ou le focus, sans détourner leur comportement.
+      document.addEventListener('click', onLink, true);
+      document.addEventListener('keydown', onKey, true);
+      document.addEventListener('focusin', cancelInertia, true);
+      document.addEventListener('visibilitychange', onVisibility);
+
+      return () => {
+        document.removeEventListener('click', onLink, true);
+        document.removeEventListener('keydown', onKey, true);
+        document.removeEventListener('focusin', cancelInertia, true);
+        document.removeEventListener('visibilitychange', onVisibility);
+        lockObserver.disconnect();
+        gsap.ticker.remove(tick);
+        unsubscribe();
+        lenis.destroy();
+      };
+    });
+
+    return () => media.revert();
+  }, []);
+
   return null;
 }

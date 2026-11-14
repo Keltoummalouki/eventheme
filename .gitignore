@@ -25,3 +25,6 @@ Thumbs.db
 .eventheme/
 test-results/
 public/uploads/
+
+# Supabase CLI cache
+supabase/.temp/
