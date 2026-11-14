@@ -1,5 +1,5 @@
 /*
- * Kit de formulaire EVENTHEME.
+ * Kit de formulaire EVENTHEMES.
  *
  * Convention : les contrôles natifs (Input, Textarea) transmettent l'événement
  * `onChange` d'origine ; les contrôles personnalisés (Select, DatePicker,

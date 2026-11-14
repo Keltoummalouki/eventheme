@@ -52,8 +52,8 @@ export default function DropdownShowcase() {
     catch { setCopyError('Copiez directement le code ci-dessous.'); }
   }
   return <main className={s.page}>
-    <header className={s.header}><Link href="/">EVENTHEME <span><ArrowUpRightIcon className="inline-icon" /> Retour au site</span></Link><span>BIBLIOTHÈQUE DE COMPOSANTS / 01</span></header>
-    <section className={s.intro}><span className={s.eyebrow}>L’INTERFACE EVENTHEME</span><h1>Les listes déroulantes.<br /><em>Une même signature.</em></h1><p>Des composants personnalisés, réutilisables dans les formulaires du site et de l’administration. Essayez-les à la souris, au toucher ou au clavier.</p><div className={s.tags}><span>React + TypeScript</span><span>CSS Modules</span><span>Navigation clavier</span></div></section>
+    <header className={s.header}><Link href="/">EVENTHEMES <span><ArrowUpRightIcon className="inline-icon" /> Retour au site</span></Link><span>BIBLIOTHÈQUE DE COMPOSANTS / 01</span></header>
+    <section className={s.intro}><span className={s.eyebrow}>L’INTERFACE EVENTHEMES</span><h1>Les listes déroulantes.<br /><em>Une même signature.</em></h1><p>Des composants personnalisés, réutilisables dans les formulaires du site et de l’administration. Essayez-les à la souris, au toucher ou au clavier.</p><div className={s.tags}><span>React + TypeScript</span><span>CSS Modules</span><span>Navigation clavier</span></div></section>
     <div className={s.grid}>
       <section className={s.card}><div className={s.cardTitle}><span>01</span><h2>Sélection simple</h2><code>Select</code></div><p>Une valeur, un libellé, une description. Le champ s’intègre à un formulaire standard.</p><form onSubmit={submit}>
         <Select label="Type d’événement" name="eventType" options={events} value={event} onChange={setEvent} required hint="Choisissez un événement, puis validez le formulaire." />
@@ -67,7 +67,7 @@ export default function DropdownShowcase() {
         <Dropdown trigger="Gérer mon événement" label="Actions disponibles" variant="outline" items={[
           { id: 'edit', label: 'Modifier le projet', description: 'Une action de démonstration.', onSelect: () => setAction('Action déclenchée : modifier le projet.') },
           { id: 'duplicate', label: 'Dupliquer le projet', onSelect: () => setAction('Action déclenchée : dupliquer le projet.') },
-          { id: 'catalog', label: 'Voir le catalogue', href: '/location', meta: <ArrowUpRightIcon className="inline-icon" /> },
+          { id: 'catalog', label: 'Voir le catalogue', href: '/materiel', meta: <ArrowUpRightIcon className="inline-icon" /> },
           { id: 'archive', label: 'Archiver le projet', description: 'Indisponible pour cet exemple.', disabled: true },
         ]} />
         <output className={s.result} aria-live="polite">{action}</output>

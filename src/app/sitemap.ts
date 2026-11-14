@@ -6,11 +6,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.APP_URL.replace(/\/$/, "");
   const paths = [
     "",
-    "/evenements",
-    "/services",
-    "/location",
-    "/realisations",
     "/a-propos",
+    "/services",
+    "/materiel",
+    "/realisations",
     "/contact",
     "/devis",
     "/mentions-legales",
@@ -20,7 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((e) => e.kind === "products" || e.kind === "projects")
     .forEach((e) =>
       paths.push(
-        `/${e.kind === "products" ? "location" : "realisations"}/${e.id}`,
+        `/${e.kind === "products" ? "materiel" : "realisations"}/${e.id}`,
       ),
     );
   return paths.map((path) => ({

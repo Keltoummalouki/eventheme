@@ -62,12 +62,12 @@ export default function Services() {
         eyebrow="Nos expertises"
         title={
           <>
-            Tout un savoir-faire.
+            Toute la technique.
             <br />
-            <em>Une seule signature.</em>
+            <em>Une seule équipe.</em>
           </>
         }
-        description="Un accompagnement complet ou une expertise à la carte : composez les prestations qui donneront vie à votre événement."
+        description="Scène, structure, image, son, lumière et régie : choisissez les prestations utiles à votre événement et ajoutez-les à votre demande de devis."
         action={
           <Button href="/services" variant="link" icon={<ArrowUpRightIcon />}>
             Tous nos services
@@ -115,7 +115,7 @@ export default function Services() {
                     aria-pressed={chosen}
                     onClick={() => toggle(service.id)}
                   >
-                    {chosen ? 'Dans mon devis' : 'Ajouter à mon devis'}
+                    {chosen ? 'Dans mon devis' : 'Ajouter au devis'}
                   </Button>
                   <Button href="/services" variant="link" size="sm" icon={<ArrowUpRightIcon />}>
                     En savoir plus

@@ -5,10 +5,10 @@ import Shell from "@/components/eventheme/Shell";
 import { Detail } from "@/components/eventheme/Pages";
 async function find(params: Promise<{ page: string; id: string }>) {
   const { page, id } = await params;
-  if (!["location", "realisations"].includes(page)) return undefined;
+  if (!["materiel", "realisations"].includes(page)) return undefined;
   return (await getEntries()).find(
     (e) =>
-      e.id === id && e.kind === (page === "location" ? "products" : "projects"),
+      e.id === id && e.kind === (page === "materiel" ? "products" : "projects"),
   );
 }
 export async function generateMetadata({

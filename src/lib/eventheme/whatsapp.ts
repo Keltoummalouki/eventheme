@@ -16,7 +16,7 @@ export function quoteMessage(input: QuoteMessageInput) {
   const date = parseIsoDate(input.date);
   const contact = [input.name, input.phone, input.email].filter(Boolean).join(", ");
   return (
-    `Bonjour EVENTHEME, je souhaite demander un devis pour un événement de type ${input.event || "à définir"}, ` +
+    `Bonjour EVENTHEMES, je souhaite demander un devis pour un événement de type ${input.event || "à définir"}, ` +
     `prévu le ${date ? formatLongDate(date) : "(date à définir)"}, à ${input.city || "(ville à définir)"}. ` +
     `Les services souhaités sont : ${input.services.join(", ") || "à définir ensemble"}. ` +
     `Voici mes informations : ${contact}.` +

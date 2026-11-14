@@ -1,0 +1,30 @@
+/* Poutre truss : calque décoratif, jamais interactif. */
+
+.truss {
+  display: block;
+  width: 100%;
+  height: var(--truss-size);
+  pointer-events: none;
+}
+
+.vertical {
+  width: var(--truss-size);
+  height: 100%;
+}
+
+.truss svg {
+  display: block;
+  overflow: visible;
+}
+
+/* Membrures et diagonales : le tracé technique, en argent. */
+.frame {
+  fill: none;
+  stroke: rgba(197, 200, 206, 0.32);
+  stroke-width: 1;
+}
+
+/* Nœuds d'assemblage : l'accent or de la charte. */
+.node {
+  fill: var(--or);
+}

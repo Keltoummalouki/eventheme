@@ -490,7 +490,7 @@ export default function QuoteConfigurator() {
                     onChange={(rentalDays) => setDetails({ rentalDays: rentalDays ?? 1 })}
                   />
                 )}
-                <Button href="/location" variant="link" icon={<ArrowUpRightIcon />}>
+                <Button href="/materiel" variant="link" icon={<ArrowUpRightIcon />}>
                   Explorer le catalogue complet
                 </Button>
               </>

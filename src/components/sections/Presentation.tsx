@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import Reveal from '@/components/ui/Reveal';
 import RevealText from '@/components/ui/RevealText';
 import { useEventheme } from '@/components/eventheme/Provider';
-import { imagery, manifesto, pillars } from '@/data/eventheme';
+import { activities, imagery, manifesto } from '@/data/eventheme';
 import { gsap, motionSafe, useGSAP } from '@/lib/motion';
 import styles from './Presentation.module.css';
 import studio from './Studio.module.css';
@@ -29,7 +29,7 @@ export default function Presentation() {
   return (
     <section className={styles.root} id="a-propos" ref={ref} aria-labelledby="esprit-titre">
       <div className={styles.intro}>
-        <p className={studio.eyebrow}>L’esprit Eventheme</p>
+        <p className={studio.eyebrow}>Production technique événementielle</p>
         <RevealText as="h2" id="esprit-titre" className={studio.heading}>
           L’invisible fait<br />{' '}<em>la différence.</em>
         </RevealText>
@@ -39,13 +39,13 @@ export default function Presentation() {
         <div className={styles.visual}>
           <div className={styles.orbit} data-detail-orbit aria-hidden="true" />
           <figure className={styles.photo}>
-            <div className={styles.photoCrop}><img data-detail-photo src={about?.image || imagery.flowers} alt="Détail d’une célébration" loading="lazy" decoding="async" /></div>
-            <figcaption><span>Le sens du détail.</span><span>Photographie d’illustration</span></figcaption>
+            <div className={styles.photoCrop}><img data-detail-photo src={about?.image || imagery.ledStage} alt="Scène équipée d’écrans LED et de projecteurs" loading="lazy" decoding="async" /></div>
+            <figcaption><span>Scène, image, lumière.</span><span>Photographie d’illustration</span></figcaption>
           </figure>
-          <span className={styles.annotation} aria-hidden="true">Tout se joue<br />dans l’attention.</span>
+          <span className={styles.annotation} aria-hidden="true">Tout se règle<br />en amont.</span>
         </div>
         <div className={styles.pillars}>
-          {pillars.map(([title, description], index) => (
+          {activities.map(([title, description], index) => (
             <Reveal key={title} className={styles.pillar}>
               <span className={styles.num} aria-hidden="true">0{index + 1}</span>
               <div><h3>{title}</h3><p>{description}</p></div>

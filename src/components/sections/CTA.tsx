@@ -6,6 +6,7 @@ import RevealText from '@/components/ui/RevealText';
 import { gsap, motionSafe, useGSAP } from '@/lib/motion';
 import { findSocial } from '@/lib/eventheme/types';
 import { ArrowUpRightIcon } from '@/components/ui/icons';
+import { brand } from '@/data/eventheme';
 import styles from './CTA.module.css';
 
 export default function CTA() {
@@ -25,13 +26,13 @@ export default function CTA() {
     <section className={styles.cta} id="contact" ref={ref} aria-labelledby="contact-titre">
       <div className={styles.orbit} data-invitation-orbit aria-hidden="true" />
       <div className={styles.content}>
-        <div className={styles.topline}><span>Et maintenant, à vous.</span><span>Eventheme · Maroc</span></div>
-        <a href="#devis" className={styles.invitation} aria-label="On crée la suite ? Demander un devis">
-          <RevealText as="h2" id="contact-titre" className={styles.title}>On crée<br />{' '}la suite ?</RevealText>
+        <div className={styles.topline}><span>Et maintenant, à vous.</span><span>{brand.name} · {brand.market}</span></div>
+        <a href="#devis" className={styles.invitation} aria-label="Votre scène vous attend : demander un devis">
+          <RevealText as="h2" id="contact-titre" className={styles.title}>Votre scène<br />{' '}vous attend.</RevealText>
           <span className={styles.arrow}><ArrowUpRightIcon /></span>
         </a>
         <div className={styles.bottom}>
-          <p>Une date. Une idée. Une envie.<br />Donnons-lui une dimension inattendue.</p>
+          <p>Un lieu, une date, un programme.<br />Nous concevons la technique qui va avec.</p>
           <div className={styles.actions}>
             {whatsapp?.url && <a href={whatsapp.url} target="_blank" rel="noreferrer">Parlons sur WhatsApp <ArrowUpRightIcon /></a>}
             {instagram?.url && <a href={instagram.url} target="_blank" rel="noreferrer">Dans les coulisses <span>Instagram</span><ArrowUpRightIcon /></a>}

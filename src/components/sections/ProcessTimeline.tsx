@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 import RevealText from '@/components/ui/RevealText';
 import { imagery, methodSteps } from '@/data/eventheme';
@@ -9,10 +10,11 @@ import { ArrowUpRightIcon } from '@/components/ui/icons';
 import styles from './ProcessTimeline.module.css';
 import studio from './Studio.module.css';
 
+/** Méthodologie (cahier des charges §04 B) : sept étapes en trois temps. */
 const chapters = [
-  { title: 'Imaginer.', note: 'L’intention', image: imagery.flowers, steps: methodSteps.slice(0, 3) },
-  { title: 'Orchestrer.', note: 'La précision', image: imagery.tables, steps: methodSteps.slice(3, 5) },
-  { title: 'Faire vibrer.', note: 'L’émotion', image: imagery.party, steps: methodSteps.slice(5) },
+  { title: 'Concevoir.', note: 'L’étude', image: imagery.controlRoom, steps: methodSteps.slice(0, 3) },
+  { title: 'Installer.', note: 'Le montage', image: imagery.stageTruss, steps: methodSteps.slice(3, 5) },
+  { title: 'Exploiter.', note: 'Le direct', image: imagery.stageGlow, steps: methodSteps.slice(5) },
 ];
 
 export default function ProcessTimeline() {
@@ -42,9 +44,9 @@ export default function ProcessTimeline() {
   return (
     <section className={styles.timeline} id="methode" ref={ref} aria-labelledby="methode-titre">
       <div className={styles.heading}>
-        <p className={studio.eyebrow}>De l’idée à l’instant</p>
-        <RevealText as="h2" id="methode-titre" className={studio.heading}>Vous rêvez.<br />{' '}<em>Nous créons.</em></RevealText>
-        <p className={styles.introduction}>Trois temps pour donner vie à votre vision. Un même souci du détail, du premier échange au dernier invité.</p>
+        <p className={studio.eyebrow}>Notre méthode</p>
+        <RevealText as="h2" id="methode-titre" className={studio.heading}>De l’étude<br />{' '}<em>au direct.</em></RevealText>
+        <p className={styles.introduction}>Trois temps, sept étapes, une même exigence : une technique qui sert votre événement sans jamais s’imposer.</p>
       </div>
       <div className={styles.layout}>
         <div className={styles.stage} aria-hidden="true">
@@ -64,7 +66,7 @@ export default function ProcessTimeline() {
               <dl>{chapter.steps.map(([title, description]) => <div key={title}><dt>{title}</dt><dd>{description}</dd></div>)}</dl>
             </article>
           ))}
-          <a href="#devis" className={studio.link}>Votre histoire commence ici <ArrowUpRightIcon /></a>
+          <Link href="/devis" className={studio.link}>Demander un devis <ArrowUpRightIcon /></Link>
         </div>
       </div>
     </section>

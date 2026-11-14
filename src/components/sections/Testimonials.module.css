@@ -1,7 +1,7 @@
 /* Témoignages : diaporama centré, pagination en pastilles. */
 
 .testi {
-  background: var(--anthracite);
+  background: var(--noir-3);
   overflow: hidden;
 }
 
@@ -32,7 +32,7 @@
 
 .card blockquote {
   font-family: var(--ff-display);
-  font-style: italic;
+  font-style: normal;
   font-size: clamp(1.3rem, 2.4vw, 1.8rem);
   line-height: 1.6;
   color: var(--blanc);

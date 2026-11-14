@@ -1,0 +1,23 @@
+/* « Pourquoi EVENTHEMES » : quatre engagements sur une grille tracée comme une structure. */
+.root { position: relative; padding: clamp(90px, 10vw, 150px) 6%; background: var(--noir); overflow: clip; }
+.truss { max-width: 1440px; margin: 0 auto clamp(56px, 7vw, 96px); }
+.head { max-width: 1440px; margin: auto; display: grid; grid-template-columns: 1fr .7fr; gap: 28px 12%; align-items: end; }
+.head > p:first-child { grid-column: 1 / -1; }
+.root .intro p { max-width: 40ch; margin-bottom: 22px; color: var(--argent); font-size: 14px; line-height: 1.9; }
+.grid { max-width: 1440px; margin: clamp(56px, 7vw, 96px) auto 0; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--ligne-argent); }
+.reason { padding: 34px 28px 10px 0; }
+.reason + .reason { padding-left: 28px; border-left: 1px solid var(--ligne-argent); }
+.num { display: block; font-family: var(--ff-data); font-size: 12px; letter-spacing: .12em; color: var(--or); }
+.root .reason h3 { margin: 26px 0 14px; font-family: var(--ff-display); font-size: clamp(22px, 1.9vw, 30px); font-weight: 400; line-height: 1.2; letter-spacing: -.02em; color: var(--blanc); }
+.root .reason p { max-width: 32ch; color: var(--argent); font-size: 13px; line-height: 1.8; }
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .reason:nth-child(3) { padding-left: 0; border-left: 0; }
+  .reason:nth-child(n + 3) { border-top: 1px solid var(--ligne-argent); }
+}
+@media (max-width: 767px) {
+  .head { grid-template-columns: 1fr; gap: 22px; }
+  .grid { grid-template-columns: 1fr; }
+  .reason, .reason + .reason { padding: 26px 0 22px; border-left: 0; }
+  .reason + .reason { border-top: 1px solid var(--ligne-argent); }
+}

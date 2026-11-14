@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import Butterflies from "@/components/ui/Butterflies";
+import Truss from "@/components/ui/Truss";
 import Button from "@/components/ui/Button";
 import Eyebrow from "@/components/ui/Eyebrow";
 import { Checkbox, Input, PhoneInput } from "@/components/ui/form";
@@ -207,7 +207,7 @@ export default function QuoteStudio({
 
   return (
     <section className={cx(s.studio, wide && s.wide)} id="devis" ref={ref} aria-labelledby="devis-titre">
-      <Butterflies count={2} />
+      <Truss className={s.rig} />
       <div className={s.inner}>
         <div className={s.head}>
           <Eyebrow>Mon devis</Eyebrow>

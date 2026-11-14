@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Champs EVENTHEME — styles partagés par tous les contrôles de formulaire
+   Champs EVENTHEMES — styles partagés par tous les contrôles de formulaire
    (Input, Textarea, SearchInput, NumberInput, PhoneInput, FileInput,
    Checkbox, Select, DatePicker, TimePicker) et par les panneaux flottants
    (liste d'options, menu, calendrier).
@@ -21,7 +21,7 @@
   font-size: 0.6875rem;
   line-height: 1.5;
   letter-spacing: 0.02em;
-  color: rgba(245, 241, 232, 0.78);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .required {
@@ -338,7 +338,7 @@
   display: block;
   width: 22px;
   height: 22px;
-  border: 1px solid rgba(245, 241, 232, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   cursor: pointer;
   forced-color-adjust: none;
   transition: border-color 0.2s;
@@ -405,7 +405,7 @@
   align-items: center;
   gap: 9px;
   padding: 8px 14px;
-  border: 1px solid rgba(201, 163, 78, 0.6);
+  border: 1px solid rgba(201, 162, 74, 0.6);
   font-size: 0.75rem;
   letter-spacing: 0.02em;
   color: var(--or-clair);
@@ -455,7 +455,7 @@
   max-width: 100%;
   font-size: 0.75rem;
   line-height: 1.6;
-  color: rgba(245, 241, 232, 0.86);
+  color: rgba(255, 255, 255, 0.86);
   cursor: pointer;
 }
 
@@ -472,7 +472,7 @@
   height: 18px;
   margin: 1px 0 0;
   background: var(--champ-fond) center / 12px no-repeat;
-  border: 1px solid rgba(245, 241, 232, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   border-radius: 0;
   cursor: inherit;
   transition:
@@ -482,7 +482,7 @@
 
 .checkInput:checked {
   background-color: var(--or);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23050505' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2308090b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
   border-color: var(--or);
 }
 
@@ -611,10 +611,10 @@
   z-index: 40;
   /* Filet doré en tête : un calque de fond, pour qu'il ne défile pas avec la liste. */
   background:
-    linear-gradient(90deg, transparent, rgba(201, 163, 78, 0.85), transparent) top / 100% 1px
+    linear-gradient(90deg, transparent, rgba(201, 162, 74, 0.85), transparent) top / 100% 1px
       no-repeat,
     var(--noir-2);
-  border: 1px solid rgba(201, 163, 78, 0.28);
+  border: 1px solid rgba(201, 162, 74, 0.28);
   box-shadow: var(--panneau-ombre);
   animation: panel-in 0.22s var(--ease) both;
 }
@@ -663,7 +663,7 @@
   overscroll-behavior: contain;
   list-style: none;
   scrollbar-width: thin;
-  scrollbar-color: rgba(201, 163, 78, 0.4) transparent;
+  scrollbar-color: rgba(201, 162, 74, 0.4) transparent;
 }
 
 .menu {
@@ -683,7 +683,7 @@
   font-size: 0.8125rem;
   line-height: 1.45;
   text-align: left;
-  color: rgba(245, 241, 232, 0.86);
+  color: rgba(255, 255, 255, 0.86);
   cursor: pointer;
   transition:
     background-color 0.15s,

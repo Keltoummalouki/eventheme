@@ -11,7 +11,8 @@ import {
   Select,
 } from "@/components/ui/form";
 import { ArrowUpRightIcon, CheckIcon } from "@/components/ui/icons";
-import { methodSteps } from "@/data/eventheme";
+import ProcessTimeline from "@/components/sections/ProcessTimeline";
+import { activities, brand } from "@/data/eventheme";
 import {
   centimetres,
   findSocial,
@@ -55,7 +56,7 @@ export function Catalog({ projects = false }: { projects?: boolean }) {
     <>
       <PageIntro
         id={projects ? "projects-page" : "location-page"}
-        eyebrow={projects ? "LE REGARD EVENTHEME" : "LE CATALOGUE ÉVÉNEMENTIEL"}
+        eyebrow={projects ? "NOS RÉALISATIONS" : "CATALOGUE MATÉRIEL"}
       />
       <section className={s.section}>
         <div className={s.filters}>
@@ -126,13 +127,13 @@ export function Catalog({ projects = false }: { projects?: boolean }) {
         <p className={s.caption}>
           {filtered.length} {projects ? "projet(s)" : "article(s)"} · Les
           contenus marqués « exemple » ou « inspiration » sont à remplacer par
-          le catalogue et les réalisations Eventheme.
+          le catalogue et les réalisations {brand.name}.
         </p>
         <div className={s.catalogGrid}>
           {filtered.map((item) => (
             <article key={item.id} className={s.productCard}>
               <Link
-                href={`/${projects ? "realisations" : "location"}/${item.id}`}
+                href={`/${projects ? "realisations" : "materiel"}/${item.id}`}
                 className={s.productImage}
               >
                 <img
@@ -149,7 +150,7 @@ export function Catalog({ projects = false }: { projects?: boolean }) {
               <div className={s.productBody}>
                 <span className={s.eyebrow}>{item.category}</span>
                 <Link
-                  href={`/${projects ? "realisations" : "location"}/${item.id}`}
+                  href={`/${projects ? "realisations" : "materiel"}/${item.id}`}
                 >
                   <h3>{item.title}</h3>
                 </Link>
@@ -249,7 +250,7 @@ export function Services() {
                         : add(e)
                     }
                   >
-                    {chosen ? "Dans mon devis" : "Ajouter à mon devis"}
+                    {chosen ? "Dans mon devis" : "Ajouter au devis"}
                   </Button>
                 </div>
               </article>
@@ -260,74 +261,43 @@ export function Services() {
     </>
   );
 }
-export function Events() {
-  const { entries } = useEventheme();
-  return (
-    <>
-      <PageIntro id="events-page" eyebrow="VOS ÉVÉNEMENTS" />
-      <section className={`${s.section} ${s.catalogGrid}`}>
-        {entries
-          .filter((e) => e.kind === "events")
-          .map((e) => (
-            <article className={s.productCard} key={e.id}>
-              <div className={s.productImage}>
-                <img
-                  src={e.image || "/eventheme.jpg"}
-                  alt={`Ambiance ${e.title} — illustration`}
-                  loading="lazy"
-                />
-              </div>
-              <div className={s.productBody}>
-                <h3>{e.title}</h3>
-                <p>{e.description}</p>
-                <p className={s.caption}>
-                  Organisation · Animation · Décoration · Location
-                </p>
-                <Button
-                  href={`/devis?event=${e.id}`}
-                  variant="link"
-                  icon={<ArrowUpRightIcon />}
-                >
-                  Imaginer cet événement
-                </Button>
-              </div>
-            </article>
-          ))}
-      </section>
-      <CTA />
-    </>
-  );
-}
+/**
+ * À propos (cahier des charges §04 B) : présentation, valeurs, expertise
+ * technique et méthodologie. Vision, mission et équipe attendent les textes et
+ * visuels d’EVENTHEMES.
+ */
 export function About() {
   const { entries } = useEventheme();
   const about = entries.find((e) => e.id === "about");
   const values = entries.find((e) => e.id === "values");
   return (
     <>
-      <PageIntro id="about" eyebrow="L’ESPRIT EVENTHEME" />
+      <PageIntro id="about" eyebrow={`À PROPOS D’${brand.name}`} />
       <section className={`${s.section} ${s.aboutSplit}`}>
         <img
           src={about?.image || "/eventheme.jpg"}
-          alt="Univers floral — photographie d’illustration"
+          alt="Scène équipée d’écrans LED et de projecteurs — photographie d’illustration"
         />
         <div>
-          <span className={s.eyebrow}>UNE ATTENTION À CHAQUE INSTANT</span>
+          <span className={s.eyebrow}>NOS VALEURS</span>
           <h2>{values?.title}</h2>
           <p>{values?.description}</p>
         </div>
       </section>
       <section className={s.section}>
-        <span className={s.eyebrow}>NOTRE MÉTHODE</span>
-        <h2>Ensemble, à chaque étape.</h2>
+        <span className={s.eyebrow}>EXPERTISE TECHNIQUE</span>
+        <h2>De la fourniture à l’exploitation.</h2>
         <div className={s.process}>
-          {methodSteps.map(([title], i) => (
+          {activities.map(([title, description], i) => (
             <div key={title}>
               <span>0{i + 1}</span>
               <h3>{title}</h3>
+              <p>{description}</p>
             </div>
           ))}
         </div>
       </section>
+      <ProcessTimeline />
       <CTA />
     </>
   );
@@ -344,7 +314,7 @@ export function Detail({ entry }: { entry: Entry }) {
   const whatsapp = findSocial(entries, "whatsapp");
   return (
     <section className={s.section}>
-      <Button variant="link" href={product ? "/location" : "/realisations"}>
+      <Button variant="link" href={product ? "/materiel" : "/realisations"}>
         ← Retour {product ? "au catalogue" : "aux réalisations"}
       </Button>
       <div className={s.detail}>
@@ -422,12 +392,12 @@ export function Detail({ entry }: { entry: Entry }) {
               >
                 {entry.available === false
                   ? "Indisponible"
-                  : "Ajouter à mon devis"}
+                  : "Ajouter au devis"}
               </Button>
             )}
             {!product && (
               <Button href="/devis" icon={<ArrowUpRightIcon />}>
-                Imaginer mon événement
+                Demander un devis
               </Button>
             )}
             {whatsapp?.url && (
@@ -484,7 +454,7 @@ export function Legal({ privacy = false }: { privacy?: boolean }) {
   const content = entries.find((e) => e.id === (privacy ? "privacy" : "legal"));
   return (
     <section className={`${s.section} ${s.legal}`}>
-      <span className={s.eyebrow}>EVENTHEME</span>
+      <span className={s.eyebrow}>{brand.name}</span>
       <h1>{privacy ? "Politique de confidentialité" : "Mentions légales"}</h1>
       {content ? (
         <p>{content.description}</p>
@@ -492,7 +462,7 @@ export function Legal({ privacy = false }: { privacy?: boolean }) {
         <>
           <p>
             Page en préparation. Les informations légales et la politique de
-            confidentialité doivent être complétées et validées par Eventheme
+            confidentialité doivent être complétées et validées par {brand.name}
             avant la mise en ligne.
           </p>
           <p>

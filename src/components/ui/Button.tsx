@@ -77,7 +77,7 @@ const PULL = 0.32;
 const MAX_PULL = 14;
 
 /**
- * Bouton de la charte EVENTHEME.
+ * Bouton de la charte EVENTHEMES.
  *
  * Rend un lien (`next/link`) lorsqu'un `href` est fourni, un vrai `<button>`
  * sinon. Libellé et pictogramme restent au-dessus du remplissage animé.

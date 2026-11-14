@@ -2,17 +2,17 @@
    Graphiques — barres classées, colonnes mensuelles et jauges
 
    Une seule teinte : la donnée est portée par la longueur de la marque, jamais
-   par une couleur inventée. L'or (#c9a34e) atteint 8:1 sur le fond des
-   panneaux (#111), les filets et les pistes restent volontairement discrets.
+   par une couleur inventée. L'or (var(--or)) atteint 8:1 sur le fond des
+   panneaux (var(--noir-2)), les filets et les pistes restent volontairement discrets.
    Le libellé et la valeur sont toujours écrits à côté de la marque : rien ne
    dépend de la couleur seule.
    ========================================================================== */
 
 .chart {
-  --piste: rgba(245, 241, 232, 0.08);
-  --filet: rgba(245, 241, 232, 0.1);
+  --piste: rgba(255, 255, 255, 0.08);
+  --filet: rgba(255, 255, 255, 0.1);
   --marque: var(--or);
-  --marque-douce: rgba(245, 241, 232, 0.26);
+  --marque-douce: rgba(255, 255, 255, 0.26);
   min-width: 0;
 }
 
@@ -41,7 +41,7 @@
 
 .barLabel {
   font-size: 11px;
-  color: #f5f1e8;
+  color: var(--blanc);
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -49,19 +49,19 @@
 .barCaption {
   display: block;
   font-size: 9px;
-  color: #8f8c85;
+  color: var(--gris);
   margin-top: 3px;
 }
 
 .barValue {
   font-size: 11px;
-  color: #f5f1e8;
+  color: var(--blanc);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
 .barShare {
-  color: #8f8c85;
+  color: var(--gris);
   margin-left: 7px;
 }
 
@@ -97,17 +97,17 @@
 
 .readout {
   font-size: 10px;
-  color: #8f8c85;
+  color: var(--gris);
 }
 
 .readout b {
   font-weight: 400;
-  color: #f5f1e8;
+  color: var(--blanc);
 }
 
 .scale {
   font-size: 9px;
-  color: #777269;
+  color: var(--gris);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -162,7 +162,7 @@
   text-align: center;
   font-size: 8px;
   letter-spacing: 0.04em;
-  color: #777269;
+  color: var(--gris);
   white-space: nowrap;
 }
 
@@ -183,14 +183,14 @@
 
 .meterLabel {
   font-size: 10px;
-  color: #a5a5a5;
+  color: var(--gris);
 }
 
 .meterValue {
   font-family: var(--ff-display);
   font-size: 27px;
   line-height: 1;
-  color: #e4c779;
+  color: var(--or-clair);
   font-weight: 400;
 }
 
@@ -207,7 +207,7 @@
 
 .meterCaption {
   font-size: 9px;
-  color: #8f8c85;
+  color: var(--gris);
   line-height: 1.6;
 }
 
@@ -215,7 +215,7 @@
 
 .chartEmpty {
   font-size: 10px;
-  color: #777269;
+  color: var(--gris);
   padding: 18px 0;
 }
 

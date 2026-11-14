@@ -10,6 +10,15 @@ const nextConfig = {
       { protocol: 'https', hostname: 'picsum.photos' },
     ],
   },
+  // Anciennes adresses (avant le cahier des charges EVENTHEMES) : les liens
+  // partagés et les favoris mènent à la page qui les remplace.
+  async redirects() {
+    return [
+      { source: '/location', destination: '/materiel', permanent: true },
+      { source: '/location/:id', destination: '/materiel/:id', permanent: true },
+      { source: '/evenements', destination: '/realisations', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

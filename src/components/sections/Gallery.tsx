@@ -95,9 +95,9 @@ export default function Gallery() {
   return (
     <section className={styles.root} id="realisations">
       <div className={styles.heading}>
-        <p className={studio.eyebrow}>Les univers Eventheme</p>
-        <RevealText as="h2" className={studio.heading}>L’instant passe.<br />{' '}<em>L’émotion reste.</em></RevealText>
-        <div className={styles.introduction}><p>Des atmosphères à explorer.<br />Et la vôtre à inventer.</p><Link href="/realisations" className={studio.link}>Toute la galerie <ArrowUpRightIcon /></Link></div>
+        <p className={studio.eyebrow}>Réalisations</p>
+        <RevealText as="h2" className={studio.heading}>Chaque format,<br />{' '}<em>sa technique.</em></RevealText>
+        <div className={styles.introduction}><p>Galas, concerts, festivals, conférences :<br />les ambiances, par type d’événement.</p><Link href="/realisations" className={studio.link}>Toute la galerie <ArrowUpRightIcon /></Link></div>
       </div>
 
       <div className={styles.toolbar}>
@@ -161,7 +161,7 @@ export default function Gallery() {
       {projects.some((p) => p.demo) && (
         <p className={styles.note}>
           Planches d’inspiration : ces visuels illustrent des ambiances et seront remplacés par les réalisations
-          EVENTHEME.
+          EVENTHEMES.
         </p>
       )}
 
@@ -264,7 +264,7 @@ function Lightbox({
               Voir le projet
             </Button>
             <Button href="#devis" variant="link" size="sm" icon={<ArrowUpRightIcon />} onClick={() => onClose(false)}>
-              Imaginer un événement similaire
+              Demander un devis
             </Button>
           </div>
           {projects.length > 1 && (

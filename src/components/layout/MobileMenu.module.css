@@ -11,7 +11,7 @@
   padding: 110px 7vw 36px;
   overflow-y: auto;
   background:
-    radial-gradient(ellipse at 100% 0%, rgba(201, 163, 78, 0.14), transparent 55%),
+    radial-gradient(ellipse at 100% 0%, rgba(201, 162, 74, 0.14), transparent 55%),
     var(--noir-2);
   clip-path: circle(0% at calc(100% - 44px) 40px);
   transition: clip-path 0.8s var(--ease);
@@ -61,7 +61,7 @@
 }
 
 .links a[aria-current='page'] {
-  font-style: italic;
+  font-style: normal;
 }
 
 .index {
@@ -90,9 +90,9 @@
 
 .signature {
   font-family: var(--ff-display);
-  font-style: italic;
+  font-style: normal;
   font-size: 1.1rem;
-  color: rgba(245, 241, 232, 0.6);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* Le menu n'existe que sur petit écran. */

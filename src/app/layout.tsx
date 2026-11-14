@@ -1,48 +1,44 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Manrope } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import { EventhemeProvider } from "@/components/eventheme/Provider";
+import { brand } from "@/data/eventheme";
 import { getEntries, localMode } from "@/lib/eventheme/server";
 import "./globals.css";
 
-/** Titres et éléments d'affichage. */
-const cormorantGaramond = Cormorant_Garamond({
+/** Titres, chiffres et données (cahier des charges §02). Police variable : un seul fichier. */
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
   display: "swap",
   variable: "--font-display",
 });
 
-/** Textes courants et interface. */
-const manrope = Manrope({
+/** Textes courants et interface. Police variable : un seul fichier. */
+const inter = Inter({
   subsets: ["latin", "latin-ext"],
-  weight: ["300", "400", "500", "600"],
   display: "swap",
   variable: "--font-body",
 });
 
 export const metadata: Metadata = {
   title: {
-    default:
-      "Eventheme — Organisation, animation & location événementielle au Maroc",
-    template: "%s | Eventheme",
+    default: `${brand.name} — ${brand.baseline} au Maroc`,
+    template: `%s | ${brand.name}`,
   },
-  description:
-    "Votre événement. Votre vision. Notre savoir-faire. Organisation, animation, décoration et location de matériel événementiel au Maroc.",
+  description: `${brand.summary} Fourniture, location, installation et exploitation.`,
   icons: {
     icon: [{ url: "/eventheme_icon.ico", sizes: "32x32" }],
   },
   openGraph: {
-    title: "Eventheme — Votre événement. Votre vision. Notre savoir-faire.",
-    description:
-      "Organisation, animation, décoration et location événementielle au Maroc.",
+    title: `${brand.name} — ${brand.signature}`,
+    description: brand.summary,
+    siteName: brand.name,
     locale: "fr_FR",
     type: "website",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#050505",
+  themeColor: "#08090b",
 };
 
 export const dynamic = "force-dynamic";
@@ -55,7 +51,7 @@ export default async function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${cormorantGaramond.variable} ${manrope.variable}`}
+      className={`${spaceGrotesk.variable} ${inter.variable}`}
     >
       <body>
         {/* Sans JavaScript, les blocs révélés au défilement restent visibles. */}

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { cx } from '@/lib/cx';
 import { ArrowUpRightIcon } from '@/components/ui/icons';
+import { brand } from '@/data/eventheme';
 import styles from './MobileMenu.module.css';
 
 type MobileMenuProps = {
@@ -50,7 +51,7 @@ export default function MobileMenu({ id, open, links, current, action, socials, 
             </a>
           ))}
         </div>
-        <p className={styles.signature}>Votre événement. Votre vision. Notre savoir-faire.</p>
+        <p className={styles.signature} lang="en">{brand.signature}</p>
       </div>
     </div>
   );

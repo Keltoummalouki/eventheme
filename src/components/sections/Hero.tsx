@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEventheme } from '@/components/eventheme/Provider';
 import Button from '@/components/ui/Button';
 import { ArrowUpRightIcon, SocialIcon } from '@/components/ui/icons';
-import { heroSlides } from '@/data/eventheme';
+import { brand, heroSlides, isSignature } from '@/data/eventheme';
 import { cx } from '@/lib/cx';
 import { onCurtainOpen } from '@/lib/intro';
 import { gsap, revealSafe, ScrollTrigger, useGSAP } from '@/lib/motion';
@@ -15,12 +15,12 @@ import { findSocial } from '@/lib/eventheme/types';
 import styles from './Hero.module.css';
 
 const HeroSculpture = dynamic(() => import('./HeroSculpture'), { ssr: false });
+/** Les trois temps d’un projet, joués par la structure 3D : étude, montage, direct. */
 const WORLDS = [
-  { label: 'Imaginer', caption: 'Tout commence par une idée.', detail: 'Une vision, mille possibilités.' },
-  { label: 'Sublimer', caption: 'Le détail change tout.', detail: 'Le décor prend une autre dimension.' },
-  { label: 'Célébrer', caption: 'Faire vibrer l’instant.', detail: 'Des émotions qui restent.' },
+  { label: 'Concevoir', caption: 'Tout commence par une étude.', detail: 'Le lieu, le public, le programme.' },
+  { label: 'Installer', caption: 'Chaque structure à sa place.', detail: 'Scène, truss, écrans, son et lumière.' },
+  { label: 'Exploiter', caption: 'Le direct, maîtrisé.', detail: 'Une régie technique aux commandes.' },
 ] as const;
-const ORIGINAL_TITLE = 'Votre événement.\nVotre vision.\nNotre savoir-faire.';
 
 export default function Hero() {
   const ref = useRef<HTMLElement>(null);
@@ -36,9 +36,11 @@ export default function Hero() {
   const whatsapp = findSocial(entries, 'whatsapp');
   const candidates = [home?.image, ...(home?.gallery?.length ? home.gallery : heroSlides)];
   const images = candidates.filter((url, index): url is string => Boolean(url) && candidates.indexOf(url) === index);
-  // The redesign introduces an editorial default; custom CMS titles remain authoritative.
-  const title = !home?.title || home.title.trim() === ORIGINAL_TITLE ? 'L’émotion.\nEn grand.' : home.title;
+  // The admin title is authoritative; the brand signature is the default.
+  const title = home?.title?.trim() || 'We engineer\nthe experience.';
   const lines = title.split('\n');
+  // The signature is English on a French page: screen readers must pronounce it as such.
+  const titleLang = isSignature(title) ? 'en' : undefined;
 
   useGSAP(() => revealSafe(ref, (full) => {
     if (!full || !ref.current) return;
@@ -136,20 +138,20 @@ export default function Hero() {
     <section ref={ref} className={styles.hero} id="accueil" aria-labelledby="accueil-titre">
       <div className={styles.architecture} aria-hidden="true"><span /><span /><span /></div>
       <div className={styles.topline} data-hero-reveal>
-        <span>{home?.subtitle || 'Créateur d’émotions · Maroc'}</span>
-        <span className={styles.topNote}>L’émotion prend forme</span>
+        <span>{home?.subtitle || `${brand.sector} · ${brand.market}`}</span>
+        <span className={styles.topNote}>{brand.disciplines.join(' · ')}</span>
       </div>
       <div className={styles.composition}>
         <div className={styles.content}>
-          <h1 id="accueil-titre" className={cx(styles.title, lines.length > 2 && styles.customTitle)}>
+          <h1 id="accueil-titre" lang={titleLang} className={cx(styles.title, lines.length > 2 && styles.customTitle)}>
             {lines.map((line, index) => <span className={styles.lineMask} key={index}>
               {index === lines.length - 1 && lines.length > 1 ? <em data-hero-line>{line}</em> : <span data-hero-line>{line}</span>}
             </span>)}
           </h1>
-          <p className={styles.lede} data-hero-reveal>{home?.description || 'Votre vision devient une expérience. Nous imaginons des événements qui ne ressemblent qu’à vous.'}</p>
+          <p className={styles.lede} data-hero-reveal>{home?.description || brand.summary}</p>
           <div className={styles.actions} data-hero-reveal>
-            <Button href="#devis" icon={<ArrowUpRightIcon />} className={styles.primary} magnetic>Créer mon événement</Button>
-            <a href="#services" className={styles.secondary}>Explorer nos services <ArrowUpRightIcon /></a>
+            <Button href="#devis" icon={<ArrowUpRightIcon />} className={styles.primary} magnetic>Demander un devis</Button>
+            <a href="#services" className={styles.secondary}>Nos expertises <ArrowUpRightIcon /></a>
           </div>
         </div>
         <div className={styles.stage} data-hero-stage>
@@ -159,24 +161,25 @@ export default function Hero() {
               {images.slice(0, 3).map((src, index) => <img key={src} src={src} alt="" className={cx(styles.photo, active % Math.min(images.length, 3) === index && styles.photoActive)} loading={index === 0 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : undefined} decoding="async" />)}
             </div>
             {images[1] && <div className={styles.insetPhoto}><img src={images[1]} alt="" loading="eager" decoding="async" /></div>}
-            <span className={styles.photoSignature}>Eventheme · Des idées aux émotions</span>
+            <span className={styles.photoSignature}>{brand.name} · {brand.sector} · Photographie d’illustration</span>
           </div>
           <div className={styles.sculpture} data-stage-scroll aria-hidden="true">
+            {/* Repli tant que WebGL n’a pas rendu : le portique truss au trait. */}
             <div className={styles.fallback}>
-              <svg viewBox="-50 -44 100 88" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden="true" focusable="false">
-                <path d="M2 -2 C8 -28 30 -44 42 -34 C52 -25 38 -6 4 0 C22 2 34 16 26 28 C18 38 6 22 2 7 M-2 -2 C-8 -28 -30 -44 -42 -34 C-52 -25 -38 -6 -4 0 C-22 2 -34 16 -26 28 C-18 38 -6 22 -2 7 M0 -12 C2 -6 2 14 0 22 M0 -12 C-2 -22 -8 -28 -12 -31 M0 -12 C2 -22 8 -28 12 -31" />
+              <svg viewBox="-50 -44 100 88" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true" focusable="false">
+                <path d="M-40 -34H40M-40 -26H40M-40 -34L-32 -26L-24 -34L-16 -26L-8 -34L0 -26L8 -34L16 -26L24 -34L32 -26L40 -34M-40 -26V40M-32 -26V40M-40 -26L-32 -18L-40 -10L-32 -2L-40 6L-32 14L-40 22L-32 30L-40 38M32 -26V40M40 -26V40M32 -26L40 -18L32 -10L40 -2L32 6L40 14L32 22L40 30L32 38" />
               </svg>
             </div>
             <HeroSculpture active={active} paused={paused} scrollScene={scrollScene} onSettled={onSettled} />
           </div>
           <span className={styles.stageIndex} aria-hidden="true">0{active + 1} / 03</span>
           <div className={styles.sceneMeta} ref={worldRef} aria-live="polite" aria-atomic="true"><span>{WORLDS[active].caption}</span><span>{WORLDS[active].detail}</span></div>
-          {!settled && <button className={styles.pause} onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Reprendre l’animation du papillon' : 'Mettre l’animation du papillon en pause'} aria-pressed={paused} type="button"><span aria-hidden="true">{paused ? '▷' : 'Ⅱ'}</span><span>{paused ? 'Reprendre' : 'Pause'}</span></button>}
+          {!settled && <button className={styles.pause} onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Reprendre l’animation de la structure' : 'Mettre l’animation de la structure en pause'} aria-pressed={paused} type="button"><span aria-hidden="true">{paused ? '▷' : 'Ⅱ'}</span><span>{paused ? 'Reprendre' : 'Pause'}</span></button>}
         </div>
       </div>
       <div className={styles.bottom} data-hero-reveal>
-        <a href="#a-propos" className={styles.scroll}><span aria-hidden="true">↓</span><span>La suite de l’histoire</span></a>
-        <div className={styles.worlds} role="group" aria-label="Explorer les trois univers">
+        <a href="#a-propos" className={styles.scroll}><span aria-hidden="true">↓</span><span>Découvrir {brand.name}</span></a>
+        <div className={styles.worlds} role="group" aria-label="Explorer les trois temps d’un projet">
           {WORLDS.map((world, index) => <button key={world.label} type="button" className={cx(styles.world, active === index && styles.selected)} aria-pressed={active === index} onClick={() => chooseWorld(index)}><span className={styles.worldNumber}>0{index + 1}</span><span>{world.label}</span><span className={styles.worldArrow} aria-hidden="true">↗</span></button>)}
         </div>
         {whatsapp?.url && <a href={whatsapp.url} className={styles.whatsapp} target="_blank" rel="noreferrer" aria-label="Nous contacter sur WhatsApp (nouvel onglet)"><SocialIcon name="whatsapp" /></a>}

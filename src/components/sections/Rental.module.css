@@ -95,7 +95,7 @@
   left: 18px;
   bottom: 14px;
   font-family: var(--ff-display);
-  font-style: italic;
+  font-style: normal;
   font-size: 2.6rem;
   line-height: 1;
   color: transparent;
@@ -110,7 +110,7 @@
   font-size: 0.56rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  background: rgba(5, 5, 5, 0.7);
+  background: rgba(8, 9, 11, 0.7);
   backdrop-filter: blur(8px);
   color: var(--blanc);
 }
@@ -200,7 +200,7 @@
   padding: 30px;
   border: 1px solid var(--ligne);
   background:
-    radial-gradient(ellipse at 100% 0%, rgba(201, 163, 78, 0.16), transparent 60%),
+    radial-gradient(ellipse at 100% 0%, rgba(201, 162, 74, 0.16), transparent 60%),
     var(--noir-2);
   transition: border-color 0.5s ease;
 }
@@ -224,7 +224,7 @@
 }
 
 .moreTitle em {
-  font-style: italic;
+  font-style: normal;
   color: var(--or-clair);
 }
 

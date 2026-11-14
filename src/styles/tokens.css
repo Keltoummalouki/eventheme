@@ -1,31 +1,30 @@
 /* ==========================================================================
-   AURÉLYS — Jetons de design
-   Valeurs reprises telles quelles de la maquette approuvée
-   (aurelys-maquette .html). Ne pas remplacer par une palette générique.
+   EVENTHEMES — Jetons de design
+   Palette et typographie du cahier des charges (§02 « Positionnement &
+   direction artistique »). Les dérivés sont des mélanges des couleurs de la
+   charte entre elles : aucune nouvelle teinte.
    ========================================================================== */
 
 :root {
-  /* Fonds */
-  --noir: #050505;
-  --noir-2: #111111;
-  --anthracite: #1c1b17;
-  --anthracite-2: #26241e;
+  /* Charte — cinq couleurs */
+  --noir: #08090b; /* Noir profond : fond principal et sections premium */
+  --or: #c9a24a; /* Or : accents, séparateurs et détails */
+  --argent: #c5c8ce; /* Argent : détails techniques et éléments secondaires */
+  --blanc: #ffffff; /* Blanc : textes et contrastes */
+  --gris: #858990; /* Gris : textes secondaires — 5,7:1 sur --noir */
 
-  /* Ors */
-  --or: #c9a34e;
-  --or-clair: #e4c779;
-  --or-vif: #d9b978;
-  --or-profond: #8a6a2a;
+  /* Surfaces : noir profond éclairci d'argent (94, 88 et 82 %) */
+  --noir-2: #131417;
+  --noir-3: #1f2022;
+  --noir-4: #2a2b2e;
 
-  /* Textes */
-  --blanc: #f5f1e8;
-  --blanc-doux: #cfc7b4;
+  /* Or : variantes d'état (survol, appui) — or mêlé de blanc ou de noir */
+  --or-clair: #d9be80;
+  --or-profond: #856c34;
 
-  /* Gris secondaire (charte) : aides, textes indicatifs */
-  --gris: #a5a5a5;
-
-  /* Filets */
-  --ligne: rgba(201, 166, 104, 0.22);
+  /* Filets : l'or pour les accents, l'argent pour les tracés techniques */
+  --ligne: rgba(201, 162, 74, 0.22);
+  --ligne-argent: rgba(197, 200, 206, 0.14);
 
   /* Actions destructrices (« Supprimer ») uniquement — hors charte, à la demande
      de l'équipe. Contraste 6:1 sur --noir-2. */
@@ -34,14 +33,16 @@
 
   /* Champs de formulaire et panneaux flottants (listes, menus, calendrier) */
   --champ-fond: var(--noir-2);
-  --champ-filet: rgba(245, 241, 232, 0.16);
-  --champ-filet-survol: rgba(201, 163, 78, 0.55);
-  --champ-actif: rgba(201, 163, 78, 0.1);
+  --champ-filet: rgba(197, 200, 206, 0.18);
+  --champ-filet-survol: rgba(201, 162, 74, 0.55);
+  --champ-actif: rgba(201, 162, 74, 0.1);
   --panneau-ombre: 0 24px 60px rgba(0, 0, 0, 0.6);
 
-  /* Typographie — les variables --font-* sont injectées par next/font (layout.tsx) */
-  --ff-display: var(--font-display), 'Cormorant Garamond', serif;
-  --ff-body: var(--font-body), 'Manrope', sans-serif;
+  /* Typographie — les variables --font-* sont injectées par next/font (layout.tsx).
+     Titres : Space Grotesk · Textes : Inter · Chiffres et données : Space Grotesk. */
+  --ff-display: var(--font-display), 'Space Grotesk', system-ui, sans-serif;
+  --ff-body: var(--font-body), 'Inter', system-ui, sans-serif;
+  --ff-data: var(--ff-display);
 
   /* Courbe d'accélération commune à toutes les transitions */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);

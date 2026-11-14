@@ -1,22 +1,22 @@
-.root { padding: clamp(90px, 10vw, 160px) 6%; background: #0a0b09; overflow: clip; }
+.root { padding: clamp(90px, 10vw, 160px) 6%; background: var(--noir); overflow: clip; }
 .intro { max-width: 1440px; margin: auto; display: grid; grid-template-columns: 1.25fr .75fr; gap: 32px 9%; align-items: end; }
 .intro > p { grid-column: 1 / -1; }
-.manifesto p { max-width: 41ch; color: #b6b8ab; font-size: 14px; line-height: 1.9; }
+.manifesto p { max-width: 41ch; color: var(--argent); font-size: 14px; line-height: 1.9; }
 .composition { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12%; max-width: 1440px; margin: 90px auto 0; }
 .visual { position: relative; padding: 24px 12% 50px 4%; }
 .photo { position: relative; transform: rotate(-5deg); }
-.photoCrop { aspect-ratio: 4 / 4.6; overflow: hidden; background: #171b12; }
+.photoCrop { aspect-ratio: 4 / 4.6; overflow: hidden; background: var(--noir-3); }
 .photoCrop img { height: 112%; margin-top: -6%; object-fit: cover; filter: saturate(.75); }
-.photo figcaption { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; font-size: 10px; color: #c4c5b7; }
-.photo figcaption span:last-child { font-size: 8px; color: #989c8a; }
-.orbit { position: absolute; inset: 6% -6%; border: 1px solid #dbc18a3b; border-radius: 50%; transform: rotate(-24deg); }
-.annotation { position: absolute; bottom: 0; right: -6%; color: #dbc18a; font-family: var(--ff-display); font-style: italic; font-size: clamp(24px, 3vw, 44px); line-height: 1.1; transform: rotate(-6deg); }
+.photo figcaption { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; font-size: 10px; color: var(--argent); }
+.photo figcaption span:last-child { font-size: 8px; color: var(--gris); }
+.orbit { position: absolute; inset: 6% -6%; border: 1px solid rgba(201, 162, 74, 0.23); border-radius: 50%; transform: rotate(-24deg); }
+.annotation { position: absolute; bottom: 0; right: -6%; color: var(--or); font-family: var(--ff-display); font-style: normal; font-size: clamp(24px, 3vw, 44px); line-height: 1.1; transform: rotate(-6deg); }
 .pillars { display: flex; flex-direction: column; }
 .pillar { display: grid; grid-template-columns: 32px 1fr; gap: 14px; padding-block: 28px; }
-.pillar + .pillar { border-top: 1px solid #dbc18a20; }
-.num { padding-top: 10px; font-size: 10px; color: #dbc18a; }
-.root .pillar h3 { font-family: var(--ff-body); font-weight: 400; font-size: clamp(30px, 3vw, 48px); line-height: 1.2; letter-spacing: -.05em; }
-.root .pillar p { margin-top: 12px; max-width: 35ch; font-size: 13px; line-height: 1.8; color: #aeb0a2; }
+.pillar + .pillar { border-top: 1px solid rgba(201, 162, 74, 0.13); }
+.num { padding-top: 10px; font-size: 10px; color: var(--or); }
+.root .pillar h3 { font-family: var(--ff-display); font-weight: 400; font-size: clamp(28px, 2.8vw, 44px); line-height: 1.2; letter-spacing: -.035em; }
+.root .pillar p { margin-top: 12px; max-width: 35ch; font-size: 13px; line-height: 1.8; color: var(--argent); }
 @media (max-width: 767px) {
   .intro { grid-template-columns: 1fr; gap: 24px; }
   .manifesto p { max-width: 43ch; }

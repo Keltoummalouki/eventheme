@@ -1,112 +1,126 @@
 import type { Entry } from "@/lib/eventheme/types";
+
+/**
+ * Marque — cahier des charges EVENTHEMES (§01 et §04 A). L’accroche est celle
+ * que le cahier propose : elle reste à valider par EVENTHEMES.
+ */
+export const brand = {
+  name: "EVENTHEMES",
+  sector: "Event Technical Production",
+  signature: "We engineer the experience.",
+  baseline: "Production technique & location de matériel événementiel",
+  market: "Maroc",
+  summary:
+    "Scènes, structures, écrans LED, sonorisation, éclairage et régie technique pour vos événements au Maroc.",
+  disciplines: ["Scène", "Structure", "Image", "Son", "Lumière", "Régie"],
+} as const;
+
+/** Vrai si le texte est l’accroche anglaise de la marque, quelle que soit sa mise en ligne. */
+export const isSignature = (text: string) =>
+  text.replace(/\s+/g, " ").trim().toLowerCase() === brand.signature.toLowerCase();
+
 const photo = (id: string, width = 1400) =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${width}&q=85`;
-export const imagery = {
-  hero: photo("1519741497674-611481863552", 2000),
-  tables: photo("1519225421980-715cb0215aed"),
-  party: photo("1511795409834-ef04bbd61622"),
-  conference: photo("1475721027785-f74eccf877e2"),
-  flowers: photo("1465495976277-4387d4b0b4c6"),
-};
+
 /**
- * Diaporama d’accueil — photographies d’illustration, utilisées tant que la
- * page « home » n’a pas de galerie dans l’administration.
+ * Photographies d’illustration (Unsplash), à remplacer par les médias réels
+ * d’EVENTHEMES. Elles montrent des ambiances, jamais une réalisation de la marque.
  */
-export const heroSlides = [
-  "1519741497674-611481863552",
-  "1465495976277-4387d4b0b4c6",
-  "1478146059778-26028b07395a",
-  "1522673607200-164d1b6ce486",
-  "1519225421980-715cb0215aed",
-].map((id) => photo(id, 2000));
+export const imagery = {
+  stageTruss: photo("1563841930606-67e2bce48b78", 2000),
+  stageRoof: photo("1504680177321-2e6a879aac86", 2000),
+  stageGlow: photo("1470229722913-7c0e2dbbafd3", 2000),
+  festivalTruss: photo("1506157786151-b8491531f063"),
+  ledConference: photo("1587825140708-dfaf72ae4b04"),
+  ledStage: photo("1516450360452-9312f5e86fc7"),
+  microphone: photo("1475721027785-f74eccf877e2"),
+  microphoneStage: photo("1516280440614-37939bbacd81"),
+  beams: photo("1557787163-1635e2efb160"),
+  beamsYellow: photo("1459749411175-04bf5292ceea"),
+  redLight: photo("1545128485-c400e7702796"),
+  mixer: photo("1544785349-c4a5301826fd"),
+  controlRoom: photo("1563330232-57114bb0823c"),
+  smoke: photo("1493225457124-a3eb161ffa5f"),
+  confetti: photo("1492684223066-81342ee5ff30"),
+  concertOrange: photo("1524368535928-5b5e00ddc76b"),
+  galaConfetti: photo("1533174072545-7a4b6ad7a6c3"),
+  djSmoke: photo("1496337589254-7e19d01cec44"),
+  lasers: photo("1514525253161-7a46d19cd819"),
+  roundTables: photo("1561489413-985b06da5bee"),
+  conferenceAudience: photo("1540575467063-178a50c2df87"),
+  projection: photo("1505373877841-8d25f7d46678"),
+  birthdayDinner: photo("1556125574-d7f27ec36a06"),
+  partyVenue: photo("1574391884720-bbc3740c59d1"),
+  festivalConfetti: photo("1505236858219-8359eb29e329"),
+  conferenceHall: photo("1531058020387-3be344556be6"),
+};
+
 /**
- * Prestations de chaque service, reprises du cahier des charges. Remplacées par
- * le champ « caractéristiques » du service dès qu’il est rempli dans l’admin.
+ * Diaporama d’accueil — scènes professionnelles d’illustration, utilisées tant
+ * que la page « home » n’a pas de galerie dans l’administration.
+ */
+export const heroSlides = [imagery.stageTruss, imagery.stageRoof, imagery.stageGlow, imagery.beams];
+
+/**
+ * Prestations de chaque service, reprises du cahier des charges (§04 C).
+ * Remplacées par le champ « caractéristiques » du service dès qu’il est rempli
+ * dans l’administration.
  */
 export const serviceDetails: Record<string, string[]> = {
-  organisation: [
-    "Conception du concept",
-    "Planification",
-    "Gestion logistique",
-    "Coordination des prestataires",
-    "Gestion du planning",
-    "Installation et démontage",
-    "Décoration",
-    "Gestion technique",
-    "Coordination le jour J",
-    "Accompagnement personnalisé",
-  ],
-  animation: [
-    "Animation pour enfants",
-    "Jeux et activités",
-    "Mascottes",
-    "Animateurs",
-    "Présentation et prise de parole",
-    "Animation micro",
-    "Animation musicale",
-    "Jeux interactifs",
-    "Ateliers créatifs",
-    "Animation pour entreprises",
-    "Animation de cérémonies",
-  ],
-  decoration: [
-    "Décoration thématique",
-    "Scénographie",
-    "Arche et backdrop",
-    "Décoration florale",
-    "Mobilier décoratif",
-    "Mise en lumière",
-    "Décoration de tables",
-    "Structures et éléments visuels",
-    "Personnalisation selon le thème",
-  ],
-  rental: [
-    "Mobilier",
-    "Tables et chaises",
-    "Structures",
-    "Éclairage",
-    "Sonorisation",
-    "Écrans LED",
-    "Éléments de décoration",
-    "Accessoires événementiels",
-    "Machines à fumée",
-    "Jeux de lumière",
-    "Matériel audiovisuel",
-  ],
+  scenes: ["Scènes modulaires", "Podiums", "Plateformes", "Installations scéniques"],
+  structures: ["Structures aluminium", "Roof systems", "Supports", "Rigging"],
+  "led-video": ["Murs LED", "Écrans géants", "Diffusion", "Solutions vidéo"],
+  sonorisation: ["Systèmes audio", "Enceintes", "Microphones", "Consoles"],
+  eclairage: ["Moving heads", "PAR LED", "Éclairage architectural", "Effets lumineux"],
+  regie: ["Régie son", "Régie lumière", "Régie vidéo", "Coordination", "Exploitation technique"],
+  complementaires: ["Effets spéciaux", "Installation", "Exploitation", "Démontage"],
 };
 export function serviceItems(service: Entry) {
   const own = service.specifications?.split("\n").map((line) => line.trim()).filter(Boolean);
   return own?.length ? own : serviceDetails[service.id] || [];
 }
+
 /** Phrase dévoilée mot à mot au défilement, sur l’accueil. */
 export const manifesto =
-  "Chaque événement raconte une histoire. Nous l’écrivons avec vous, du premier échange au dernier invité, avec élégance, créativité et le sens du détail.";
-/** Les engagements de la marque (positionnement, sans chiffre ni promesse datée). */
-export const pillars = [
-  ["Élégance", "Des mises en scène raffinées, pensées pour sublimer chaque instant."],
-  ["Créativité", "Des concepts sur mesure, imaginés à partir de votre vision."],
-  ["Fiabilité", "Une organisation rigoureuse et une coordination maîtrisée jusqu’au jour J."],
-  ["Sens du détail", "Lumière, décor, rythme, accueil : chaque élément compte."],
+  "Une scène se construit bien avant de s’allumer. De l’étude technique au démontage, nous faisons de la technique le socle invisible et fiable de votre événement.";
+
+/** Les métiers d’EVENTHEMES (cahier des charges §01). */
+export const activities = [
+  ["Fourniture", "Des équipements techniques et audiovisuels professionnels, pour chaque format d’événement."],
+  ["Location", "Un parc matériel à composer selon vos besoins : scène, structure, image, son et lumière."],
+  ["Installation", "Montage, câblage et réglages sur site, dans le respect du lieu et du planning."],
+  ["Exploitation", "Une régie technique aux commandes pendant l’événement, jusqu’au démontage."],
 ] as const;
-/** Parcours de collaboration du cahier des charges (7 étapes). */
+
+/** « Why EVENTHEMES » (cahier des charges §04 A) — positionnement, sans chiffre ni promesse datée. */
+export const reasons = [
+  ["Équipements professionnels", "Un parc matériel pensé pour l’événementiel : scène, structure, image, son et lumière."],
+  ["Expertise technique", "La maîtrise du son, de la lumière, de la vidéo et des structures, de l’étude au direct."],
+  ["Solutions adaptées", "Une configuration pensée pour votre lieu, votre public et votre format, du séminaire au festival."],
+  ["Exécution fiable", "Préparation, installation et exploitation menées avec méthode, pour un événement sans fausse note."],
+] as const;
+
+/** Méthodologie (cahier des charges §04 B) — texte proposé, à valider par EVENTHEMES. */
 export const methodSteps = [
-  ["Échange initial", "Nous écoutons votre projet : vos envies, votre date, vos contraintes."],
-  ["Analyse du besoin", "Nous précisons le format, le lieu, le nombre d’invités et les prestations utiles."],
-  ["Proposition créative", "Un concept, une ambiance et une mise en scène pensés pour votre événement."],
-  ["Devis personnalisé", "Une proposition claire et détaillée, ajustée à vos choix et à votre budget."],
-  ["Préparation", "Coordination des prestataires, du matériel, du planning et de la logistique."],
-  ["Réalisation", "Installation, coordination le jour J et attention portée à chaque instant."],
-  ["Suivi", "Démontage, bilan et échange après l’événement, pour prolonger la relation."],
+  ["Brief", "Votre événement, votre lieu, votre public et vos contraintes : nous recueillons le besoin technique."],
+  ["Étude technique", "Accès, alimentation électrique, points d’accroche : nous choisissons les équipements adaptés au lieu."],
+  ["Proposition & devis", "Implantation, liste du matériel et devis détaillé, ajustés à votre budget."],
+  ["Préparation", "Préparation et tests du matériel, planning de montage, coordination avec les autres prestataires."],
+  ["Installation", "Montage des scènes, structures, écrans, son et lumière, puis réglages sur site."],
+  ["Exploitation", "Régie son, lumière et vidéo pendant l’événement, au rythme de votre programme."],
+  ["Démontage & bilan", "Démontage, remise en état des espaces et retour d’expérience avec vous."],
 ] as const;
+
+/** Plan du site (cahier des charges §03). « Mon devis » reste un bouton à part. */
 export const navigation = [
   ["Accueil", "/"],
-  ["Événements", "/evenements"],
-  ["Services", "/services"],
-  ["Location", "/location"],
-  ["Réalisations", "/realisations"],
   ["À propos", "/a-propos"],
+  ["Services", "/services"],
+  ["Matériel", "/materiel"],
+  ["Réalisations", "/realisations"],
   ["Contact", "/contact"],
 ] as const;
+
 const entry = (
   id: string,
   kind: Entry["kind"],
@@ -114,242 +128,205 @@ const entry = (
   description: string,
   extra: Partial<Entry> = {},
 ): Entry => ({ id, kind, title, description, published: true, ...extra });
+
+const exampleNote = "Exemple de fiche, à remplacer par le matériel EVENTHEMES.";
+const inspirationNote =
+  "Planche d’inspiration. Cette photographie illustre une ambiance et ne représente pas une réalisation EVENTHEMES.";
+
+/** Contenu initial : remplacé par l’administration (fichier local ou Supabase). */
 export const seed: Entry[] = [
   entry(
     "home",
     "pages",
-    "Votre événement.\nVotre vision.\nNotre savoir-faire.",
-    "Des premières idées aux derniers instants, nous imaginons des événements qui vous ressemblent.",
-    { subtitle: "CRÉATEUR D’ÉMOTIONS · MAROC", image: imagery.hero },
+    "We engineer\nthe experience.",
+    "Scène, structure, image, son et lumière : EVENTHEMES fournit, installe et exploite les solutions techniques de vos événements au Maroc.",
+    { subtitle: "EVENT TECHNICAL PRODUCTION · MAROC", image: imagery.stageTruss },
   ),
   entry(
     "about",
     "pages",
-    "L’art de donner vie\nà vos envies.",
-    "Eventheme réunit organisation, animation, décoration et location de matériel pour créer des moments singuliers. Une célébration intime ou un rendez-vous professionnel : chaque projet commence par votre vision.",
-    { subtitle: "L’ESPRIT EVENTHEME", image: imagery.flowers },
+    "La technique au service\nde vos événements.",
+    "EVENTHEMES est spécialisée dans les solutions techniques et audiovisuelles pour événements de toutes tailles. Nous intervenons dans la fourniture, la location, l’installation et l’exploitation des équipements nécessaires aux événements professionnels et privés.",
+    { subtitle: "À PROPOS D’EVENTHEMES", image: imagery.ledStage },
   ),
   entry(
     "values",
     "pages",
-    "Le sens du détail.\nL’essentiel de l’émotion.",
-    "Écouter avec attention. Imaginer avec audace. Préparer avec précision. Notre approche associe créativité et coordination pour vous accompagner à chaque étape.",
+    "Puissance technique.\nExcellence professionnelle.",
+    "Trois valeurs guident chaque projet : la puissance technique, l’excellence professionnelle et l’innovation audiovisuelle. Une préparation rigoureuse, pour une technique qui sert l’événement sans jamais s’imposer.",
   ),
   entry(
     "contact",
     "pages",
-    "Tout commence\npar une conversation.",
-    "Une idée, une date, une envie ? Racontez-nous votre projet. Nous construirons ensemble un événement à votre image.",
-  ),
-  entry(
-    "events-page",
-    "pages",
-    "À chaque occasion,\nune émotion.",
-    "Des moments privés aux grands rendez-vous professionnels, imaginons une expérience qui vous ressemble.",
+    "Parlons de votre\nprochain événement.",
+    "Un lieu, une date, un format ? Décrivez-nous votre projet : notre équipe revient vers vous pour préparer une offre adaptée.",
   ),
   entry(
     "services-page",
     "pages",
-    "Votre vision,\nnotre savoir-faire.",
-    "Un accompagnement complet ou une expertise à la carte. Choisissez ce qui donnera vie à votre événement.",
+    "Nos expertises\ntechniques.",
+    "Scènes, structures, écrans, son, lumière et régie : des prestations complètes ou à la carte, de l’étude technique au démontage.",
   ),
   entry(
     "location-page",
     "pages",
-    "Les détails font\nla différence.",
-    "Mobilier, décoration, lumière et son : composez votre sélection de matériel événementiel.",
+    "Le parc\nmatériel.",
+    "Parcourez nos équipements par catégorie et ajoutez-les à votre demande de devis. La disponibilité et le tarif final sont confirmés par notre équipe selon la date, la quantité, la durée et le lieu.",
   ),
   entry(
     "projects-page",
     "pages",
-    "Des instants.\nDes émotions.",
-    "Découvrez nos univers et imaginez l’ambiance de votre prochain événement.",
+    "Nos\nréalisations.",
+    "Galas, événements corporate, concerts, festivals, conférences : nos projets, classés par type d’événement.",
   ),
-  entry(
-    "organisation",
-    "services",
-    "Organisation",
-    "De la première idée au jour J. Conception, planification et coordination, pour vivre pleinement votre événement.",
-    {
-      image: imagery.tables,
-      category: "Organisation événementielle",
-      pricing: "request",
-      price: null,
-    },
+  ...(
+    [
+      ["scenes", "Scènes & podiums", "Scène", imagery.stageRoof,
+        "Scènes modulaires, podiums et plateformes : une base stable, dimensionnée pour votre lieu et votre programme."],
+      ["structures", "Structures & truss", "Structure", imagery.festivalTruss,
+        "Structures aluminium, roof systems, supports et rigging pour porter la lumière, le son et l’image en toute sécurité."],
+      ["led-video", "Écrans LED & vidéo", "Image", imagery.ledConference,
+        "Murs LED, écrans géants, diffusion et solutions vidéo pour donner à votre message toute sa dimension."],
+      ["sonorisation", "Sonorisation", "Son", imagery.microphone,
+        "Systèmes audio, enceintes, microphones et consoles pour un son clair et maîtrisé, de la conférence au concert."],
+      ["eclairage", "Éclairage professionnel", "Lumière", imagery.beams,
+        "Moving heads, PAR LED, éclairage architectural et effets lumineux pour créer l’atmosphère de votre événement."],
+      ["regie", "Régie technique", "Régie", imagery.controlRoom,
+        "Régie son, lumière et vidéo : coordination et exploitation technique de votre événement, du montage au direct."],
+      ["complementaires", "Services complémentaires", "Sur mesure", imagery.smoke,
+        "Effets spéciaux, installation, exploitation et démontage, selon les prestations retenues pour votre projet."],
+    ] as const
+  ).map(([id, title, category, image, description]) =>
+    entry(id, "services", title, description, { category, image, pricing: "request", price: null }),
   ),
-  entry(
-    "animation",
-    "services",
-    "Animation",
-    "Des expériences vivantes, des sourires partagés. Animations musicales, ateliers et moments interactifs pour tous les publics.",
-    {
-      image: imagery.party,
-      category: "Animation événementielle",
-      pricing: "request",
-      price: null,
-    },
+  ...(
+    [
+      ["gala", "Gala & cérémonie", "Prestige", imagery.galaConfetti,
+        "Scène, lumière d’ambiance et sonorisation maîtrisée pour une soirée d’exception."],
+      ["soiree", "Soirée privée ou professionnelle", "Soirées", imagery.djSmoke,
+        "Son, lumière et effets pour donner du rythme à votre soirée."],
+      ["concert", "Concert & festival", "Grand public", imagery.lasers,
+        "Scène, structures, son et lumière dimensionnés pour le live et le grand public."],
+      ["corporate", "Événement corporate", "Entreprises", imagery.roundTables,
+        "Image, son et régie pour vos conventions, assemblées et événements d’entreprise."],
+      ["conference", "Conférence & séminaire", "Entreprises", imagery.conferenceAudience,
+        "Sonorisation des interventions, écrans et diffusion pour un message clair."],
+      ["lancement", "Lancement de produit", "Entreprises", imagery.projection,
+        "Mise en lumière, murs LED et effets pour révéler votre produit."],
+      ["prive", "Anniversaire & événement privé", "Privés", imagery.birthdayDinner,
+        "Son, lumière et ambiance sur mesure pour vos célébrations privées."],
+    ] as const
+  ).map(([id, title, category, image, description]) =>
+    entry(id, "events", title, description, { category, image, price: null }),
   ),
-  entry(
-    "decoration",
-    "services",
-    "Décoration & mise en scène",
-    "Un univers pensé dans les moindres détails. Scénographie, compositions florales et mise en lumière.",
-    {
-      image: imagery.flowers,
-      category: "Décoration",
-      pricing: "request",
-      price: null,
-    },
-  ),
-  entry(
-    "rental",
-    "services",
-    "Location de matériel",
-    "Les bonnes pièces pour une mise en scène harmonieuse. Mobilier, accessoires et équipements techniques.",
-    {
-      image: imagery.tables,
-      category: "Location",
-      pricing: "request",
-      price: null,
-    },
-  ),
-  ...[
-    "Mariage",
-    "Anniversaire",
-    "Fiançailles",
-    "Réception",
-    "Événement professionnel",
-    "Conférence",
-    "Team building",
-    "Événement pour enfants",
-    "Événement institutionnel",
-    "Soirée privée",
-    "Lancement de produit",
-    "Événement culturel",
-  ].map((title, i) =>
-    entry(
-      `event-${i}`,
-      "events",
-      title,
-      "Une expérience sur mesure, de la conception à la coordination du jour J.",
-      {
-        image: i < 4 ? imagery.flowers : imagery.conference,
-        price: null,
-      },
-    ),
-  ),
-  entry(
-    "chair",
-    "products",
-    "Chaise de réception",
-    "Exemple de fiche mobilier. Modèles et disponibilité à confirmer avec notre équipe.",
-    {
-      category: "Tables et chaises",
-      image: imagery.tables,
-      price: null,
-      pricing: "request",
-      color: "Doré",
-      swatch: "#c9a34e",
-      variants: [
-        { name: "Doré", price: null },
-        { name: "Blanc", price: null },
-      ],
-      demo: true,
-    },
-  ),
-  entry(
-    "arch",
-    "products",
-    "Arche décorative",
-    "Exemple de structure personnalisable pour une cérémonie ou un espace photo.",
-    {
-      category: "Décoration",
-      image: imagery.flowers,
+  entry("mur-led", "products", "Mur LED modulaire",
+    `${exampleNote} Mur d’images assemblable pour scène, conférence ou salon : taille, pas de pixel et luminosité définis selon le lieu et la distance de vision.`, {
+      category: "Écrans LED & vidéo",
+      image: imagery.ledStage,
       price: null,
       pricing: "request",
       variants: [
-        { name: "Florale", price: null },
-        { name: "Épurée", price: null },
+        { name: "Intérieur", price: null },
+        { name: "Extérieur", price: null },
       ],
       demo: true,
-    },
-  ),
-  entry(
-    "table",
-    "products",
-    "Table de réception",
-    "Exemple de fiche pour composer un espace de réception harmonieux.",
-    {
-      category: "Mobilier",
-      image: imagery.tables,
-      price: null,
-      pricing: "request",
-      variants: [
-        { name: "Ronde", price: null },
-        { name: "Rectangulaire", price: null },
-      ],
-      demo: true,
-    },
-  ),
-  entry(
-    "light",
-    "products",
-    "Éclairage d’ambiance",
-    "Exemple de mise en lumière à adapter à votre lieu et à votre scénographie.",
-    {
-      category: "Éclairage",
-      image: imagery.party,
-      price: null,
-      pricing: "request",
-      demo: true,
-    },
-  ),
-  entry(
-    "sound",
-    "products",
-    "Sonorisation",
-    "Exemple de solution audio. Configuration technique à préciser selon votre événement.",
-    {
+    }),
+  entry("line-array", "products", "Système de sonorisation line array",
+    `${exampleNote} Diffusion suspendue ou posée pour couvrir un large public ; configuration calculée selon la jauge et l’acoustique du lieu.`, {
       category: "Sonorisation",
-      image: imagery.conference,
+      image: imagery.concertOrange,
       price: null,
       pricing: "request",
       demo: true,
-    },
-  ),
-  entry(
-    "led",
-    "products",
-    "Écran & affichage",
-    "Exemple de dispositif audiovisuel pour vos présentations et événements.",
-    {
-      category: "Écrans et affichage",
-      image: imagery.conference,
+    }),
+  entry("micros-hf", "products", "Microphones sans fil (HF)",
+    `${exampleNote} Micros main ou serre-tête pour les prises de parole, les tables rondes et les animations.`, {
+      category: "Sonorisation",
+      image: imagery.microphoneStage,
+      price: null,
+      pricing: "request",
+      variants: [
+        { name: "Micro main", price: null },
+        { name: "Serre-tête", price: null },
+      ],
+      demo: true,
+    }),
+  entry("console", "products", "Console de mixage numérique",
+    `${exampleNote} Console pour la régie son de vos conférences, concerts et soirées.`, {
+      category: "Régie",
+      image: imagery.mixer,
       price: null,
       pricing: "request",
       demo: true,
-    },
-  ),
-  entry(
-    "inspiration-1",
-    "projects",
-    "Une réception, mille détails",
-    "Planche d’inspiration. Cette photographie illustre une ambiance et ne représente pas une réalisation Eventheme.",
-    { category: "Mariage", image: imagery.tables, demo: true },
-  ),
-  entry(
-    "inspiration-2",
-    "projects",
-    "L’élégance à ciel ouvert",
-    "Planche d’inspiration. Un décor floral pour imaginer une célébration à votre image.",
-    { category: "Réception", image: imagery.flowers, demo: true },
-  ),
-  entry(
-    "inspiration-3",
-    "projects",
-    "Des idées qui rassemblent",
-    "Planche d’inspiration. Une atmosphère pour vos rencontres et événements professionnels.",
-    { category: "Événement professionnel", image: imagery.conference, demo: true },
+    }),
+  entry("lyre", "products", "Lyre asservie (moving head)",
+    `${exampleNote} Projecteur motorisé pour les faisceaux, les mouvements et les effets de lumière sur scène.`, {
+      category: "Éclairage",
+      image: imagery.beamsYellow,
+      price: null,
+      pricing: "request",
+      demo: true,
+    }),
+  entry("par-led", "products", "Projecteur PAR LED",
+    `${exampleNote} Projecteur couleur pour la mise en lumière de la scène, du décor ou de l’architecture.`, {
+      category: "Éclairage",
+      image: imagery.redLight,
+      price: null,
+      pricing: "request",
+      demo: true,
+    }),
+  entry("truss", "products", "Structure truss aluminium",
+    `${exampleNote} Poutres et tours en aluminium pour porter la lumière, le son et l’image : portiques, grils et roof systems.`, {
+      category: "Structures & truss",
+      image: imagery.stageTruss,
+      price: null,
+      pricing: "request",
+      color: "Aluminium",
+      swatch: "#c5c8ce",
+      variants: [
+        { name: "Longueur 1 m", price: null, length: 100 },
+        { name: "Longueur 2 m", price: null, length: 200 },
+        { name: "Longueur 3 m", price: null, length: 300 },
+      ],
+      demo: true,
+    }),
+  entry("scene", "products", "Scène modulaire",
+    `${exampleNote} Praticables assemblables pour composer une scène ou un podium à la hauteur et aux dimensions de votre événement.`, {
+      category: "Scènes & podiums",
+      image: imagery.stageRoof,
+      price: null,
+      pricing: "request",
+      color: "Noir",
+      swatch: "#08090b",
+      demo: true,
+    }),
+  entry("fumee", "products", "Machine à fumée",
+    `${exampleNote} Brouillard ou fumée lourde pour révéler les faisceaux lumineux et créer l’atmosphère.`, {
+      category: "Effets spéciaux",
+      image: imagery.smoke,
+      price: null,
+      pricing: "request",
+      demo: true,
+    }),
+  entry("confettis", "products", "Canon à confettis",
+    `${exampleNote} Effet de lancement pour un moment fort : ouverture, révélation ou final.`, {
+      category: "Effets spéciaux",
+      image: imagery.confetti,
+      price: null,
+      pricing: "request",
+      demo: true,
+    }),
+  ...(
+    [
+      ["inspiration-gala", "Ambiance gala", "Galas", imagery.galaConfetti],
+      ["inspiration-corporate", "Ambiance convention", "Événements corporate", imagery.ledConference],
+      ["inspiration-concert", "Ambiance concert", "Concerts", imagery.stageGlow],
+      ["inspiration-prive", "Ambiance soirée privée", "Événements privés", imagery.partyVenue],
+      ["inspiration-festival", "Ambiance festival", "Festivals", imagery.festivalConfetti],
+      ["inspiration-conference", "Ambiance conférence", "Conférences", imagery.conferenceHall],
+    ] as const
+  ).map(([id, title, category, image]) =>
+    entry(id, "projects", title, inspirationNote, { category, image, demo: true }),
   ),
   entry("instagram", "socials", "Instagram", "@eventhemes", {
     network: "instagram",

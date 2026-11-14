@@ -13,7 +13,7 @@ type ConfirmOptions = {
 };
 
 /**
- * Confirmation dans une boîte SweetAlert aux couleurs EVENTHEME.
+ * Confirmation dans une boîte SweetAlert aux couleurs EVENTHEMES.
  *
  * Remplace `window.confirm` : le site n'utilise jamais les alertes natives du
  * navigateur. SweetAlert est chargé à la demande pour ne pas alourdir les

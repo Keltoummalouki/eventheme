@@ -24,7 +24,7 @@
 .head .title em {
   font-family: inherit;
   font-style: normal;
-  color: #dbc18a;
+  color: var(--or);
 }
 
 /* Le filet doré du sur-titre se dessine à l'entrée : GSAP anime cette variable
@@ -36,7 +36,7 @@
 
 .head .lede {
   margin-top: 22px;
-  color: rgba(245, 241, 232, 0.66);
+  color: rgba(255, 255, 255, 0.66);
   font-size: 0.95rem;
   line-height: 1.85;
   max-width: 52ch;

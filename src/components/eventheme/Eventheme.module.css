@@ -1,6 +1,6 @@
 .site {
-  background: #050505;
-  color: #f5f1e8;
+  background: var(--noir);
+  color: var(--blanc);
   font-size: 14px;
   line-height: 1.7;
 }
@@ -32,10 +32,10 @@
 }
 .site em {
   font-weight: 400;
-  color: #c9a34e;
+  color: var(--or);
 }
 .site p {
-  color: #aaa69e;
+  color: var(--gris);
   line-height: 1.9;
 }
 /* :where() : règles de repli, que les composants (Button, champs) remplacent. */
@@ -60,7 +60,7 @@
   position: sticky;
   top: 0;
   z-index: 30;
-  background: #050505f7;
+  background: rgba(8, 9, 11, 0.97);
   backdrop-filter: blur(16px);
   transition:
     height 0.5s var(--ease),
@@ -79,12 +79,12 @@
   backdrop-filter: none;
 }
 .overlay .nav a {
-  color: #f5f1e8d0;
+  color: rgba(255, 255, 255, 0.82);
 }
 .overlay.scrolled {
   height: 78px;
-  background: #050505e0;
-  border-bottom-color: #c9a34e2e;
+  background: rgba(8, 9, 11, 0.88);
+  border-bottom-color: rgba(201, 162, 74, 0.18);
   backdrop-filter: blur(14px);
 }
 .overlay.menuOpen {
@@ -99,7 +99,7 @@
   right: 0;
   bottom: -1px;
   height: 1px;
-  background: linear-gradient(90deg, #8b6914, #e4c779);
+  background: linear-gradient(90deg, var(--or-profond), var(--or-clair));
   transform: scaleX(0);
   transform-origin: left center;
   pointer-events: none;
@@ -126,17 +126,17 @@
   position: relative;
   white-space: nowrap;
   padding: 36px 0;
-  color: #b4b1aa;
+  color: var(--argent);
 }
 .nav a:hover,
 .nav .active {
-  color: #e4c779;
+  color: var(--or-clair);
 }
 .nav .active:after {
   position: absolute;
   content: "";
   height: 1px;
-  background: #c9a34e;
+  background: var(--or);
   bottom: 24px;
   left: 0;
   right: 0;
@@ -148,8 +148,8 @@
   font-size: 10px;
   line-height: 18px;
   border-radius: 50%;
-  background: #c9a34e;
-  color: #050505;
+  background: var(--or);
+  color: var(--noir);
   min-width: 18px;
   text-align: center;
   transition:
@@ -158,8 +158,8 @@
 }
 @media (hover: hover) {
   .quoteButton:hover .count {
-    background: #050505;
-    color: #e4c779;
+    background: var(--noir);
+    color: var(--or-clair);
   }
 }
 /* Deux filets qui se croisent en × à l'ouverture du menu. */
@@ -175,7 +175,7 @@
   left: 10px;
   right: 10px;
   height: 1px;
-  background: #f5f1e8;
+  background: var(--blanc);
   transition:
     transform 0.5s var(--ease),
     top 0.5s var(--ease);
@@ -191,7 +191,7 @@
 .menuToggleOpen span:last-child {
   top: 21.5px;
   left: 10px;
-  background: #e4c779;
+  background: var(--or-clair);
 }
 .menuToggleOpen span:first-child {
   transform: rotate(45deg);
@@ -204,7 +204,7 @@
   font-size: 10px;
   letter-spacing: 0.22em;
   font-weight: 500;
-  color: #c9a34e;
+  color: var(--or);
   text-transform: uppercase;
   line-height: 1.8;
 }
@@ -228,8 +228,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, #050505e3 0%, #050505a3 42%, #05050520 100%),
-    linear-gradient(0deg, #050505b0, transparent 40%);
+    linear-gradient(90deg, rgba(8, 9, 11, 0.89) 0%, rgba(8, 9, 11, 0.64) 42%, rgba(8, 9, 11, 0.13) 100%),
+    linear-gradient(0deg, rgba(8, 9, 11, 0.69), transparent 40%);
 }
 .heroContent {
   position: relative;
@@ -241,12 +241,12 @@
   display: flex;
   align-items: center;
   gap: 15px;
-  color: #e4c779;
+  color: var(--or-clair);
 }
 .eyebrow i {
   width: 30px;
   height: 1px;
-  background: #c9a34e;
+  background: var(--or);
 }
 .hero h1 {
   margin: 27px 0 25px;
@@ -259,12 +259,12 @@
   display: block;
 }
 .hero h1 em {
-  color: #e4c779;
+  color: var(--or-clair);
 }
 .hero p {
   max-width: 450px;
   font-size: 13px;
-  color: #d4d0c7;
+  color: var(--argent);
   line-height: 1.9;
 }
 .actions {
@@ -275,7 +275,7 @@
   margin-top: 30px;
 }
 .hero .heroLink {
-  border-color: #f5f1e850;
+  border-color: rgba(255, 255, 255, 0.31);
 }
 .heroBottom {
   position: absolute;
@@ -288,7 +288,7 @@
   gap: 25px;
   font-size: 8px;
   letter-spacing: 0.16em;
-  color: #c6c1b6;
+  color: var(--argent);
 }
 .heroBottom a:first-child {
   display: flex;
@@ -296,7 +296,7 @@
 }
 .heroBottom a:first-child span {
   font-size: 20px;
-  color: #c9a34e;
+  color: var(--or);
 }
 .heroCredit {
   position: absolute;
@@ -314,13 +314,13 @@
   gap: 35px;
   padding: 29px 8%;
   border-bottom: 1px solid #ffffff17;
-  color: #c9c4b9;
+  color: var(--argent);
   font-family: var(--ff-display);
   font-size: 26px;
 }
 .ribbon i {
   font-size: 20px;
-  color: #c9a34e;
+  color: var(--or);
   font-style: normal;
 }
 .section {
@@ -407,12 +407,12 @@
 }
 .caption {
   font-size: 10px !important;
-  color: #8f8c85 !important;
+  color: var(--gris) !important;
   margin: 15px 0 24px;
   line-height: 1.8 !important;
 }
 .occasion {
-  background: #111;
+  background: var(--noir-2);
   border-top: 1px solid #ffffff13;
   border-bottom: 1px solid #ffffff13;
   text-align: center;
@@ -435,15 +435,15 @@
   gap: 10px;
   padding: 18px 0;
   border-bottom: 1px solid #ffffff20;
-  color: #bdb8ad;
+  color: var(--argent);
   font-size: 12px;
   text-align: left;
 }
 .eventLinks a:hover {
-  color: #e4c779;
+  color: var(--or-clair);
 }
 .eventLinks span {
-  color: #c9a34e;
+  color: var(--or);
 }
 .projectGrid {
   display: grid;
@@ -473,7 +473,7 @@
 }
 .projectCard h3 span {
   font-size: 18px;
-  color: #c9a34e;
+  color: var(--or);
 }
 .imageTag {
   position: absolute;
@@ -481,15 +481,15 @@
   left: 16px;
   font-size: 8px;
   letter-spacing: 0.12em;
-  background: #050505b8;
-  color: #f5f1e8;
+  background: rgba(8, 9, 11, 0.72);
+  color: var(--blanc);
   padding: 6px 10px;
   backdrop-filter: blur(10px);
 }
 .cta {
   padding: 95px 8%;
   text-align: center;
-  background: radial-gradient(ellipse at center, #c9a34e0b, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(201, 162, 74, 0.04), transparent 70%);
   border-top: 1px solid #ffffff17;
   border-bottom: 1px solid #ffffff17;
 }
@@ -503,7 +503,7 @@
 }
 .footer {
   padding: 52px 6% 20px;
-  background: #080808;
+  background: var(--noir);
 }
 .footerTop {
   display: grid;
@@ -532,12 +532,12 @@
 .footerTop > div > a:not(:has(img)) {
   display: block;
   font-size: 11px;
-  color: #aaa69e;
+  color: var(--gris);
   margin: 10px 0;
   transition: color 0.3s;
 }
 .footerTop > div > a:not(:has(img)):hover {
-  color: #e4c779;
+  color: var(--or-clair);
 }
 /* Signature de marque en grand, au-dessus des colonnes du pied de page. */
 .footerSignature {
@@ -548,7 +548,7 @@
   gap: 30px;
   padding: 40px 0 56px;
   margin-bottom: 50px;
-  border-bottom: 1px solid #c9a34e30;
+  border-bottom: 1px solid rgba(201, 162, 74, 0.19);
 }
 .footer .footerSignature p {
   margin: 0;
@@ -556,11 +556,11 @@
   font-size: clamp(34px, 5vw, 72px);
   line-height: 1.02;
   letter-spacing: -0.03em;
-  color: #f5f1e8;
+  color: var(--blanc);
 }
 .footerSignature em {
-  font-style: italic;
-  color: #e4c779;
+  font-style: normal;
+  color: var(--or-clair);
 }
 .footerBottom {
   display: flex;
@@ -568,7 +568,7 @@
   border-top: 1px solid #ffffff18;
   padding-top: 22px;
   font-size: 9px;
-  color: #87847d;
+  color: var(--gris);
 }
 .footerBottom span {
   margin-right: auto;
@@ -577,8 +577,8 @@
   position: fixed;
   bottom: 25px;
   right: 25px;
-  background: #f5f1e8;
-  color: #050505;
+  background: var(--blanc);
+  color: var(--noir);
   padding: 18px 24px;
   z-index: 60;
   box-shadow: 0 4px 40px #0004;
@@ -604,8 +604,8 @@
   top: -100px;
   left: 20px;
   z-index: 100;
-  background: #c9a34e;
-  color: #050505;
+  background: var(--or);
+  color: var(--noir);
   padding: 15px;
 }
 .skip:focus {
@@ -614,7 +614,7 @@
 .pageIntro {
   padding: 90px 8% 65px;
   border-bottom: 1px solid #ffffff15;
-  background: radial-gradient(ellipse at 80% 0, #c9a34e0c, transparent 60%);
+  background: radial-gradient(ellipse at 80% 0, rgba(201, 162, 74, 0.05), transparent 60%);
 }
 .pageIntro h1 {
   margin: 23px 0;
@@ -654,7 +654,7 @@
 }
 .productCard {
   border: 1px solid #ffffff1a;
-  background: #0c0c0c;
+  background: var(--noir);
   min-width: 0;
 }
 .productImage {
@@ -689,12 +689,12 @@
 }
 .productActions > span {
   font-size: 11px;
-  color: #c9a34e;
+  color: var(--or);
 }
 .empty {
   text-align: center;
   padding: 65px 20px;
-  color: #a5a5a5;
+  color: var(--gris);
   font-size: 13px;
 }
 .empty p {
@@ -729,7 +729,7 @@
 }
 .price {
   display: block;
-  color: #c9a34e;
+  color: var(--or);
   font-size: 16px;
   margin: 20px 0;
 }
@@ -752,16 +752,22 @@
   margin-top: 40px;
 }
 .process > div {
-  border-top: 1px solid #c9a34e70;
+  border-top: 1px solid rgba(201, 162, 74, 0.44);
   padding-top: 25px;
 }
 .process span {
   font-size: 11px;
-  color: #c9a34e;
+  color: var(--or);
 }
 .process h3 {
   margin-top: 15px;
   font-size: 26px;
+}
+.process p {
+  margin-top: 12px;
+  color: var(--argent);
+  font-size: 14px;
+  line-height: 1.7;
 }
 .detail {
   display: grid;
@@ -786,7 +792,7 @@
   flex-shrink: 0;
   width: 14px;
   height: 14px;
-  border: 1px solid rgba(245, 241, 232, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   forced-color-adjust: none;
 }
 .detailActions {
@@ -868,17 +874,17 @@
 .steps button {
   text-align: left;
   font-size: 9px;
-  color: #96928b;
+  color: var(--gris);
 }
 .steps span {
   display: block;
-  color: #aaa69e;
+  color: var(--gris);
   font-size: 14px;
   margin-bottom: 5px;
 }
 .steps .stepActive button,
 .steps .stepActive span {
-  color: #e4c779;
+  color: var(--or-clair);
 }
 .form h2 {
   font-size: 40px;
@@ -897,7 +903,7 @@
 .form legend,
 .admin legend {
   font-size: 12px;
-  color: #bdb8ad;
+  color: var(--argent);
   margin-bottom: 18px;
 }
 /* Les champs viennent de components/ui/form : ici, seulement leur placement. */
@@ -930,7 +936,7 @@
   margin-left: auto;
 }
 .choice input {
-  accent-color: #c9a34e;
+  accent-color: var(--or);
   width: 15px;
   height: 15px;
   flex-shrink: 0;
@@ -938,14 +944,14 @@
 .choice small {
   display: block;
   font-size: 10px;
-  color: #8f8c85;
+  color: var(--gris);
   margin-top: 6px;
   line-height: 1.7;
 }
 .site .selected {
-  border-color: #c9a34e;
-  background: #c9a34e0a;
-  color: #e4c779;
+  border-color: var(--or);
+  background: rgba(201, 162, 74, 0.04);
+  color: var(--or-clair);
 }
 .basketRow {
   display: flex;
@@ -963,7 +969,7 @@
 }
 .basketRow small {
   display: block;
-  color: #aaa69e;
+  color: var(--gris);
 }
 .quantity {
   width: 104px;
@@ -987,7 +993,7 @@
   margin-right: auto;
 }
 .summary {
-  background: #111;
+  background: var(--noir-2);
   border: 1px solid #ffffff1c;
   padding: 30px;
   height: fit-content;
@@ -1009,12 +1015,12 @@
 }
 .summaryPrice > span {
   font-size: 10px;
-  color: #a5a5a5;
+  color: var(--gris);
   display: block;
 }
 .summaryPrice strong {
   display: block;
-  color: #e4c779;
+  color: var(--or-clair);
   font-family: var(--ff-display);
   font-size: 38px;
   font-weight: 400;
@@ -1022,7 +1028,7 @@
 }
 .summaryPrice small {
   font-size: 10px;
-  color: #aaa69e;
+  color: var(--gris);
   display: block;
   line-height: 1.7;
 }
@@ -1037,22 +1043,22 @@
 .contactLink small {
   display: block;
   font-size: 10px;
-  color: #aaa69e;
+  color: var(--gris);
 }
 .contactLink > span:last-child {
-  color: #c9a34e;
+  color: var(--or);
 }
 .demoNote {
   font-size: 10px !important;
   line-height: 1.7 !important;
   margin-top: 22px;
-  color: #9d957f !important;
+  color: var(--gris) !important;
 }
 .error {
   padding: 14px 18px;
-  border: 1px solid #c9a34e;
-  background: #c9a34e12;
-  color: #e4c779 !important;
+  border: 1px solid var(--or);
+  background: rgba(201, 162, 74, 0.07);
+  color: var(--or-clair) !important;
   font-size: 12px;
   margin: 15px 0;
 }
@@ -1064,7 +1070,7 @@
   line-height: 1.8;
 }
 .recap dt {
-  color: #8f8c85;
+  color: var(--gris);
 }
 .recap dd {
   margin: 0;
@@ -1091,9 +1097,9 @@
   place-items: center;
   width: 60px;
   height: 60px;
-  border: 1px solid #c9a34e;
+  border: 1px solid var(--or);
   border-radius: 50%;
-  color: #c9a34e;
+  color: var(--or);
   font-size: 25px;
   margin-bottom: 30px;
 }
@@ -1107,16 +1113,16 @@
   margin-top: 25px;
 }
 .admin {
-  background: #0c0c0c;
+  background: var(--noir);
   min-height: 100vh;
   display: grid;
   grid-template-columns: 245px 1fr;
-  color: #f5f1e8;
+  color: var(--blanc);
   line-height: 1.7;
   font-size: 13px;
 }
 .sidebar {
-  background: #080808;
+  background: var(--noir);
   border-right: 1px solid #ffffff15;
   padding: 10px 22px 30px;
   position: sticky;
@@ -1136,7 +1142,7 @@
 .sidebar nav > span {
   font-size: 8px;
   letter-spacing: 0.15em;
-  color: #726e64;
+  color: var(--gris);
   margin: 20px 12px 8px;
 }
 .sidebar nav button {
@@ -1146,23 +1152,23 @@
   text-align: left;
   padding: 11px 12px;
   font-size: 11px;
-  color: #a5a5a5;
+  color: var(--gris);
 }
 .sidebar nav button:hover,
 .sidebar nav .sideActive {
-  background: #c9a34e15;
-  color: #e4c779;
+  background: rgba(201, 162, 74, 0.08);
+  color: var(--or-clair);
 }
 .sidebar b {
   font-weight: 400;
   font-size: 10px;
-  color: #c9a34e;
+  color: var(--or);
 }
 .sidebar > .sidebarLink {
   display: flex;
   width: fit-content;
   margin: 20px 12px 0;
-  color: #c9a34e;
+  color: var(--or);
 }
 .adminMain {
   padding: 45px 4.5%;
@@ -1185,17 +1191,17 @@
 }
 .modeBadge {
   font-size: 9px;
-  color: #c9a34e;
-  border: 1px solid #c9a34e40;
+  color: var(--or);
+  border: 1px solid rgba(201, 162, 74, 0.25);
   padding: 7px 12px;
   white-space: nowrap;
 }
 .adminBanner {
-  background: #c9a34e0b;
-  border: 1px solid #c9a34e25;
+  background: rgba(201, 162, 74, 0.04);
+  border: 1px solid rgba(201, 162, 74, 0.15);
   padding: 13px 17px;
   font-size: 10px;
-  color: #a9a18e;
+  color: var(--gris);
   margin-bottom: 30px;
 }
 .metricGrid {
@@ -1207,22 +1213,22 @@
 .metricGrid > div {
   padding: 25px;
   border: 1px solid #ffffff18;
-  background: #111;
+  background: var(--noir-2);
 }
 .metricGrid span {
   font-size: 10px;
-  color: #a5a5a5;
+  color: var(--gris);
 }
 .metricGrid strong {
   display: block;
   font-family: var(--ff-display);
   font-size: 49px;
   font-weight: 400;
-  color: #e4c779;
+  color: var(--or-clair);
   margin-top: 10px;
 }
 .adminPanel {
-  background: #111;
+  background: var(--noir-2);
   border: 1px solid #ffffff18;
   padding: 28px;
   margin-bottom: 25px;
@@ -1237,7 +1243,7 @@
   margin: 20px 0 10px;
 }
 .adminPanel p {
-  color: #a5a5a5;
+  color: var(--gris);
   font-size: 12px;
   margin: 15px 0;
   line-height: 1.9;
@@ -1273,7 +1279,7 @@
   text-align: left;
 }
 .table th {
-  color: #777269;
+  color: var(--gris);
   font-size: 9px;
   font-weight: 500;
   letter-spacing: 0.08em;
@@ -1291,7 +1297,7 @@
 }
 .table small {
   display: block;
-  color: #8f8c85;
+  color: var(--gris);
   font-size: 10px;
   margin-top: 5px;
   max-width: 230px;
@@ -1306,19 +1312,19 @@
 .status {
   display: inline-block;
   padding: 4px 9px;
-  background: #c9a34e10;
-  color: #c9a34e;
+  background: rgba(201, 162, 74, 0.06);
+  color: var(--or);
   font-size: 9px;
   white-space: nowrap;
 }
 .saved {
-  color: #e4c779;
+  color: var(--or-clair);
   font-size: 12px;
   margin-bottom: 20px;
 }
 /* --------------------------------------------------------------------------
    Statistiques — vignettes d'indicateurs, cartes de graphiques et listes de
-   mesures. Mêmes surfaces que le reste de l'administration : #111 sur #0c0c0c,
+   mesures. Mêmes surfaces que le reste de l'administration : var(--noir-2) sur var(--noir),
    filets clairs, or réservé aux chiffres.
    -------------------------------------------------------------------------- */
 .statGrid {
@@ -1330,13 +1336,13 @@
 .statTile {
   padding: 22px;
   border: 1px solid #ffffff18;
-  background: #111;
+  background: var(--noir-2);
   min-width: 0;
 }
 .statTile > span {
   display: block;
   font-size: 10px;
-  color: #a5a5a5;
+  color: var(--gris);
 }
 .statTile strong {
   display: block;
@@ -1344,14 +1350,14 @@
   font-weight: 400;
   font-size: 37px;
   line-height: 1.1;
-  color: #e4c779;
+  color: var(--or-clair);
   margin-top: 10px;
   overflow-wrap: anywhere;
 }
 .statTile small {
   display: block;
   font-size: 9px;
-  color: #8f8c85;
+  color: var(--gris);
   line-height: 1.7;
   margin-top: 9px;
 }
@@ -1369,7 +1375,7 @@
 .chartCard > p {
   margin: 0 0 20px;
   font-size: 10px;
-  color: #8f8c85;
+  color: var(--gris);
 }
 .meterRow {
   display: grid;
@@ -1390,12 +1396,12 @@
 }
 .statList dt {
   font-size: 11px;
-  color: #a5a5a5;
+  color: var(--gris);
 }
 .statList dd {
   margin: 0;
   font-size: 11px;
-  color: #f5f1e8;
+  color: var(--blanc);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -1409,7 +1415,7 @@
 }
 .tagList li {
   font-size: 10px;
-  color: #a5a5a5;
+  color: var(--gris);
   border: 1px solid #ffffff18;
   padding: 6px 11px;
 }
@@ -1501,7 +1507,7 @@
   width: 160px;
   aspect-ratio: 4/3;
   border: 1px solid #ffffff18;
-  background: #050505;
+  background: var(--noir);
 }
 .photoThumb img {
   display: block;
@@ -1513,7 +1519,7 @@
   position: absolute;
   top: 4px;
   right: 4px;
-  background: #050505cc;
+  background: rgba(8, 9, 11, 0.8);
 }
 .adminPanel .actions {
   margin-top: 25px;
@@ -1527,7 +1533,7 @@
 }
 .requestSummary {
   padding-left: 20px;
-  color: #a5a5a5;
+  color: var(--gris);
   font-size: 12px;
 }
 .preserve {
@@ -1542,8 +1548,8 @@
   flex-direction: column;
   padding: 40px 25px;
   background:
-    radial-gradient(ellipse at 50% 20%, #c9a34e0e, transparent 60%), #050505;
-  color: #f5f1e8;
+    radial-gradient(ellipse at 50% 20%, rgba(201, 162, 74, 0.05), transparent 60%), var(--noir);
+  color: var(--blanc);
 }
 .login .logo {
   width: 185px;
@@ -1557,7 +1563,7 @@
 .login > p {
   max-width: 370px;
   text-align: center;
-  color: #a5a5a5;
+  color: var(--gris);
   font-size: 13px;
   line-height: 1.9;
   margin: 10px 0 30px;
@@ -1571,7 +1577,7 @@
 }
 .login > .loginBack {
   margin-top: 25px;
-  color: #aaa69e;
+  color: var(--gris);
 }
 .login .eyebrow {
   font-size: 9px;
@@ -1609,7 +1615,7 @@
   justify-content: center;
 }
 .coming .comingLink {
-  color: #e4c779;
+  color: var(--or-clair);
 }
 @keyframes appear {
   from {
@@ -1741,8 +1747,8 @@
   }
   .heroShade {
     background:
-      linear-gradient(90deg, #050505d9, #05050560),
-      linear-gradient(0deg, #05050580, transparent);
+      linear-gradient(90deg, rgba(8, 9, 11, 0.85), rgba(8, 9, 11, 0.38)),
+      linear-gradient(0deg, rgba(8, 9, 11, 0.5), transparent);
   }
   .ribbon {
     font-size: 22px;

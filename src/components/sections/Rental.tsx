@@ -143,21 +143,21 @@ export default function Rental() {
   };
 
   return (
-    <section className={styles.root} id="location" ref={sectionRef}>
+    <section className={styles.root} id="materiel" ref={sectionRef}>
       <div className={styles.stage}>
         <div className={styles.head}>
           <SectionHeader
-            eyebrow="Location de matériel"
+            eyebrow="Matériel technique"
             title={
               <>
-                Les détails font
+                Le bon matériel.
                 <br />
-                <em>la différence.</em>
+                <em>Au bon endroit.</em>
               </>
             }
-            description="Mobilier, décoration, lumière, son et image : composez votre sélection et ajoutez-la directement à votre devis."
+            description="Écrans LED, sonorisation, éclairage, structures et effets : composez votre sélection et ajoutez-la directement à votre devis."
             action={
-              <Button href="/location" variant="link" icon={<ArrowUpRightIcon />}>
+              <Button href="/materiel" variant="link" icon={<ArrowUpRightIcon />}>
                 Tout le catalogue
               </Button>
             }
@@ -173,12 +173,12 @@ export default function Rental() {
           onDragStart={(event) => event.preventDefault()}
           {...(pinned
             ? {}
-            : { role: 'group', 'aria-label': 'Catalogue de location — faire défiler horizontalement', tabIndex: 0 })}
+            : { role: 'group', 'aria-label': 'Catalogue matériel — faire défiler horizontalement', tabIndex: 0 })}
         >
           <div className={styles.track} ref={trackRef}>
             {products.map((product, index) => (
               <article key={product.id} className={styles.card}>
-                <Link href={`/location/${product.id}`} className={styles.thumb} tabIndex={-1} aria-hidden="true">
+                <Link href={`/materiel/${product.id}`} className={styles.thumb} tabIndex={-1} aria-hidden="true">
                   <div className={styles.pan}>
                     <img src={product.image || '/eventheme.jpg'} alt="" loading="lazy" decoding="async" />
                   </div>
@@ -190,7 +190,7 @@ export default function Rental() {
                   <span className={styles.price}>{priceLabel(product)}</span>
                 </div>
                 <h3 className={styles.name}>
-                  <Link href={`/location/${product.id}`}>{product.title}</Link>
+                  <Link href={`/materiel/${product.id}`}>{product.title}</Link>
                 </h3>
                 <button
                   type="button"
@@ -204,7 +204,7 @@ export default function Rental() {
                 </button>
               </article>
             ))}
-            <Link href="/location" className={styles.more}>
+            <Link href="/materiel" className={styles.more}>
               <span className={styles.moreLabel}>Découvrir</span>
               <span className={styles.moreTitle}>
                 Tout le

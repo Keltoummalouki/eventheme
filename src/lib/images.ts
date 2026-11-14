@@ -2,7 +2,7 @@
  * Fabriques d'URL d'images.
  *
  * Les visuels actuels proviennent de la maquette approuvée (Unsplash) et sont
- * volontairement isolés ici : pour basculer sur les photos réelles d'AURÉLYS,
+ * volontairement isolés ici : pour basculer sur les photos réelles d'EVENTHEMES,
  * il suffira de remplacer les identifiants dans `src/data/*` ou de réécrire
  * `unsplashPhoto` pour pointer vers `/public`.
  */

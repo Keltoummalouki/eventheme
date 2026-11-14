@@ -1,7 +1,7 @@
 /* Bandeau de chiffres clés : quatre cellules séparées par des filets dorés. */
 
 .stats {
-  background: var(--anthracite);
+  background: var(--noir-3);
   border-top: 1px solid var(--ligne);
   border-bottom: 1px solid var(--ligne);
 }
@@ -22,12 +22,12 @@
 }
 
 .stat:hover {
-  background: rgba(201, 166, 104, 0.05);
+  background: rgba(201, 162, 74, 0.05);
 }
 
 .num {
   font-family: var(--ff-display);
-  font-style: italic;
+  font-style: normal;
   font-size: clamp(2.4rem, 4vw, 3.3rem);
   color: var(--or-clair);
 }
@@ -41,7 +41,7 @@
   font-size: 0.78rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--blanc-doux);
+  color: var(--argent);
 }
 
 @media (min-width: 800px) {

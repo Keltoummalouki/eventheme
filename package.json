@@ -1,8 +1,8 @@
 {
-  "name": "eventheme",
+  "name": "eventhemes",
   "version": "0.1.0",
   "private": true,
-  "description": "Eventheme — site vitrine et administration événementielle.",
+  "description": "EVENTHEMES — site vitrine, catalogue de matériel technique et demandes de devis.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

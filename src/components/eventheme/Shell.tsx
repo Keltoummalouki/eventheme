@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import MobileMenu from "@/components/layout/MobileMenu";
-import { navigation } from "@/data/eventheme";
+import { brand, navigation } from "@/data/eventheme";
 import { useScrolled } from "@/hooks/useScrolled";
 import { cx } from "@/lib/cx";
 import { findSocial } from "@/lib/eventheme/types";
@@ -17,7 +17,7 @@ export function Logo() {
   return (
     <img
       src="/eventheme_logo_png.webp"
-      alt="Eventheme — accueil"
+      alt={`${brand.name} — accueil`}
       className={s.logo}
       width={150}
       height={68}
@@ -192,11 +192,11 @@ export default function Shell({ children }: { children: ReactNode }) {
       />
       <main id="main" inert={open}>{children}</main>
       <footer className={s.footer} inert={open}>
-        {home ? <div className={homeHeader.footerMark} aria-hidden="true">EVENTHEME<span>®</span></div> : <div className={s.footerSignature}>
-          <p>
-            Votre événement. Votre vision.
+        {home ? <div className={homeHeader.footerMark} aria-hidden="true">{brand.name}</div> : <div className={s.footerSignature}>
+          <p lang="en">
+            We engineer
             <br />
-            <em>Notre savoir-faire.</em>
+            <em>the experience.</em>
           </p>
           <Button href={quoteHref} icon={<ArrowUpRightIcon />}>
             Demander un devis
@@ -208,10 +208,10 @@ export default function Shell({ children }: { children: ReactNode }) {
               <Logo />
             </Link>
             <p>
-              EVENTHEME — Organisation, animation et location événementielle.
+              {brand.name} — {brand.baseline}.
             </p>
             <span className={s.eyebrow}>
-              ORGANISATION · ANIMATION · DÉCORATION · LOCATION
+              {brand.disciplines.join(" · ").toUpperCase()}
             </span>
           </div>
           <div>
@@ -229,7 +229,7 @@ export default function Shell({ children }: { children: ReactNode }) {
                 {service.title}
               </Link>
             ))}
-            <Link href="/location">Catalogue de location</Link>
+            <Link href="/materiel">Catalogue matériel</Link>
           </div>
           <div>
             <h3>Rencontrons-nous</h3>
@@ -249,7 +249,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         </div>
         <div className={s.footerBottom}>
           <span>
-            © {new Date().getFullYear()} EVENTHEME. Tous droits réservés.
+            © {new Date().getFullYear()} {brand.name}. Tous droits réservés.
           </span>
           <Link href="/mentions-legales">Mentions légales</Link>
           <Link href="/politique-de-confidentialite">Confidentialité</Link>
@@ -273,7 +273,7 @@ export function CTA() {
   const whatsapp = findSocial(entries, "whatsapp");
   return (
     <section className={s.cta}>
-      <span className={s.eyebrow}>IMAGINONS LA SUITE, ENSEMBLE</span>
+      <span className={s.eyebrow}>VOTRE PROJET, NOTRE TECHNIQUE</span>
       <h2>
         Parlons de votre
         <br />

@@ -6,6 +6,7 @@ import { daysLabel, findSocial, hoursLabel, lineAmount, lineLabel, money, type Q
 import { quoteMessage, whatsappLink } from "@/lib/eventheme/whatsapp";
 import { gsap, revealSafe, useGSAP } from "@/lib/motion";
 import { initialQuote, useEventheme, useQuote } from "./Provider";
+import { brand } from "@/data/eventheme";
 import s from "./QuoteStudio.module.css";
 import { ArrowUpRightIcon } from "@/components/ui/icons";
 
@@ -167,7 +168,7 @@ export default function QuoteDocument({ result }: { result: QuoteResult }) {
             quantités et montants définitifs vous seront confirmés dans votre devis personnalisé. Aucun paiement en
             ligne.
           </p>
-          <p className={s.paperSignature}>Votre événement. Votre vision. Notre savoir-faire.</p>
+          <p className={s.paperSignature} lang="en">{brand.name} — {brand.signature}</p>
         </footer>
       </article>
 

@@ -3,6 +3,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { onCurtainOpen } from '@/lib/intro';
 
 export type HeroSceneState = {
@@ -19,104 +20,104 @@ type HeroSculptureProps = {
   onSettled?: () => void;
 };
 
-const POSES = [
-  { x: 0.12, y: -0.3, z: -0.15, fold: 0.18 },
-  { x: -0.1, y: 0.36, z: 0.12, fold: 0.36 },
-  { x: 0.23, y: -0.15, z: -0.06, fold: 0.06 },
+/**
+ * Pose of the rig: rotation, assembly (0 = parts apart, 1 = assembled) and
+ * light (0 = fixtures off, 1 = beams on).
+ */
+type Pose = { x: number; y: number; z: number; assembly: number; light: number };
+
+/** One pose per hero scene: Concevoir, Installer, Exploiter. */
+const POSES: Pose[] = [
+  { x: 0.16, y: -0.5, z: 0.02, assembly: 0.3, light: 0 },
+  { x: 0.12, y: -0.18, z: 0, assembly: 0.8, light: 0.15 },
+  { x: 0.1, y: 0.32, z: -0.02, assembly: 1, light: 1 },
 ];
 
-const SCROLL_POSES = [
-  { x: 0.12, y: -0.3, z: -0.15, fold: 0.18 },
-  { x: -0.08, y: -0.12, z: -0.06, fold: 0.3 },
-  { x: 0.16, y: 0.14, z: 0.08, fold: 0.22 },
-  { x: 0.02, y: -0.05, z: -0.04, fold: 0.28 },
-  { x: 0.12, y: -0.3, z: -0.15, fold: 0.18 },
+const SCROLL_POSES: Pose[] = [
+  { x: 0.16, y: -0.5, z: 0.02, assembly: 0.3, light: 0 },
+  { x: 0.14, y: -0.3, z: 0.01, assembly: 0.62, light: 0 },
+  { x: 0.12, y: -0.05, z: 0, assembly: 0.92, light: 0.25 },
+  { x: 0.1, y: 0.25, z: -0.02, assembly: 1, light: 1 },
+  { x: 0.1, y: 0.4, z: -0.02, assembly: 1, light: 1 },
 ];
 
-const FLIGHT_DURATION = 3600;
+const ENTRANCE_DURATION = 2600;
 
-/** Sample one continuous arc; the browser composites the flight independently of WebGL. */
-function flightKeyframes(): Keyframe[] {
-  return Array.from({ length: 61 }, (_, index) => {
-    const progress = index / 60;
-    const remaining = 1 - progress;
-    const x = remaining ** 3 * 105 + 3 * remaining ** 2 * progress * 175 - 3 * remaining * progress ** 2 * 36;
-    const y = remaining ** 3 * 130 - 3 * remaining ** 2 * progress * 75 - 3 * remaining * progress ** 2 * 55;
-    const turn = remaining * 30 - Math.sin(progress * Math.PI) * 24;
-    const scale = 0.92 + progress * 0.08;
-    return {
-      offset: progress,
-      transform: `translate3d(${x}%, ${y}%, 0) rotate(${turn}deg) scale(${scale})`,
-      opacity: Math.min(1, progress / 0.08),
-    };
-  });
+/** The rig rises into place; the browser composites this layer independently of WebGL. */
+const ENTRANCE_KEYFRAMES: Keyframe[] = [
+  { offset: 0, transform: 'translate3d(0, 7%, 0) scale(.94)', opacity: 0 },
+  { offset: 0.25, opacity: 1 },
+  { offset: 1, transform: 'none', opacity: 1 },
+];
+
+/** Aluminium stage truss, in scene units: 0.22 square section, square bays. */
+const HALF = 0.11;
+const CHORD = 0.017;
+const LACING = 0.008;
+const TOWER_X = 1.2;
+const TOWER_HEIGHT = 2;
+const BASE_Y = -1;
+const FIXTURES = [-0.62, 0, 0.62];
+/** Gold corner blocks are a little wider than the truss; the beam spans between them. */
+const BLOCK_HALF = HALF + 0.015;
+const BEAM_LENGTH = 2 * (TOWER_X - BLOCK_HALF);
+
+const UP = new THREE.Vector3(0, 1, 0);
+
+/** A tube between two points: one chord or one lacing brace. */
+function strut(from: THREE.Vector3, to: THREE.Vector3, radius: number) {
+  const direction = new THREE.Vector3().subVectors(to, from);
+  const length = direction.length();
+  const geometry = new THREE.CylinderGeometry(radius, radius, length, 6, 1, true);
+  geometry.translate(0, length / 2, 0);
+  geometry.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(UP, direction.normalize()));
+  geometry.translate(from.x, from.y, from.z);
+  return geometry;
 }
 
-/** A swept, openwork wing, modelled as separate pieces of curved gold ribbon. */
-function wingContour(lower: boolean) {
-  const path = new THREE.Shape();
-  if (lower) {
-    path.moveTo(0.055, -0.04);
-    path.bezierCurveTo(0.58, 0.05, 1.65, 0.15, 1.72, -0.57);
-    path.bezierCurveTo(1.79, -1.14, 1.26, -1.76, 0.77, -1.31);
-    path.bezierCurveTo(0.28, -0.96, 0.16, -0.35, 0.055, -0.04);
-  } else {
-    path.moveTo(0.055, 0.065);
-    path.bezierCurveTo(0.32, 0.72, 1.13, 1.98, 1.98, 1.84);
-    path.bezierCurveTo(2.61, 1.73, 2.31, 0.94, 1.86, 0.58);
-    path.bezierCurveTo(1.32, 0.15, 0.6, -0.04, 0.055, 0.065);
-  }
-  return path.getPoints(44);
-}
-
-function makeWing(
-  material: THREE.MeshPhysicalMaterial,
-) {
-  const wing = new THREE.Group();
-  for (const lower of [false, true]) {
-    const contour = wingContour(lower);
-    const scales = lower ? [1, 0.79, 0.59, 0.4] : [1, 0.83, 0.66, 0.49, 0.32];
-    for (const [index, scale] of scales.entries()) {
-      const innerScale = scale - (lower ? 0.095 : 0.08);
-      // Connect corresponding contour points explicitly. A scaled hole can
-      // cross a concave outline near the wing root; a swept quad strip keeps
-      // every opening empty and gives each ribbon its own rounded thickness.
-      const profile = [
-        [0, -0.01], [0.13, -0.023], [0.87, -0.023], [1, -0.01],
-        [1, 0.01], [0.87, 0.023], [0.13, 0.023], [0, 0.01],
-      ];
-      const vertices: number[] = [];
-      const indices: number[] = [];
-      for (let row = 0; row < contour.length; row += 1) {
-        const point = contour[row];
-        for (const [across, depth] of profile) {
-          const radius = THREE.MathUtils.lerp(innerScale, scale, across);
-          const x = point.x * radius;
-          const y = point.y * radius;
-          const sweep = 0.135 * x * x + Math.sin(y * 1.6) * 0.12 + index * 0.016;
-          vertices.push(x, y, sweep + depth);
-        }
-        if (row === 0) continue;
-        for (let column = 0; column < profile.length; column += 1) {
-          const next = (column + 1) % profile.length;
-          const a = (row - 1) * profile.length + column;
-          const b = (row - 1) * profile.length + next;
-          const c = row * profile.length + next;
-          const d = row * profile.length + column;
-          indices.push(a, b, d, b, c, d);
-        }
-      }
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-      geometry.setIndex(indices);
-      geometry.computeVertexNormals();
-      const ribbon = new THREE.Mesh(geometry, material);
-      ribbon.userData = { layer: index, lower };
-      wing.add(ribbon);
+/**
+ * A square box truss along Y, from 0 to `length`: four chords and a zigzag
+ * (Warren) lacing on each face, as aluminium event truss is built.
+ */
+function boxTruss(length: number) {
+  const corners = [[-HALF, -HALF], [HALF, -HALF], [HALF, HALF], [-HALF, HALF]] as const;
+  const parts = corners.map(([x, z]) => strut(new THREE.Vector3(x, 0, z), new THREE.Vector3(x, length, z), CHORD));
+  const bays = Math.max(1, Math.round(length / (2 * HALF)));
+  const step = length / bays;
+  corners.forEach(([ax, az], face) => {
+    const [bx, bz] = corners[(face + 1) % corners.length];
+    for (let bay = 0; bay < bays; bay += 1) {
+      const [fromX, fromZ, toX, toZ] = bay % 2 === 0 ? [ax, az, bx, bz] : [bx, bz, ax, az];
+      parts.push(strut(new THREE.Vector3(fromX, bay * step, fromZ), new THREE.Vector3(toX, (bay + 1) * step, toZ), LACING));
     }
-  }
-  return wing;
+  });
+  const merged = mergeGeometries(parts);
+  parts.forEach((part) => part.dispose());
+  return merged;
 }
+
+/** An open light cone hanging from its apex, bright at the lens and fading to nothing. */
+function beamGeometry(length: number, radius: number) {
+  const geometry = new THREE.CylinderGeometry(0.035, radius, length, 32, 8, true);
+  geometry.translate(0, -length / 2, 0);
+  const position = geometry.getAttribute('position');
+  const colors = new Float32Array(position.count * 4);
+  const gold = new THREE.Color(0xd9be80);
+  for (let index = 0; index < position.count; index += 1) {
+    const fade = THREE.MathUtils.clamp(1 + position.getY(index) / length, 0, 1);
+    colors.set([gold.r, gold.g, gold.b, fade ** 1.6], index * 4);
+  }
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+  return geometry;
+}
+
+const blend = (from: Pose, to: Pose, amount: number): Pose => ({
+  x: THREE.MathUtils.lerp(from.x, to.x, amount),
+  y: THREE.MathUtils.lerp(from.y, to.y, amount),
+  z: THREE.MathUtils.lerp(from.z, to.z, amount),
+  assembly: THREE.MathUtils.lerp(from.assembly, to.assembly, amount),
+  light: THREE.MathUtils.lerp(from.light, to.light, amount),
+});
 
 export default function HeroSculpture({ active, paused, scrollScene, onReady, onSettled }: HeroSculptureProps) {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -148,12 +149,12 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
     renderer.setClearColor(0x000000, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
+    renderer.toneMappingExposure = 1.05;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 40);
-    const sculpture = new THREE.Group();
-    scene.add(sculpture);
+    const rig = new THREE.Group();
+    scene.add(rig);
 
     const pmrem = new THREE.PMREMGenerator(renderer);
     const room = new RoomEnvironment();
@@ -161,65 +162,86 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
     try {
       environment = pmrem.fromScene(room, 0.035);
       scene.environment = environment.texture;
-      scene.environmentIntensity = 0.9;
+      scene.environmentIntensity = 0.85;
     } catch {
-      // Direct studio lights also support the sculpture if PMREM is unavailable.
+      // Direct studio lights also support the rig if PMREM is unavailable.
     }
     room.dispose();
     pmrem.dispose();
 
-    const gold = new THREE.MeshPhysicalMaterial({
-      color: 0xcdb285,
-      metalness: 1,
-      roughness: 0.22,
-      clearcoat: 0.35,
-      clearcoatRoughness: 0.2,
+    // Brand palette: aluminium (argent), gold accents, deep black fixtures.
+    const aluminium = new THREE.MeshStandardMaterial({ color: 0xc5c8ce, metalness: 0.92, roughness: 0.3 });
+    const gold = new THREE.MeshStandardMaterial({ color: 0xc9a24a, metalness: 1, roughness: 0.24 });
+    const black = new THREE.MeshStandardMaterial({ color: 0x131417, metalness: 0.6, roughness: 0.45 });
+    const lens = new THREE.MeshBasicMaterial({ color: 0x2a2b2e });
+    const light = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
       side: THREE.DoubleSide,
+      toneMapped: false,
     });
-    const polishedGold = new THREE.MeshStandardMaterial({ color: 0xe3c999, metalness: 0.98, roughness: 0.19 });
-    const darkGold = new THREE.MeshStandardMaterial({ color: 0x855321, metalness: 0.93, roughness: 0.3 });
+    const lensOff = new THREE.Color(0x2a2b2e);
+    const lensOn = new THREE.Color(0xfff1d0);
 
-    const rightWing = makeWing(gold);
-    const leftWing = makeWing(gold);
-    leftWing.scale.x = -1;
-    sculpture.add(rightWing, leftWing);
+    const towerGeometry = boxTruss(TOWER_HEIGHT);
+    const beamTruss = boxTruss(BEAM_LENGTH);
+    const block = new THREE.BoxGeometry(2 * BLOCK_HALF, 2 * BLOCK_HALF, 2 * BLOCK_HALF);
+    const plate = new THREE.BoxGeometry(0.42, 0.025, 0.42);
+    const cone = beamGeometry(2.3, 0.42);
 
-    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 32), polishedGold);
-    body.scale.set(0.09, 0.53, 0.11);
-    body.position.set(0, -0.13, 0.12);
-    sculpture.add(body);
-    const thorax = new THREE.Mesh(new THREE.SphereGeometry(0.115, 24, 24), gold);
-    thorax.scale.set(0.85, 1.5, 1);
-    thorax.position.set(0, 0.3, 0.13);
-    sculpture.add(thorax);
+    // Towers stand on base plates; their pivot is the foot of the tower.
+    const towers = [-1, 1].map((side) => {
+      const tower = new THREE.Group();
+      tower.add(new THREE.Mesh(towerGeometry, aluminium));
+      const base = new THREE.Mesh(plate, black);
+      base.position.y = -0.0125;
+      tower.add(base);
+      rig.add(tower);
+      return { tower, side };
+    });
 
-    // A jeweller's fine collar and curved antennae finish the central silhouette.
-    for (let i = 0; i < 7; i += 1) {
-      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.075 - i * 0.005, 0.012, 6, 20), darkGold);
-      collar.rotation.x = Math.PI / 2;
-      collar.position.set(0, -0.08 - i * 0.068, 0.12);
-      sculpture.add(collar);
+    // The top: a horizontal beam between two gold corner blocks, carrying the fixtures.
+    const top = new THREE.Group();
+    const beam = new THREE.Mesh(beamTruss, aluminium);
+    beam.rotation.z = -Math.PI / 2;
+    beam.position.x = -BEAM_LENGTH / 2;
+    top.add(beam);
+    for (const side of [-1, 1]) {
+      const corner = new THREE.Mesh(block, gold);
+      corner.position.x = side * TOWER_X;
+      top.add(corner);
     }
-    for (const direction of [-1, 1]) {
-      const curve = new THREE.CubicBezierCurve3(
-        new THREE.Vector3(direction * 0.04, 0.38, 0.15),
-        new THREE.Vector3(direction * 0.12, 0.77, 0.21),
-        new THREE.Vector3(direction * 0.4, 1.02, 0.18),
-        new THREE.Vector3(direction * 0.46, 0.93, 0.12),
-      );
-      sculpture.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 32, 0.013, 6, false), polishedGold));
-      const tip = new THREE.Mesh(new THREE.SphereGeometry(0.024, 12, 12), polishedGold);
-      tip.position.copy(curve.getPoint(1));
-      sculpture.add(tip);
-    }
+    const heads = FIXTURES.map((x, index) => {
+      const fixture = new THREE.Group();
+      fixture.position.set(x, -HALF - 0.02, 0);
+      const yoke = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.035, 0.05), black);
+      yoke.position.y = -0.02;
+      const head = new THREE.Group();
+      head.position.y = -0.1;
+      // Aimed down and toward the audience, fanning out across the stage.
+      head.rotation.set(-0.42, 0, (index - 1) * 0.2);
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.075, 0.15, 20), black);
+      const glass = new THREE.Mesh(new THREE.CircleGeometry(0.058, 24), lens);
+      glass.rotation.x = Math.PI / 2;
+      glass.position.y = -0.076;
+      const ray = new THREE.Mesh(cone, light);
+      ray.position.y = -0.08;
+      head.add(body, glass, ray);
+      fixture.add(yoke, head);
+      top.add(fixture);
+      return fixture;
+    });
+    rig.add(top);
 
-    const key = new THREE.DirectionalLight(0xfff4e4, 2.8);
+    const key = new THREE.DirectionalLight(0xffffff, 2.4);
     key.position.set(-3, 5, 5);
-    const rim = new THREE.DirectionalLight(0xffdfab, 2.5);
+    const rim = new THREE.DirectionalLight(0xffe2a8, 2.2);
     rim.position.set(4, 1, -2);
-    const fill = new THREE.DirectionalLight(0xffffff, 1.1);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.9);
     fill.position.set(1, -3, 4);
-    scene.add(key, rim, fill, new THREE.HemisphereLight(0xffe8c4, 0x302018, 0.6));
+    scene.add(key, rim, fill, new THREE.HemisphereLight(0xf2f3f5, 0x131417, 0.55));
 
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     let frame = 0;
@@ -229,37 +251,42 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
     let ready = false;
     let sized = false;
     let curtainIsOpen = false;
-    let flight: Animation | null = null;
-    let flightComplete = false;
+    let entrance: Animation | null = null;
+    let entranceComplete = false;
     mount.style.opacity = '0';
 
-    const flightSeconds = () => typeof flight?.currentTime === 'number' ? flight.currentTime / 1000 : 0;
+    const entranceProgress = () =>
+      entrance && !entranceComplete && typeof entrance.currentTime === 'number'
+        ? THREE.MathUtils.clamp(entrance.currentTime / ENTRANCE_DURATION, 0, 1)
+        : 1;
+
     const applyPose = () => {
       const progress = motionQuery.matches ? 0 : THREE.MathUtils.clamp(inputRef.current.scrollScene.current.progress, 0, 1);
       const driven = inputRef.current.scrollScene.current.scrollDriven && !motionQuery.matches;
-      const pose = { ...POSES[((inputRef.current.active % POSES.length) + POSES.length) % POSES.length] };
+      let pose = POSES[((inputRef.current.active % POSES.length) + POSES.length) % POSES.length];
       if (driven) {
-        const segment = Math.min(3, Math.floor(progress * 4));
-        const blend = THREE.MathUtils.smoothstep(progress * 4 - segment, 0, 1);
-        for (const axis of ['x', 'y', 'z', 'fold'] as const) {
-          pose[axis] = THREE.MathUtils.lerp(SCROLL_POSES[segment][axis], SCROLL_POSES[segment + 1][axis], blend);
-        }
+        const segment = Math.min(SCROLL_POSES.length - 2, Math.floor(progress * (SCROLL_POSES.length - 1)));
+        const amount = THREE.MathUtils.smoothstep(progress * (SCROLL_POSES.length - 1) - segment, 0, 1);
+        pose = blend(SCROLL_POSES[segment], SCROLL_POSES[segment + 1], amount);
       }
-      // The WAAPI clock keeps wingbeats and banking synchronized with every pause.
-      const seconds = flightSeconds();
-      const duration = FLIGHT_DURATION / 1000;
-      const airborne = flight && !flightComplete && !motionQuery.matches;
-      const envelope = airborne ? 1 - THREE.MathUtils.smoothstep(seconds / duration, 0.62, 1) : 0;
-      const phase = Math.PI * 2 * (7 * seconds - 2.5 * seconds * seconds / duration);
-      const wingbeat = envelope * (0.15 + (Math.sin(phase) + 1) * 0.43);
-      sculpture.rotation.set(
-        pose.x + Math.sin(seconds * 2.5) * envelope * 0.08,
-        pose.y + Math.sin(seconds * 1.4) * envelope * 0.16,
-        pose.z,
-      );
-      sculpture.position.y = -0.13;
-      rightWing.rotation.y = -pose.fold - wingbeat;
-      leftWing.rotation.y = pose.fold + wingbeat;
+      // The WAAPI clock drives the entrance, so the pause button freezes it too.
+      const intro = entranceProgress();
+      const assembly = pose.assembly * THREE.MathUtils.smoothstep(intro, 0, 0.85);
+      const glow = pose.light * THREE.MathUtils.smoothstep(intro, 0.7, 1);
+      const apart = 1 - assembly;
+
+      rig.rotation.set(pose.x, pose.y + (1 - intro) * 0.55, pose.z);
+      for (const { tower, side } of towers) {
+        tower.position.set(side * (TOWER_X + 0.55 * apart), BASE_Y - 0.4 * apart, side * 0.22 * apart);
+        tower.rotation.z = -side * 0.1 * apart;
+      }
+      top.position.set(0, BASE_Y + TOWER_HEIGHT + BLOCK_HALF + 0.6 * apart, 0.25 * apart);
+      top.rotation.z = -0.07 * apart;
+      heads.forEach((fixture, index) => {
+        fixture.position.y = -HALF - 0.02 - (0.12 + index * 0.05) * apart;
+      });
+      light.opacity = 0.42 * glow;
+      lens.color.lerpColors(lensOff, lensOn, glow);
     };
 
     const render = () => {
@@ -276,18 +303,18 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
         contextLost = true;
         mount.dataset.webglReady = 'false';
         canvas.style.opacity = '0';
-        flight?.pause();
+        entrance?.pause();
       }
     };
 
     const canAnimate = () => !disposed && !contextLost && visible && !document.hidden && !motionQuery.matches && !inputRef.current.paused;
     const settle = () => {
       if (disposed) return;
-      const alreadySettled = flightComplete;
-      flightComplete = true;
-      const completedFlight = flight;
-      flight = null;
-      completedFlight?.cancel();
+      const alreadySettled = entranceComplete;
+      entranceComplete = true;
+      const completed = entrance;
+      entrance = null;
+      completed?.cancel();
       window.cancelAnimationFrame(frame);
       frame = 0;
       mount.style.opacity = '1';
@@ -299,10 +326,10 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
     };
     const tick = () => {
       frame = 0;
-      if (!canAnimate() || !flight || flightComplete) return;
+      if (!canAnimate() || !entrance || entranceComplete) return;
       applyPose();
       render();
-      if (canAnimate() && flight && !flightComplete) frame = window.requestAnimationFrame(tick);
+      if (canAnimate() && entrance && !entranceComplete) frame = window.requestAnimationFrame(tick);
     };
 
     const sync = () => {
@@ -314,23 +341,23 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
         return;
       }
       // Dynamic import and the curtain can finish in either order. Wait for both.
-      if (curtainIsOpen && ready && !flight && !flightComplete) {
+      if (curtainIsOpen && ready && !entrance && !entranceComplete) {
         mount.style.willChange = 'transform, opacity';
-        flight = mount.animate(flightKeyframes(), {
-          duration: FLIGHT_DURATION,
+        entrance = mount.animate(ENTRANCE_KEYFRAMES, {
+          duration: ENTRANCE_DURATION,
           easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
           fill: 'both',
         });
-        flight.pause();
-        flight.currentTime = 0;
-        flight.onfinish = settle;
+        entrance.pause();
+        entrance.currentTime = 0;
+        entrance.onfinish = settle;
       }
-      if (flight && !flightComplete) {
+      if (entrance && !entranceComplete) {
         if (canAnimate()) {
-          flight.play();
+          entrance.play();
           frame = window.requestAnimationFrame(tick);
         } else {
-          flight.pause();
+          entrance.pause();
         }
       }
       if (visible && !document.hidden && !contextLost) {
@@ -339,7 +366,7 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
       }
     };
     syncRef.current = sync;
-    // No idle render loop after landing; deliberate scene changes still render.
+    // No idle render loop once assembled; deliberate scene changes still render.
     const sceneState = inputRef.current.scrollScene.current;
     sceneState.render = () => {
       if (disposed || !visible || document.hidden || contextLost) return;
@@ -348,7 +375,6 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
     };
 
     const resize = () => {
-      // Layout dimensions stay stable while the composited flight rotates/scales.
       const width = mount.clientWidth;
       const height = mount.clientHeight;
       if (width < 1 || height < 1) return;
@@ -357,8 +383,8 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
       renderer.setSize(width, height, false);
       sized = true;
       camera.aspect = width / height;
-      // Fit the full antenna-to-wing silhouette at any aspect ratio.
-      camera.position.set(0, 0, Math.max(4.7, 5.7 / camera.aspect) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))));
+      // Fit the rig with its parts apart, light cones included, at any aspect ratio.
+      camera.position.set(0, 0.1, Math.max(4.2, 4.6 / camera.aspect) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))));
       camera.lookAt(0, 0, 0);
       camera.updateProjectionMatrix();
       render();
@@ -370,14 +396,14 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
       visible = entry.isIntersecting;
       sync();
     }, { threshold: 0 });
-    // Observe the stationary landing area, not the travelling element.
+    // Observe the stationary landing area, not the rising element.
     intersectionObserver.observe(mount.parentElement ?? mount);
     const loseContext = (event: Event) => {
       event.preventDefault();
       contextLost = true;
       mount.dataset.webglReady = 'false';
       canvas.style.opacity = '0';
-      flight?.pause();
+      entrance?.pause();
       window.cancelAnimationFrame(frame);
       frame = 0;
     };
@@ -406,7 +432,7 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
       delete sceneState.render;
       window.cancelAnimationFrame(frame);
       unsubscribeCurtain();
-      flight?.cancel();
+      entrance?.cancel();
       resizeObserver.disconnect();
       intersectionObserver.disconnect();
       document.removeEventListener('visibilitychange', sync);
@@ -418,9 +444,7 @@ export default function HeroSculpture({ active, paused, scrollScene, onReady, on
         if (object instanceof THREE.Mesh) geometries.add(object.geometry);
       });
       geometries.forEach((geometry) => geometry.dispose());
-      gold.dispose();
-      polishedGold.dispose();
-      darkGold.dispose();
+      for (const material of [aluminium, gold, black, lens, light]) material.dispose();
       environment?.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
