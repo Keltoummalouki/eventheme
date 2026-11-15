@@ -1,7 +1,7 @@
 .root { padding: clamp(90px, 10vw, 160px) 6%; background: var(--noir); overflow: clip; }
 .intro { max-width: 1440px; margin: auto; display: grid; grid-template-columns: 1.25fr .75fr; gap: 32px 9%; align-items: end; }
 .intro > p { grid-column: 1 / -1; }
-.manifesto p { max-width: 41ch; color: var(--argent); font-family: var(--ff-signature); font-weight: 400; font-size: clamp(26px, 2.1vw, 34px); line-height: 1.45; letter-spacing: 0; }
+.manifesto p { max-width: 41ch; color: var(--argent); font-family: var(--ff-body); font-weight: 400; font-size: 14px; line-height: 1.9; }
 .composition { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12%; max-width: 1440px; margin: 90px auto 0; }
 .visual { position: relative; padding: 24px 12% 50px 4%; }
 .photo { position: relative; transform: rotate(-5deg); }

@@ -21,4 +21,3 @@
   .reason, .reason + .reason { padding: 26px 0 22px; border-inline-start: 0; }
   .reason + .reason { border-top: 1px solid var(--ligne-argent); }
 }
-.root .intro p { font-family: var(--ff-signature); font-size: clamp(26px, 2vw, 34px); font-weight: 600; line-height: 1.4; letter-spacing: 0; }

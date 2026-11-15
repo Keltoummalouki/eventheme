@@ -39,9 +39,9 @@
   --panneau-ombre: 0 24px 60px rgba(0, 0, 0, 0.6);
 
   /* Typographie — les variables --font-* sont injectées par next/font (layout.tsx).
-     Titres : Bebas · Textes et données : Roboto · Signature : Baltime (Khurasan), accents en Allura. */
+     Titres : Bebas · Textes et données : Poppins · Signature : Baltime (Khurasan), accents en Allura. */
   --ff-display: var(--font-display), var(--font-display-accents), var(--font-display-ar), sans-serif;
-  --ff-body: var(--font-body), var(--font-body-ar), 'Roboto', system-ui, sans-serif;
+  --ff-body: var(--font-body), var(--font-body-ar), 'Poppins', system-ui, sans-serif;
   --ff-data: var(--ff-body);
   --ff-signature: var(--font-signature), var(--font-signature-accents), cursive;
 

@@ -51,6 +51,7 @@ export default function Gallery() {
   const [category, setCategory] = useState(ALL);
   const [open, setOpen] = useState<number | null>(null);
   const [pinned, setPinned] = useState(false);
+  const [near, setNear] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const reelRef = useRef<HTMLDivElement>(null);
@@ -164,6 +165,21 @@ export default function Gallery() {
     setCategory(next);
   };
 
+  /*
+   * Chargement : hors champ, les visuels de la galerie sont masqués par son cadre
+   * et le chargement différé ne les demanderait qu’en entrant à l’écran, trop
+   * tard pour un défilement continu. Ils partent tous quand la section approche.
+   */
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || near) return;
+    const observer = new IntersectionObserver((seen) => {
+      if (seen.some((entry) => entry.isIntersecting)) setNear(true);
+    }, { rootMargin: '150% 0px' });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [near]);
+
   /* Épinglage : le défilement vertical fait avancer la galerie, sur tous les écrans. */
   useGSAP(
     () =>
@@ -175,7 +191,15 @@ export default function Gallery() {
         setPinned(true);
 
         // Recalculée à chaque rafraîchissement : elle dépend de l’écran et du filtre choisi.
-        const distance = () => Math.max(0, track.scrollWidth - reel.clientWidth);
+        // Mesurée sur les vignettes affichées, pas sur `scrollWidth` : pendant un changement
+        // de filtre, Flip sort les vignettes qui partent du flux, et un rafraîchissement à ce
+        // moment-là les compterait. Marges égales de part et d’autre : celle de début vaut
+        // la distance de la première vignette.
+        const distance = () => {
+          const tiles = shownTiles();
+          const last = tiles[tiles.length - 1];
+          return last ? Math.max(0, last.offset + last.tile.offsetWidth + tiles[0].offset - reel.clientWidth) : 0;
+        };
         const rail = gsap.timeline({
           scrollTrigger: {
             trigger: stage,
@@ -324,7 +348,7 @@ export default function Gallery() {
                     }}
                     tabIndex={shown < 0 ? -1 : undefined}
                   >
-                    <span className={styles.imageFrame}><img src={project.image || '/eventheme.jpg'} alt={project.title} loading="lazy" decoding="async" /></span>
+                    <span className={styles.imageFrame}><img src={project.image || '/eventheme.jpg'} alt={project.title} loading={near ? 'eager' : 'lazy'} decoding="async" /></span>
                     {project.demo && <span className={styles.tag}>{t.common.inspiration}</span>}
                     <span className={styles.caption}>
                       <span className={styles.cat}>{projectCategoryLabel(locale, project.category)}</span>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Allura, Bebas_Neue, Noto_Kufi_Arabic, Noto_Sans_Arabic, Roboto } from "next/font/google";
+import { Allura, Bebas_Neue, Noto_Kufi_Arabic, Noto_Sans_Arabic, Poppins } from "next/font/google";
 import localFont from "next/font/local";
 import ComingSoon from "@/components/eventheme/ComingSoon";
 import { EventhemeProvider } from "@/components/eventheme/Provider";
@@ -27,8 +27,9 @@ const bebasAccents = Bebas_Neue({
   variable: "--font-display-accents",
 });
 
-/** Textes courants et interface. Police variable : un seul fichier. */
-const roboto = Roboto({
+/** Textes courants et interface. Poppins pour une lecture régulière. */
+const poppins = Poppins({
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin", "latin-ext"],
   display: "swap",
   variable: "--font-body",
@@ -45,7 +46,7 @@ const signatureAccents = Allura({ weight: "400", subsets: ["latin", "latin-ext"]
 
 /**
  * Arabe (pages /ar) : titres en coufique géométrique, textes en Noto Sans
- * Arabic, dessiné pour accompagner Roboto. Placés après les polices latines
+ * Arabic, dessiné pour accompagner Poppins. Placés après les polices latines
  * (tokens.css) : ils ne servent qu’aux lettres arabes, et ne sont téléchargés
  * que par une page qui en contient (pas de préchargement).
  */
@@ -117,7 +118,7 @@ export default async function RootLayout({
       suppressHydrationWarning
       lang={locale}
       dir={direction(locale)}
-      className={`${bebas.variable} ${bebasAccents.variable} ${roboto.variable} ${signature.variable} ${signatureAccents.variable} ${arabicDisplay.variable} ${arabicBody.variable}`}
+      className={`${bebas.variable} ${bebasAccents.variable} ${poppins.variable} ${signature.variable} ${signatureAccents.variable} ${arabicDisplay.variable} ${arabicBody.variable}`}
     >
       <body>
         <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('eventheme-theme');document.documentElement.dataset.theme=t==='light'||t==='dark'?t:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}catch{document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}" }} />

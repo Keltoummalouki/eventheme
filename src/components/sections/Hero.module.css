@@ -179,5 +179,3 @@
 }
 
 .hero .title:not(.customTitle) .lineMask + .lineMask { margin-top: -.24em; }
-/* Handwritten supporting copy, with a stronger stroke at reading size. */
-.hero .lede { font-family: var(--ff-signature); font-size: clamp(26px, 2vw, 34px); font-weight: 600; line-height: 1.4; letter-spacing: 0; max-width: 35ch; }
