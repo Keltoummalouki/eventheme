@@ -22,6 +22,7 @@ import {
   money,
   type Inquiry,
 } from "@/lib/eventheme/types";
+import { StatusPill } from "./admin/Dashboard";
 import s from "./Eventheme.module.css";
 
 /** Vignette d'indicateur : un intitulé, un chiffre, une précision facultative. */
@@ -95,7 +96,7 @@ function EventTable({
               </td>
               <td>{inquiry.guests ? count(inquiry.guests) : "—"}</td>
               <td>
-                <span className={s.status}>{inquiry.status}</span>
+                <StatusPill status={inquiry.status} />
               </td>
               <td>
                 <Button

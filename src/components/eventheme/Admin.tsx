@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
 import {
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type Dispatch,
   type FormEvent,
@@ -9,6 +11,14 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { cx } from "@/lib/cx";
+import { gsap, prefersReducedMotion, useGSAP } from "@/lib/motion";
+import type { AdminAccount } from "@/lib/eventheme/auth";
+import { inquiryKindLabels, type AdminView } from "@/lib/eventheme/dashboard";
+import AdminShell, { locate, navigation } from "./admin/AdminShell";
+import Dashboard, { StatusPill } from "./admin/Dashboard";
+import type { PaletteItem } from "./admin/CommandPalette";
+import { DownloadIcon, ExternalIcon, LogoutIcon, MailIcon, PhoneIcon, PlusIcon, QuoteIcon } from "./admin/icons";
+import a from "./admin/Admin.module.css";
 import {
   kinds,
   labels,
@@ -36,19 +46,10 @@ import { direction, pathFor, type PageKey } from "@/lib/i18n";
 import { isGeneratedId, slugify, uniqueSlug } from "@/lib/slug";
 import { categoryTrail, childCategories, topCategories } from "@/lib/eventheme/catalogue";
 import { sizeLabel } from "@/lib/eventheme/requests";
-import { brand, projectCategories } from "@/data/eventheme";
-import {
-  analytics,
-  compactMoney,
-  count,
-  daysCount,
-  percent,
-  statisticsRows,
-  trendNote,
-  UPCOMING_DAYS,
-} from "@/lib/eventheme/analytics";
+import { projectCategories } from "@/data/eventheme";
+import { analytics, statisticsRows } from "@/lib/eventheme/analytics";
 import { Logo } from "./Shell";
-import Statistics, { Tile } from "./Statistics";
+import Statistics from "./Statistics";
 import Button from "@/components/ui/Button";
 import { confirmDialog } from "@/components/ui/dialog";
 import { ArrowUpRightIcon, CloseIcon, SocialIcon } from "@/components/ui/icons";
@@ -146,11 +147,18 @@ const formFields: Record<Kind, readonly FormField[]> = {
   // Social links have their own form: network, link, account name, followers.
   socials: [],
 };
-const kindNames: Record<Inquiry["kind"], string> = {
-  quote: "Devis",
-  callback: "Rappel",
-  contact: "Message",
-};
+const kindNames = inquiryKindLabels;
+/** Nouvelle fiche vierge d'un type de contenu (bouton « Ajouter », raccourcis du tableau de bord). */
+const blankEntry = (kind: Kind): Entry => ({
+  id: crypto.randomUUID(),
+  kind,
+  title: "",
+  description: "",
+  published: true,
+  price: null,
+  pricing: "request",
+  variants: [],
+});
 async function api(body: object, path = "/api/admin") {
   const response = await fetch(path, {
     method: "POST",
@@ -249,7 +257,10 @@ export default function Admin({
   initialInquiries,
   local,
   now,
+  offset,
   mail,
+  account,
+  initialView = "dashboard",
 }: {
   initialEntries: Entry[];
   initialInquiries: Inquiry[];
@@ -261,19 +272,52 @@ export default function Admin({
    * et la page hydratée comptent ainsi les mêmes journées.
    */
   now: number;
+  /**
+   * Décalage de Casablanca sur UTC à cet instant, lu par le serveur : le
+   * tableau de bord compte ses journées sans consulter les fuseaux du navigateur.
+   */
+  offset: number;
+  /** Le compte connecté : salutation et carte du menu. */
+  account: AdminAccount;
+  /** Onglet demandé par l’adresse (« /admin?vue=quotes »), pour qu’un rechargement garde sa place. */
+  initialView?: AdminView;
 }) {
   const router = useRouter();
   const [entries, setEntries] = useState(initialEntries);
   const [inquiries, setInquiries] = useState(initialInquiries);
-  const [tab, setTab] = useState<
-    Kind | "dashboard" | "statistics" | "quotes" | "messages" | "clients"
-  >("dashboard");
+  const [tab, setTab] = useState<AdminView>(initialView);
   const [edit, setEdit] = useState<Entry | null>(null);
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const view = useRef<HTMLDivElement>(null);
+  const detail = useRef<HTMLDivElement>(null);
+  const shown = useRef(false);
+
+  // Changement d’onglet : le contenu entre en fondu (sauf au premier affichage et en mouvement réduit).
+  useGSAP(
+    () => {
+      if (!shown.current) {
+        shown.current = true;
+        return;
+      }
+      if (!view.current || prefersReducedMotion()) return;
+      gsap.fromTo(
+        view.current,
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power3.out", clearProps: "opacity,transform" },
+      );
+    },
+    { dependencies: [tab] },
+  );
+
+  // Une demande ouverte depuis une liste s’affiche sous elle : on l’amène à l’écran.
+  useEffect(() => {
+    if (inquiry)
+      detail.current?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
+  }, [inquiry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   async function mutate(body: object, onSuccess?: () => void) {
     setBusy(true);
     setError("");
@@ -300,22 +344,30 @@ export default function Admin({
     () => analytics(entries, inquiries, new Date(now)),
     [entries, inquiries, now],
   );
-  const title = kinds.includes(tab as Kind)
-    ? labels[tab as Kind]
-    : {
-        dashboard: "Vue d’ensemble",
-        statistics: "Statistiques",
-        quotes: "Demandes de devis",
-        messages: "Messages de contact",
-        clients: "Clients & contacts",
-      }[tab as "dashboard"];
-  function navigate(next: typeof tab) {
+  const here = locate(tab);
+  function navigate(next: AdminView) {
+    if (next !== tab) window.scrollTo({ top: 0 });
     setTab(next);
     setEdit(null);
     setInquiry(null);
     setSearch("");
     setError("");
-    setNotice("");
+    // L’adresse suit l’onglet : un rechargement ou un lien partagé y ramène.
+    window.history.replaceState(null, "", next === "dashboard" ? "/admin" : `/admin?vue=${next}`);
+  }
+  /** Ouvre une fiche dans son onglet. */
+  function editEntry(target: Entry) {
+    navigate(target.kind);
+    setEdit(structuredClone(target));
+  }
+  /** Nouvelle fiche d’un type de contenu, ouverte dans son onglet. */
+  function createEntry(kind: Kind) {
+    navigate(kind);
+    setEdit(blankEntry(kind));
+  }
+  async function logout() {
+    await api({ action: "logout" }, "/api/auth");
+    router.replace(adminLogin);
   }
   /** Ouvre une demande depuis les statistiques, dans la liste qui la contient. */
   function openInquiry(target: Inquiry) {
@@ -398,204 +450,119 @@ export default function Admin({
     ];
     downloadCsv(rows, "eventhemes-demandes.csv");
   }
+  /** Pastilles du menu : ce qui attend une première réponse. */
+  const fresh = (kind: Inquiry["kind"]) => inquiries.filter((i) => i.kind === kind && i.status === "Nouveau").length;
+  const counts = { quotes: fresh("quote"), messages: fresh("contact"), clients: fresh("callback") };
+  /** La palette de commandes : aller à un onglet, lancer une action, retrouver une demande ou une fiche. */
+  const paletteItems = useMemo<PaletteItem[]>(() => {
+    const kindIcons = { quote: <QuoteIcon />, callback: <PhoneIcon />, contact: <MailIcon /> };
+    const go: PaletteItem[] = navigation.flatMap((group) =>
+      group.items.map(({ view: target, label, icon: Icon }) => ({
+        id: `aller-${target}`,
+        group: "Aller à",
+        label,
+        hint: group.title,
+        icon: <Icon />,
+        run: () => navigate(target),
+      })),
+    );
+    const actions: PaletteItem[] = [
+      { id: "ajout-materiel", label: "Ajouter du matériel", kind: "products" as Kind },
+      { id: "ajout-realisation", label: "Nouvelle réalisation", kind: "projects" as Kind },
+      { id: "ajout-service", label: "Nouveau service", kind: "services" as Kind },
+      { id: "ajout-categorie", label: "Nouvelle catégorie du matériel", kind: "categories" as Kind },
+      { id: "ajout-ville", label: "Nouvelle zone d’intervention", kind: "cities" as Kind },
+    ].map(({ id, label, kind }) => ({ id, group: "Actions", label, icon: <PlusIcon />, run: () => createEntry(kind) }));
+    actions.push(
+      { id: "export-demandes", group: "Actions", label: "Exporter les demandes (CSV)", icon: <DownloadIcon />, run: exportCsv },
+      {
+        id: "export-statistiques",
+        group: "Actions",
+        label: "Exporter les statistiques (CSV)",
+        icon: <DownloadIcon />,
+        run: () => downloadCsv(statisticsRows(stats), "eventhemes-statistiques.csv"),
+      },
+      { id: "voir-site", group: "Actions", label: "Voir le site", hint: "Nouvel onglet", icon: <ExternalIcon />, run: () => window.open("/", "_blank", "noopener") },
+      { id: "deconnexion", group: "Actions", label: "Se déconnecter", icon: <LogoutIcon />, run: () => void logout() },
+    );
+    const requests: PaletteItem[] = inquiries.map((item) => ({
+      id: `demande-${item.id}`,
+      group: "Demandes",
+      label: item.name || "Demande sans nom",
+      hint: [kindNames[item.kind], referenceOf(item), item.city, item.status].filter(Boolean).join(" · "),
+      keywords: [item.company, item.email, item.phone, item.subject].join(" "),
+      icon: kindIcons[item.kind],
+      searchOnly: true,
+      run: () => openInquiry(item),
+    }));
+    const records: PaletteItem[] = entries
+      .filter((entry) => entry.kind !== "settings")
+      .map((entry) => {
+        const Icon = locate(entry.kind).icon;
+        return {
+          id: `fiche-${entry.kind}-${entry.id}`,
+          group: "Contenus",
+          label: entry.title || entry.id,
+          hint: `${labels[entry.kind]}${entry.published ? "" : " · Brouillon"}`,
+          keywords: [entry.id, entry.brand, entry.model, entry.reference, entry.category].filter(Boolean).join(" "),
+          icon: <Icon />,
+          searchOnly: true,
+          run: () => editEntry(entry),
+        };
+      });
+    return [...go, ...actions, ...requests, ...records];
+    // Les actions lisent l’état courant à chaque rendu : la liste est recalculée avec les données.
+  }, [entries, inquiries, stats]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div className={s.admin}>
-      <aside className={s.sidebar}>
-        <Link href="/">
-          <Logo />
-        </Link>
-        <span className={s.eyebrow}>ADMINISTRATION</span>
-        <nav aria-label="Administration">
-          <button
-            className={tab === "dashboard" ? s.sideActive : ""}
-            onClick={() => navigate("dashboard")}
-          >
-            ◈ Vue d’ensemble
-          </button>
-          <button
-            className={tab === "statistics" ? s.sideActive : ""}
-            onClick={() => navigate("statistics")}
-          >
-            Statistiques
-          </button>
-          <span>RELATION CLIENT</span>
-          <button
-            className={tab === "quotes" ? s.sideActive : ""}
-            onClick={() => navigate("quotes")}
-          >
-            Demandes de devis <b>{quotes.length}</b>
-          </button>
-          <button
-            className={tab === "messages" ? s.sideActive : ""}
-            onClick={() => navigate("messages")}
-          >
-            Messages <b>{messages.length}</b>
-          </button>
-          <button
-            className={tab === "clients" ? s.sideActive : ""}
-            onClick={() => navigate("clients")}
-          >
-            Clients & contacts
-          </button>
-          <span>VOTRE SITE</span>
-          {contentKinds.map((kind) => (
-            <button
-              key={kind}
-              className={tab === kind ? s.sideActive : ""}
-              onClick={() => navigate(kind)}
-            >
-              {labels[kind]}
-            </button>
-          ))}
-          <button
-            className={tab === "settings" ? s.sideActive : ""}
-            onClick={() => navigate("settings")}
-          >
-            {labels.settings}
-          </button>
-        </nav>
-        <Button
-          href="/"
-          target="_blank"
-          variant="link"
-          size="sm"
-          icon={<ArrowUpRightIcon />}
-          className={s.sidebarLink}
-        >
-          Voir le site
-        </Button>
-        <Button
-          variant="link"
-          size="sm"
-          className={s.sidebarLink}
-          onClick={async () => {
-            await api({ action: "logout" }, "/api/auth");
-            router.replace(adminLogin);
-          }}
-        >
-          Se déconnecter
-        </Button>
-      </aside>
-      <main className={s.adminMain}>
-        <header className={s.adminHeader}>
-          <div>
-            <span className={s.eyebrow}>{brand.name} / {title}</span>
-            <h1>{title}</h1>
+    <AdminShell
+      view={tab}
+      navigate={navigate}
+      counts={counts}
+      account={account}
+      local={local}
+      onLogout={() => void logout()}
+      paletteItems={paletteItems}
+      notice={notice}
+      onNoticeShown={() => setNotice("")}
+    >
+      <div ref={view}>
+        {tab !== "dashboard" && (
+          <div className={a.pageHead}>
+            <p className={a.eyebrow}>{here.group}</p>
+            <h1>{here.label}</h1>
           </div>
-          <span className={s.modeBadge}>
-            {local ? "● Aperçu local" : "● Administration"}
-          </span>
-        </header>
-        {local && (
+        )}
+        {["quotes", "messages", "clients"].includes(tab) && (
           <p className={s.adminBanner}>
-            Les changements sont conservés sur cet ordinateur. Les formulaires
-            alimentent cette boîte de réception.
+            {mail.mode === "off"
+              ? "Les e-mails automatiques ne sont pas configurés : les nouvelles demandes n’arrivent que dans cette administration."
+              : mail.mode === "preview"
+                ? "Aperçu local : les e-mails (alertes et accusés de réception) sont enregistrés dans .eventheme/emails/ pour relecture, pas envoyés."
+                : mail.recipients.length
+                  ? `Alertes e-mail envoyées à ${mail.recipients.join(", ")}. Les clients qui donnent leur e-mail reçoivent un accusé de réception.`
+                  : "Aucune adresse ne reçoit les alertes : ajoutez un lien « E-mail » dans Contact & réseaux, ou définissez EMAIL_TEAM."}
           </p>
         )}
-        <p className={s.adminBanner}>
-          {mail.mode === "off"
-            ? "Les e-mails automatiques ne sont pas configurés : les nouvelles demandes n’arrivent que dans cette administration."
-            : mail.mode === "preview"
-              ? "Aperçu local : les e-mails (alertes et accusés de réception) sont enregistrés dans .eventheme/emails/ pour relecture, pas envoyés."
-              : mail.recipients.length
-                ? `Alertes e-mail envoyées à ${mail.recipients.join(", ")}. Les clients qui donnent leur e-mail reçoivent un accusé de réception.`
-                : "Aucune adresse ne reçoit les alertes : ajoutez un lien « E-mail » dans Contact & réseaux, ou définissez EMAIL_TEAM."}
-        </p>
         {error && (
           <p className={s.error} role="alert">
             {error}
           </p>
         )}
-        {notice && (
-          <p className={s.saved} role="status">
-            ✓ {notice}
-          </p>
-        )}
         {tab === "dashboard" && (
-          <>
-            <div className={s.statGrid}>
-              <Tile
-                label="Demandes reçues (30 jours)"
-                value={count(stats.volume.month.value)}
-                note={trendNote(stats.volume.month, "sur les 30 jours précédents")}
-              />
-              <Tile
-                label="À traiter"
-                value={count(stats.handling.pending)}
-                note={
-                  stats.handling.stale.length
-                    ? `${count(stats.handling.stale.length)} à relancer · la plus ancienne remonte à ${daysCount(stats.handling.oldestPendingDays)}`
-                    : "Aucune demande en retard."
-                }
-              />
-              <Tile
-                label={`Événements dans ${UPCOMING_DAYS} jours`}
-                value={count(stats.events.upcoming30)}
-                note={`${count(stats.events.thisMonth)} ce mois-ci`}
-              />
-              <Tile
-                label="Valeur du portefeuille"
-                value={compactMoney(stats.value.pipeline)}
-                note={`Montant indicatif des demandes ouvertes · concrétisation ${percent(stats.conversion.winRate)}`}
-              />
-            </div>
-            <div className={s.statGrid}>
-              <Tile label="Demandes de devis" value={count(quotes.length)} />
-              <Tile label="Messages reçus" value={count(messages.length)} />
-              <Tile
-                label="Rappels en attente"
-                value={count(stats.volume.callbacks)}
-              />
-              <Tile
-                label="Articles au catalogue"
-                value={count(stats.catalogue.products)}
-              />
-            </div>
-            <div className={s.adminPanel}>
-              <h2>Les dernières demandes</h2>
-              <RequestTable
-                inquiries={inquiries.slice(0, 5)}
-                select={setInquiry}
-              />
-              <div className={s.actions}>
-                <Button
-                  variant="link"
-                  icon="→"
-                  onClick={() => navigate("quotes")}
-                >
-                  Toutes les demandes
-                </Button>
-                <Button
-                  variant="link"
-                  icon="→"
-                  onClick={() => navigate("statistics")}
-                >
-                  Voir les statistiques
-                </Button>
-              </div>
-            </div>
-            <div className={s.adminPanel}>
-              <h2>Votre site, à votre rythme.</h2>
-              <p>
-                Ajoutez votre matériel et vos réalisations, organisez les
-                catégories du catalogue et personnalisez les textes. Un prix
-                vide signifie « sur devis » ; le prix d’un type d’événement
-                s’ajoute comme montant fixe à l’estimation.
-              </p>
-              <div className={s.actions}>
-                <Button icon={<ArrowUpRightIcon />} onClick={() => navigate("projects")}>
-                  Gérer les réalisations
-                </Button>
-                <Button
-                  variant="link"
-                  icon="→"
-                  onClick={() => navigate("pages")}
-                >
-                  Modifier les pages
-                </Button>
-              </div>
-            </div>
-          </>
+          <Dashboard
+            entries={entries}
+            inquiries={inquiries}
+            stats={stats}
+            now={now}
+            offset={offset}
+            account={account}
+            local={local}
+            mail={mail}
+            navigate={navigate}
+            openInquiry={openInquiry}
+            editEntry={editEntry}
+            createEntry={createEntry}
+          />
         )}
         {tab === "statistics" && (
           <>
@@ -678,18 +645,7 @@ export default function Admin({
               <Button
                 icon="+"
                 className={s.toolbarAction}
-                onClick={() =>
-                  setEdit({
-                    id: crypto.randomUUID(),
-                    kind: tab as Kind,
-                    title: "",
-                    description: "",
-                    published: true,
-                    price: null,
-                    pricing: "request",
-                    variants: [],
-                  })
-                }
+                onClick={() => setEdit(blankEntry(tab as Kind))}
               >
                 Ajouter
               </Button>
@@ -833,7 +789,7 @@ export default function Admin({
           />
         )}
         {inquiry && (
-          <div className={s.adminPanel}>
+          <div ref={detail} className={cx(s.adminPanel, a.detail)}>
             <div className={s.sectionHeading}>
               <div>
                 <span className={s.eyebrow}>
@@ -1003,8 +959,8 @@ export default function Admin({
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </AdminShell>
   );
 }
 function RequestTable({
@@ -1041,7 +997,7 @@ function RequestTable({
                 </small>
               </td>
               <td>
-                <span className={s.status}>{i.status}</span>
+                <StatusPill status={i.status} />
               </td>
               <td>{new Date(i.createdAt).toLocaleDateString("fr-FR")}</td>
               <td>

@@ -3,7 +3,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { beamGeometry, boxTruss as trussOf } from '@/components/ui/trussGeometry';
 import { onCurtainOpen } from '@/lib/intro';
 
 export type HeroSceneState = {
@@ -62,54 +62,8 @@ const FIXTURES = [-0.62, 0, 0.62];
 const BLOCK_HALF = HALF + 0.015;
 const BEAM_LENGTH = 2 * (TOWER_X - BLOCK_HALF);
 
-const UP = new THREE.Vector3(0, 1, 0);
-
-/** A tube between two points: one chord or one lacing brace. */
-function strut(from: THREE.Vector3, to: THREE.Vector3, radius: number) {
-  const direction = new THREE.Vector3().subVectors(to, from);
-  const length = direction.length();
-  const geometry = new THREE.CylinderGeometry(radius, radius, length, 6, 1, true);
-  geometry.translate(0, length / 2, 0);
-  geometry.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(UP, direction.normalize()));
-  geometry.translate(from.x, from.y, from.z);
-  return geometry;
-}
-
-/**
- * A square box truss along Y, from 0 to `length`: four chords and a zigzag
- * (Warren) lacing on each face, as aluminium event truss is built.
- */
-function boxTruss(length: number) {
-  const corners = [[-HALF, -HALF], [HALF, -HALF], [HALF, HALF], [-HALF, HALF]] as const;
-  const parts = corners.map(([x, z]) => strut(new THREE.Vector3(x, 0, z), new THREE.Vector3(x, length, z), CHORD));
-  const bays = Math.max(1, Math.round(length / (2 * HALF)));
-  const step = length / bays;
-  corners.forEach(([ax, az], face) => {
-    const [bx, bz] = corners[(face + 1) % corners.length];
-    for (let bay = 0; bay < bays; bay += 1) {
-      const [fromX, fromZ, toX, toZ] = bay % 2 === 0 ? [ax, az, bx, bz] : [bx, bz, ax, az];
-      parts.push(strut(new THREE.Vector3(fromX, bay * step, fromZ), new THREE.Vector3(toX, (bay + 1) * step, toZ), LACING));
-    }
-  });
-  const merged = mergeGeometries(parts);
-  parts.forEach((part) => part.dispose());
-  return merged;
-}
-
-/** An open light cone hanging from its apex, bright at the lens and fading to nothing. */
-function beamGeometry(length: number, radius: number) {
-  const geometry = new THREE.CylinderGeometry(0.035, radius, length, 32, 8, true);
-  geometry.translate(0, -length / 2, 0);
-  const position = geometry.getAttribute('position');
-  const colors = new Float32Array(position.count * 4);
-  const gold = new THREE.Color(0xd9be80);
-  for (let index = 0; index < position.count; index += 1) {
-    const fade = THREE.MathUtils.clamp(1 + position.getY(index) / length, 0, 1);
-    colors.set([gold.r, gold.g, gold.b, fade ** 1.6], index * 4);
-  }
-  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
-  return geometry;
-}
+const SECTION = { half: HALF, chord: CHORD, lacing: LACING };
+const boxTruss = (length: number) => trussOf(length, SECTION);
 
 const blend = (from: Pose, to: Pose, amount: number): Pose => ({
   x: THREE.MathUtils.lerp(from.x, to.x, amount),

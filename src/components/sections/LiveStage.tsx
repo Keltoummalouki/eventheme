@@ -4,7 +4,7 @@ import { useEffect, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-type Props = { active: number; paused: boolean; scrollPose: RefObject<{ progress: number }> };
+type Props = { active: number; paused: boolean; scrollPose: RefObject<{ progress: number; driven: boolean }> };
 
 /** Four aluminium chords and diagonal braces, like a standard box truss. */
 function trussGeometry(length: number) {
@@ -135,34 +135,55 @@ export default function LiveStage({ active, paused, scrollPose }: Props) {
     key.position.set(2, 5, 4);
     const rim = new THREE.DirectionalLight(0x8cc8dd, 2);
     rim.position.set(-4, 2, -3);
-    scene.add(key, rim, new THREE.AmbientLight(0xffffff, 1.2));
+    const ambient = new THREE.HemisphereLight(0xc8e6ff, 0x49361e, 1.2);
+    scene.add(key, rim, ambient);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x101923, roughness: 1 }));
+    floor.rotation.x = -Math.PI / 2; floor.position.y = -.97; scene.add(floor);
+    scene.fog = new THREE.Fog(0x101923, 10, 28);
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
-    const fine = matchMedia('(hover: hover) and (pointer: fine)');
+    let daylight = document.documentElement.dataset.theme === 'light';
     let frameId = 0, lastTime = 0, time = 0, progress = inputs.current.active;
     let visible = true, lost = false, disposed = false;
-    const pointer = { x: 0, y: 0 };
+    const pointer = { x: 0, y: 0, yaw: 0, pitch: 0, id: -1 };
     const pose = (delta: number) => {
       const moving = !motion.matches && !inputs.current.paused;
-      const scroll = moving ? inputs.current.scrollPose.current.progress : 0;
-      const target = Math.min(2, inputs.current.active + scroll * 1.6);
-      progress = moving ? THREE.MathUtils.damp(progress, target, 4.5, delta) : inputs.current.active;
+      const scroll = inputs.current.scrollPose.current;
+      const target = scroll.driven && !motion.matches ? scroll.progress * 2 : inputs.current.active;
+      if (!inputs.current.paused) progress = moving ? THREE.MathUtils.damp(progress, target, 4.5, delta) : target;
       if (moving) time += delta;
-      rig.rotation.y = -.15 + (moving ? scroll * .55 + Math.sin(time * .23) * .035 + pointer.x * .12 : 0);
-      rig.rotation.x = moving ? pointer.y * .035 : 0;
+      rig.rotation.y = -.15 + pointer.yaw;
+      rig.rotation.x = pointer.pitch;
+      const separation = Math.max(0, 1 - progress);
+      const show = THREE.MathUtils.smoothstep(progress, 1, 2);
       portals.forEach((portal, i) => {
-        const separation = Math.max(0, 1 - progress);
-        portal.position.y = separation * i * .15;
-        portal.position.z = .9 - i * (1.8 + separation * .2);
+        portal.position.y = separation * (.25 + i * .35);
+        portal.position.z = .9 - i * (1.8 + separation * .65);
       });
-      screen.position.y = .45 + Math.max(0, 1 - progress) * .14;
-      screenMaterial.color.setScalar(.55 + progress * .225);
-      speakers.forEach(array => { array.position.y = 1.3 + Math.max(0,1-progress) * .16; });
+      screen.position.y = .45 + separation * .6;
+      screen.position.z = -.98 - separation * .5;
+      screenMaterial.color.setScalar(.65 + show * .35);
+      speakers.forEach((array, i) => {
+        array.position.y = 1.3 + separation * .35;
+        array.position.x = (i === 0 ? -1 : 1) * (1.88 + separation * .45);
+      });
       beams.forEach((head, i) => {
-        head.rotation.x = -.2 + (moving ? Math.sin(time * .7 + i * .65) * .32 : 0);
-        head.rotation.z = (i - 2) * .16 + (moving ? Math.cos(time * .55 + i) * .18 : 0);
+        head.position.y = 1.55 + separation * .25;
+        head.rotation.x = -.2 + (moving ? Math.sin(time * .7 + i * .65) * .32 * show : 0);
+        head.rotation.z = (i - 2) * .16 + (moving ? Math.cos(time * .55 + i) * .18 * show : 0);
       });
-      beamMaterial.opacity = .025 + progress * .035;
-      glow.color.set(progress > 1.4 ? 0xffdf94 : 0xd9be80);
+      beamMaterial.opacity = show * (daylight ? .035 : .11);
+      glow.color.set(show > .1 ? 0xffdf94 : 0x454956);
+      const sky = daylight ? 0xd9e8ed : 0x101923;
+      if (!scene.background) scene.background = new THREE.Color(sky);
+      (scene.background as THREE.Color).set(sky);
+      (scene.fog as THREE.Fog).color.set(sky);
+      floor.material.color.set(daylight ? 0xd8d4c6 : 0x101923);
+      key.color.set(daylight ? 0xffe3b1 : 0xc5daff);
+      key.intensity = daylight ? 3.8 : 1.6;
+      rim.intensity = daylight ? 1 : 2.8;
+      ambient.intensity = daylight ? 2 : .65;
+      renderer.toneMappingExposure = daylight ? 1.1 : 1;
       renderer.render(scene, camera);
       mount.dataset.ready = 'true';
     };
@@ -188,27 +209,43 @@ export default function LiveStage({ active, paused, scrollPose }: Props) {
       camera.aspect = mount.clientWidth / mount.clientHeight;
       camera.updateProjectionMatrix(); sync();
     };
-    const move = (event: PointerEvent) => {
-      if (!fine.matches || motion.matches) return;
-      const rect = mount.getBoundingClientRect();
-      pointer.x = (event.clientX - rect.left) / rect.width - .5;
-      pointer.y = (event.clientY - rect.top) / rect.height - .5;
+    const down = (event: PointerEvent) => {
+      if (event.button !== 0) return;
+      pointer.id = event.pointerId; pointer.x = event.clientX; pointer.y = event.clientY;
+      mount.setPointerCapture(event.pointerId); mount.style.cursor = 'grabbing';
     };
-    const leave = () => { pointer.x = 0; pointer.y = 0; };
+    const move = (event: PointerEvent) => {
+      if (pointer.id !== event.pointerId) return;
+      pointer.yaw += (event.clientX - pointer.x) * .008;
+      pointer.pitch = THREE.MathUtils.clamp(pointer.pitch + (event.clientY - pointer.y) * .004, -.35, .4);
+      pointer.x = event.clientX; pointer.y = event.clientY; sync();
+    };
+    const leave = () => { pointer.id = -1; mount.style.cursor = 'grab'; };
+    const keyboard = (event: KeyboardEvent) => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home'].includes(event.key)) return;
+      event.preventDefault();
+      if (event.key === 'Home') { pointer.yaw = 0; pointer.pitch = 0; }
+      else if (event.key === 'ArrowLeft') pointer.yaw -= .15;
+      else if (event.key === 'ArrowRight') pointer.yaw += .15;
+      else pointer.pitch = THREE.MathUtils.clamp(pointer.pitch + (event.key === 'ArrowUp' ? -.08 : .08), -.35, .4);
+      sync();
+    };
+    const themeObserver = new MutationObserver(() => { daylight = document.documentElement.dataset.theme === 'light'; sync(); });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     const lose = (event: Event) => { event.preventDefault(); lost = true; cancelAnimationFrame(frameId); mount.dataset.ready = 'false'; };
     const restore = () => { lost = false; resize(); };
     const ro = new ResizeObserver(resize); ro.observe(mount);
     const io = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; sync(); }); io.observe(mount);
     const menuObserver = new MutationObserver(sync);
     if (main) menuObserver.observe(main, { attributes: true, attributeFilter: ['inert'] });
-    mount.addEventListener('pointermove', move); mount.addEventListener('pointerleave', leave);
+    mount.addEventListener('pointerdown', down); mount.addEventListener('pointermove', move); mount.addEventListener('lostpointercapture', leave); mount.addEventListener('pointerup', leave); mount.addEventListener('pointercancel', leave); mount.addEventListener('keydown', keyboard);
     renderer.domElement.addEventListener('webglcontextlost', lose);
     renderer.domElement.addEventListener('webglcontextrestored', restore);
     document.addEventListener('visibilitychange', sync); motion.addEventListener('change', sync);
     resize();
     return () => {
       disposed = true; refresh.current = null; cancelAnimationFrame(frameId); ro.disconnect(); io.disconnect(); menuObserver.disconnect();
-      mount.removeEventListener('pointermove', move); mount.removeEventListener('pointerleave', leave);
+      themeObserver.disconnect(); mount.removeEventListener('pointerdown', down); mount.removeEventListener('pointermove', move); mount.removeEventListener('lostpointercapture', leave); mount.removeEventListener('pointerup', leave); mount.removeEventListener('pointercancel', leave); mount.removeEventListener('keydown', keyboard);
       document.removeEventListener('visibilitychange', sync); motion.removeEventListener('change', sync);
       renderer.domElement.removeEventListener('webglcontextlost', lose); renderer.domElement.removeEventListener('webglcontextrestored', restore);
       const geometries = new Set<THREE.BufferGeometry>(); const materials = new Set<THREE.Material>();
@@ -217,5 +254,5 @@ export default function LiveStage({ active, paused, scrollPose }: Props) {
     };
     // Props update via inputs; preserve one WebGL context for the mounted stage.
   }, []);
-  return <div ref={mountRef} data-ready="false" style={{ width: '100%', height: '100%' }} aria-hidden="true" />;
+  return <div ref={mountRef} data-ready="false" tabIndex={0} role="region" aria-label="Scène 3D interactive — glisser pour tourner, flèches pour orienter, Home pour réinitialiser" style={{ width: '100%', height: '100%', cursor: 'grab', touchAction: 'pan-y' }} />;
 }

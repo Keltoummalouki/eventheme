@@ -1,7 +1,7 @@
 .root { padding: clamp(90px, 10vw, 160px) 6%; background: var(--noir); overflow: clip; }
 .intro { max-width: 1440px; margin: auto; display: grid; grid-template-columns: 1.25fr .75fr; gap: 32px 9%; align-items: end; }
 .intro > p { grid-column: 1 / -1; }
-.manifesto p { max-width: 41ch; color: var(--argent); font-size: 14px; line-height: 1.9; }
+.manifesto p { max-width: 41ch; color: var(--argent); font-family: var(--ff-signature); font-weight: 400; font-size: clamp(26px, 2.1vw, 34px); line-height: 1.45; letter-spacing: 0; }
 .composition { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12%; max-width: 1440px; margin: 90px auto 0; }
 .visual { position: relative; padding: 24px 12% 50px 4%; }
 .photo { position: relative; transform: rotate(-5deg); }
@@ -11,9 +11,13 @@
 .photo figcaption span:last-child { font-size: 8px; color: var(--gris); }
 .orbit { position: absolute; inset: 6% -6%; border: 1px solid rgba(201, 162, 74, 0.23); border-radius: 50%; transform: rotate(-24deg); }
 .annotation { position: absolute; bottom: 0; inset-inline-end: -6%; color: var(--or); font-family: var(--ff-signature); font-style: normal; font-weight: 400; font-size: clamp(34px, 3.8vw, 58px); line-height: .95; letter-spacing: 0; transform: rotate(-6deg); }
+/* Une boîte par ligne, à la largeur du texte : chacune s'écrit à son tour. */
+.noteLine { display: block; width: fit-content; }
 .pillars { display: flex; flex-direction: column; }
-.pillar { display: grid; grid-template-columns: 32px 1fr; gap: 14px; padding-block: 28px; }
-.pillar + .pillar { border-top: 1px solid rgba(201, 162, 74, 0.13); }
+.pillar { position: relative; display: grid; grid-template-columns: 32px 1fr; gap: 14px; padding-block: 28px; }
+/* Filet entre deux métiers : un élément plutôt qu'une bordure, pour pouvoir le tracer dans le sens de lecture. */
+.rule { position: absolute; inset-block-start: 0; inset-inline: 0; height: 1px; background: var(--ligne); transform-origin: left; }
+[dir='rtl'] .rule { transform-origin: right; }
 .num { padding-top: 10px; font-size: 10px; color: var(--or); }
 .root .pillar h3 { font-family: var(--ff-display); font-weight: 400; font-size: clamp(28px, 2.8vw, 44px); line-height: 1.2; letter-spacing: -.035em; }
 .root .pillar p { margin-top: 12px; max-width: 35ch; font-size: 13px; line-height: 1.8; color: var(--argent); }
@@ -26,3 +30,12 @@
   .annotation { inset-inline-end: -6%; }
   .pillar { padding-block: 22px; }
 }
+/* The section's gold line and four rails follow reading progress. */
+.productionLabel { position: relative; padding-bottom: 18px; }
+.productionLine { position: absolute; bottom: 0; inset-inline: 0; height: 1px; background: var(--or); transform-origin: left; }
+.pillar { isolation: isolate; }
+.pillarAccent { position: absolute; inset: 0 -18px; z-index: -1; pointer-events: none; background: linear-gradient(90deg, rgba(201,162,74,.12), transparent); opacity: 0; }
+.pillarProgress { position: absolute; inset-inline-start: -18px; top: 24px; bottom: 24px; width: 2px; background: var(--or); transform-origin: top; }
+[dir='rtl'] .productionLine { transform-origin: right; }
+[dir='rtl'] .pillarAccent { background: linear-gradient(270deg, rgba(201,162,74,.12), transparent); }
+@media (prefers-reduced-motion: reduce) { .pillarAccent, .pillarProgress { display: none; } }

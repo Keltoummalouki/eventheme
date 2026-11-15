@@ -5,9 +5,9 @@ import dynamic from 'next/dynamic';
 import { useEventheme } from '@/components/eventheme/Provider';
 import Button from '@/components/ui/Button';
 import { ArrowUpRightIcon, SocialIcon } from '@/components/ui/icons';
-import { brand, heroSlides, isSignature } from '@/data/eventheme';
+import { heroSlides, isSignature } from '@/data/eventheme';
 import { cx } from '@/lib/cx';
-import { gsap, motionSafe, revealSafe, useGSAP } from '@/lib/motion';
+import { gsap, motionSafe, revealSafe, ScrollTrigger, useGSAP } from '@/lib/motion';
 import { findSocial } from '@/lib/eventheme/types';
 import styles from './Hero.module.css';
 
@@ -15,7 +15,8 @@ const LiveStage = dynamic(() => import('./LiveStage'), { ssr: false });
 
 export default function Hero() {
   const ref = useRef<HTMLElement>(null);
-  const scrollPose = useRef({ progress: 0 });
+  const scrollPose = useRef({ progress: 0, driven: false });
+  const story = useRef<ScrollTrigger | null>(null);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const { entries, t } = useEventheme();
@@ -39,13 +40,22 @@ export default function Hero() {
   }), { scope: ref });
 
   useGSAP(() => motionSafe(ref, () => {
-    if (paused) return;
-    const find = gsap.utils.selector(ref);
-    gsap.to(find('[data-orbit]'), { rotation: 360, duration: 55, repeat: -1, ease: 'none', scrollTrigger: { trigger: ref.current, start: 'top bottom', end: 'bottom top', toggleActions: 'play pause resume pause' } });
-    gsap.to(find('[data-parallax]'), { yPercent: 12, ease: 'none', scrollTrigger: { trigger: ref.current, start: 'top top', end: 'bottom top', scrub: .8 } });
-    gsap.fromTo(scrollPose.current, { progress: 0 }, { progress: 1, ease: 'none', scrollTrigger: { trigger: ref.current, start: 'top top', end: 'bottom top', scrub: .6 } });
-    gsap.fromTo(find('[data-scroll-cue]'), { scaleX: 0 }, { scaleX: 1, ease: 'none', scrollTrigger: { trigger: ref.current, start: 'top top', end: 'bottom top', scrub: .6 } });
-  }), { scope: ref, dependencies: [paused], revertOnUpdate: true });
+    const desktop = window.matchMedia('(min-width: 961px)').matches;
+    scrollPose.current.driven = true;
+    const tween = gsap.fromTo(scrollPose.current, { progress: 0 }, {
+      progress: 1, ease: 'none',
+      onUpdate: () => setActive(Math.min(2, Math.floor(scrollPose.current.progress * 3))),
+      scrollTrigger: { trigger: ref.current, start: desktop ? 'top top' : 'top 15%', end: desktop ? '+=160%' : 'bottom 35%', pin: desktop, scrub: .6, invalidateOnRefresh: true },
+    });
+    story.current = tween.scrollTrigger ?? null;
+    return () => { story.current = null; scrollPose.current.driven = false; };
+  }), { scope: ref });
+
+  const selectWorld = (index: number) => {
+    const trigger = story.current;
+    if (trigger) trigger.scroll(trigger.start + (trigger.end - trigger.start) * [0, .5, 1][index]);
+    else setActive(index);
+  };
 
   useGSAP(() => revealSafe(ref, (full) => {
     if (!full || paused) return;
@@ -56,10 +66,6 @@ export default function Hero() {
     <section ref={ref} className={styles.hero} id="accueil" aria-labelledby="accueil-titre">
       <div className={styles.backdrop} data-parallax aria-hidden="true">
         {images.slice(0, 3).map((src, index) => <img key={src} src={src} alt="" className={cx(styles.photo, active % Math.min(images.length, 3) === index && styles.photoActive)} loading={index === 0 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : undefined} decoding="async" />)}
-      </div>
-      <div className={styles.topline} data-hero-reveal>
-        <span className={styles.eyebrow}>{home?.subtitle || `${brand.sector} · ${t.brand.market}`}</span>
-        <span className={styles.disciplines}>{t.brand.disciplines.join(' / ')}</span>
       </div>
       <div className={styles.composition}>
         <div className={styles.content}>
@@ -85,7 +91,7 @@ export default function Hero() {
             <a href="#realisations" className={styles.stageProjects}>{t.nav.projects}<ArrowUpRightIcon /></a>
             <button type="button" className={styles.pause} aria-pressed={paused} aria-label={paused ? t.hero.resumeLabel : t.hero.pauseLabel} onClick={() => setPaused(value => !value)}><span aria-hidden="true">{paused ? '▷' : 'Ⅱ'}</span>{paused ? t.hero.resume : t.hero.pause}</button>
           </div>
-          <div className={styles.stageProgress} aria-hidden="true"><span data-scroll-cue /></div>
+          <div className={styles.stageProgress} aria-hidden="true"><span style={{ transform: `scaleX(${(active + 1) / 3})` }} /></div>
         </div>
       </div>
       <div className={styles.console} data-hero-reveal>
@@ -94,13 +100,12 @@ export default function Hero() {
           <div><strong>{worlds[active].caption}</strong><span>{worlds[active].detail}</span></div>
         </div>
         <div className={styles.worlds} role="group" aria-label={t.hero.worldsLabel}>
-          {worlds.map((world, index) => <button key={world.label} type="button" className={cx(styles.world, active === index && styles.selected)} aria-pressed={active === index} aria-controls="hero-scene" onClick={() => setActive(index)}>
+          {worlds.map((world, index) => <button key={world.label} type="button" className={cx(styles.world, active === index && styles.selected)} aria-pressed={active === index} aria-controls="hero-scene" onClick={() => selectWorld(index)}>
             <span className={styles.worldNumber}>0{index + 1}</span><span>{world.label}</span>
           </button>)}
         </div>
         {whatsapp?.url && <a href={whatsapp.url} className={styles.whatsapp} target="_blank" rel="noreferrer" aria-label={t.hero.whatsapp}><SocialIcon name="whatsapp" /><span>WhatsApp</span></a>}
       </div>
-      <span className={styles.photoCredit}>{t.common.illustration}</span>
     </section>
   );
 }

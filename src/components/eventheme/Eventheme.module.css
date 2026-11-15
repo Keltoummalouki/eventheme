@@ -1416,126 +1416,29 @@
 .successAction {
   margin-top: 25px;
 }
+/* Espace administrateur : la mise en page (menu, barre, grille) appartient à
+   admin/Admin.module.css ; cette classe ne porte que la typographie de base. */
 .admin {
   background: var(--noir);
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 245px 1fr;
   color: var(--blanc);
   line-height: 1.7;
   font-size: 13px;
 }
-.sidebar {
-  background: var(--noir);
-  border-inline-end: 1px solid #ffffff15;
-  padding: 10px 22px 30px;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-}
-.sidebar > .eyebrow {
-  font-size: 8px;
-  margin: 5px 0 28px;
-}
-.sidebar nav {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.sidebar nav > span {
-  font-size: 8px;
-  letter-spacing: 0.15em;
-  color: var(--gris);
-  margin: 20px 12px 8px;
-}
-.sidebar nav button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  text-align: start;
-  padding: 11px 12px;
-  font-size: 11px;
-  color: var(--gris);
-}
-.sidebar nav button:hover,
-.sidebar nav .sideActive {
-  background: rgba(201, 162, 74, 0.08);
-  color: var(--or-clair);
-}
-.sidebar b {
-  font-weight: 400;
-  font-size: 10px;
-  color: var(--or);
-}
-.sidebar > .sidebarLink {
-  display: flex;
-  width: fit-content;
-  margin: 20px 12px 0;
-  color: var(--or);
-}
-.adminMain {
-  padding: 45px 4.5%;
-  min-width: 0;
-}
-.adminHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-.adminHeader h1 {
-  font-size: 43px;
-  margin-top: 12px;
-  line-height: 1.1;
-}
-.adminHeader .eyebrow {
-  font-size: 8px;
-}
-.modeBadge {
-  font-size: 9px;
-  color: var(--or);
-  border: 1px solid rgba(201, 162, 74, 0.25);
-  padding: 7px 12px;
-  white-space: nowrap;
-}
 .adminBanner {
-  background: rgba(201, 162, 74, 0.04);
-  border: 1px solid rgba(201, 162, 74, 0.15);
+  background: color-mix(in srgb, var(--or) 5%, transparent);
+  border: 1px solid var(--ligne);
+  border-radius: 14px;
   padding: 13px 17px;
-  font-size: 10px;
-  color: var(--gris);
-  margin-bottom: 30px;
-}
-.metricGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-  margin-bottom: 30px;
-}
-.metricGrid > div {
-  padding: 25px;
-  border: 1px solid #ffffff18;
-  background: var(--noir-2);
-}
-.metricGrid span {
-  font-size: 10px;
-  color: var(--gris);
-}
-.metricGrid strong {
-  display: block;
-  font-family: var(--ff-display);
-  font-size: 49px;
-  font-weight: 400;
-  color: var(--or-clair);
-  margin-top: 10px;
+  font-size: 12px;
+  color: var(--argent);
+  margin-bottom: 24px;
 }
 .adminPanel {
   background: var(--noir-2);
-  border: 1px solid #ffffff18;
+  border: 1px solid var(--ligne-argent);
+  border-radius: 18px;
   padding: 28px;
-  margin-bottom: 25px;
+  margin-bottom: 22px;
   min-width: 0;
 }
 .adminPanel h2 {
@@ -1615,10 +1518,11 @@
 }
 .status {
   display: inline-block;
-  padding: 4px 9px;
-  background: rgba(201, 162, 74, 0.06);
-  color: var(--or);
-  font-size: 9px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--or) 9%, transparent);
+  color: var(--or-clair);
+  font-size: 11px;
   white-space: nowrap;
 }
 .saved {
@@ -1639,7 +1543,8 @@
 }
 .statTile {
   padding: 22px;
-  border: 1px solid #ffffff18;
+  border: 1px solid var(--ligne-argent);
+  border-radius: 16px;
   background: var(--noir-2);
   min-width: 0;
 }
@@ -2002,18 +1907,6 @@
   .footerTop {
     gap: 30px;
   }
-  .admin {
-    grid-template-columns: 220px 1fr;
-  }
-  .adminMain {
-    padding: 35px 3%;
-  }
-  .metricGrid {
-    gap: 12px;
-  }
-  .metricGrid > div {
-    padding: 18px;
-  }
   .statGrid {
     gap: 12px;
   }
@@ -2157,24 +2050,6 @@
   }
   .detail h1 {
     font-size: 46px;
-  }
-  .admin {
-    grid-template-columns: 190px 1fr;
-  }
-  .sidebar {
-    padding: 10px 12px 20px;
-  }
-  .sidebar nav button {
-    font-size: 10px;
-  }
-  .adminHeader {
-    align-items: flex-start;
-  }
-  .adminHeader h1 {
-    font-size: 35px;
-  }
-  .metricGrid {
-    grid-template-columns: repeat(2, 1fr);
   }
   .statGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2522,67 +2397,9 @@
   .legal h1 {
     font-size: 45px;
   }
-  .admin {
-    display: block;
-  }
-  .sidebar {
-    position: relative;
-    height: auto;
-    border-inline-end: 0;
-    border-bottom: 1px solid #ffffff20;
-    padding: 10px 20px 20px;
-  }
-  .sidebar > .eyebrow {
-    display: none;
-  }
-  .sidebar nav {
-    flex-direction: row;
-    overflow: auto;
-    gap: 7px;
-    padding: 10px 0;
-    scrollbar-width: thin;
-  }
-  .sidebar nav > span {
-    display: none;
-  }
-  .sidebar nav button {
-    white-space: nowrap;
-    gap: 10px;
-    padding: 9px 12px;
-    border: 1px solid #ffffff15;
-  }
-  .sidebar > .sidebarLink {
-    display: inline-flex;
-    margin: 10px 20px 0 0;
-  }
-  .adminMain {
-    padding: 28px 5%;
-  }
-  .adminHeader {
-    gap: 10px;
-  }
-  .adminHeader h1 {
-    font-size: 33px;
-  }
-  .modeBadge {
-    font-size: 7px;
-    padding: 6px 8px;
-  }
   .adminBanner {
-    font-size: 9px;
+    font-size: 11px;
     padding: 12px;
-  }
-  .metricGrid {
-    gap: 12px;
-  }
-  .metricGrid > div {
-    padding: 15px;
-  }
-  .metricGrid span {
-    font-size: 9px;
-  }
-  .metricGrid strong {
-    font-size: 40px;
   }
   .statGrid {
     grid-template-columns: minmax(0, 1fr);

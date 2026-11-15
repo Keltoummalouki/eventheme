@@ -240,7 +240,7 @@ export default function Shell({ children }: { children: ReactNode }) {
       />
       <main id="main" inert={open}>{children}</main>
       <footer className={s.footer} inert={open}>
-        {home ? <div className={homeHeader.footerMark} aria-hidden="true">{brand.name}</div> : <div className={s.footerSignature}>
+        {!home && <div className={s.footerSignature}>
           <p lang="en">
             We engineer
             <br />

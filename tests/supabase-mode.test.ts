@@ -337,7 +337,18 @@ test("only an admin account opens the back office; its session cookie is refresh
   assert.equal(fake.state.clients.at(-1)?.key, "publishable-key", "sessions use the public key, never the secret one");
   assert.deepEqual(fake.state.cookies.written, ["sb-session=refreshed"]);
   await assert.doesNotReject(server.requireAdmin());
-  await assert.doesNotReject(server.verifyAdmin());
+  assert.deepEqual(await server.verifyAdmin(), { email: "", name: "" }, "an account without e-mail or name");
+  fake.state.user = {
+    data: {
+      user: { email: "k@eventhemes.ma", app_metadata: { role: "admin" }, user_metadata: { full_name: "Keltoum Malouki" } },
+    },
+    error: null,
+  };
+  assert.deepEqual(
+    await server.verifyAdmin(),
+    { email: "k@eventhemes.ma", name: "Keltoum Malouki" },
+    "the back office greets the signed-in account",
+  );
   fake.state.cookies.readOnly = true;
   assert.equal(await server.isAdmin(), true, "while a page renders, cookies are read-only: the proxy refreshes them");
 

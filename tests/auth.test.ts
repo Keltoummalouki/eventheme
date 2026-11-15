@@ -1,6 +1,21 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { adminRedirectPath, hasAdminRole } from "../src/lib/eventheme/auth";
+import { accountOf, adminRedirectPath, hasAdminRole } from "../src/lib/eventheme/auth";
+
+test("the account card shows the e-mail and the first readable name of the user", () => {
+  assert.deepEqual(
+    accountOf({ email: "k@eventhemes.ma", user_metadata: { full_name: "  Keltoum Malouki ", name: "K" } }),
+    { email: "k@eventhemes.ma", name: "Keltoum Malouki" },
+  );
+  // Non-text or blank values are skipped; the name never grants anything, it is only shown.
+  assert.deepEqual(accountOf({ email: null, user_metadata: { full_name: " ", name: 42, first_name: "Salma" } }), {
+    email: "",
+    name: "Salma",
+  });
+  assert.deepEqual(accountOf({ email: "a@b.ma" }), { email: "a@b.ma", name: "" });
+  assert.deepEqual(accountOf(null), { email: "", name: "" });
+  assert.equal(accountOf({ user_metadata: { name: "x".repeat(200) } }).name.length, 80, "a long name is cut");
+});
 
 test("only app_metadata.role = admin grants access", () => {
   assert.equal(hasAdminRole({ app_metadata: { role: "admin" } }), true);

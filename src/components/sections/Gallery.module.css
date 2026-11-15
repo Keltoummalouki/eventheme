@@ -1,8 +1,13 @@
-.root { padding: clamp(90px, 10vw, 150px) 6%; background: var(--noir); overflow: hidden; }
-.heading { max-width: 1440px; margin: auto; display: grid; grid-template-columns: 1.3fr .7fr; gap: 30px 8%; align-items: end; }
+/* Colonne de contenu : min(1440px, 88%), centrée ; seule la galerie occupe toute la largeur.
+   `clip` et non `hidden` : la section ne devient pas un conteneur que le focus pourrait faire défiler. */
+.root { padding-block: clamp(90px, 10vw, 150px); background: var(--noir); overflow: clip; }
+.heading { width: min(1440px, 88%); margin-inline: auto; display: grid; grid-template-columns: 1.3fr .7fr; gap: 30px 8%; align-items: end; }
 .heading > p { grid-column: 1 / -1; }
 .introduction p { color: var(--argent); font-size: 14px; line-height: 1.8; margin-bottom: 24px; }
-.toolbar { max-width: 1440px; margin: 52px auto 25px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+/* Scène épinglée (Gallery.tsx) : filtres, galerie et mention. `flow-root` garde les marges
+   intérieures à l'intérieur, épinglée ou non : rien ne saute au moment de l'épinglage. */
+.stage { display: flow-root; margin-top: 52px; background: var(--noir); }
+.toolbar { width: min(1440px, 88%); margin: 0 auto 25px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .filters { display: flex; gap: 26px; flex-wrap: wrap; }
 .filter { position: relative; min-height: 44px; font-size: 11px; color: var(--gris); transition: color 200ms ease; }
 .filter::after { content: ''; position: absolute; inset: auto 0 2px; height: 1px; background: var(--or); transform: scaleX(0); transform-origin: left; transition: transform 220ms ease; }
@@ -11,11 +16,18 @@
 .current::after { transform: scaleX(1); }
 .reelControls { display: flex; gap: 8px; margin-inline-start: auto; flex: none; }
 .reelControls button { width: 44px; height: 44px; border: 1px solid rgba(201, 162, 74, 0.28); border-radius: 50%; font-size: 20px; color: var(--or); }
-.grid { display: grid; grid-auto-flow: column; grid-auto-columns: min(58vw, 680px); gap: 32px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 3px; padding: 4px 3px 22px; scrollbar-width: thin; scrollbar-color: rgba(201, 162, 74, 0.4) rgba(201, 162, 74, 0.07); max-width: 1440px; margin: auto; }
+/* Galerie pleine largeur, première vignette alignée sur la colonne de contenu ; aucune barre de défilement. */
+.reel { --gutter: max(6%, calc((100% - 1440px) / 2)); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
+.reel::-webkit-scrollbar { display: none; }
+/* Épinglée : la page fait avancer la galerie ; au doigt, le glisser horizontal est confié à Gallery.tsx. */
+.locked { overflow: clip; scroll-snap-type: none; touch-action: pan-y pinch-zoom; }
+/* Largeurs en vw : une piste à sa largeur de contenu ne peut pas résoudre de pourcentage. */
+.grid { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: min(58vw, 680px); gap: 32px; width: max-content; padding: 4px var(--gutter); }
 .tile { min-width: 0; scroll-snap-align: start; }
 .hidden { display: none; }
 .inner { position: relative; width: 100%; display: block; text-align: start; cursor: zoom-in; }
-.imageFrame { display: block; height: clamp(280px, 34vw, 460px); overflow: hidden; background: var(--noir-3); }
+/* Hauteur bornée par l'écran : épinglée, la scène tient sous l'en-tête, même sur un portable. */
+.imageFrame { display: block; height: clamp(240px, min(34vw, 52svh), 460px); overflow: hidden; background: var(--noir-3); }
 .imageFrame img { filter: saturate(.8); transition: transform 650ms var(--ease); }
 .caption { position: relative; display: flex; flex-direction: column; gap: 9px; padding: 22px 55px 10px 0; }
 .cat { color: var(--or); font-size: 9px; letter-spacing: .15em; text-transform: uppercase; }
@@ -24,7 +36,7 @@
 .tag { position: absolute; top: 16px; inset-inline-start: 16px; background: rgba(8, 9, 11, 0.86); padding: 7px 11px; font-size: 8px; letter-spacing: .13em; text-transform: uppercase; color: var(--blanc); }
 .zoom { position: absolute; inset-inline-end: 0; bottom: 28px; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid rgba(201, 162, 74, 0.27); border-radius: 50%; color: var(--or); }
 .zoom svg { width: 19px; height: 19px; }
-.root .note { max-width: 1440px; margin: 22px auto 0; font-size: 10px; line-height: 1.7; color: var(--gris); }
+.root .note { width: min(1440px, 88%); margin: 22px auto 0; font-size: 10px; line-height: 1.7; color: var(--gris); }
 .lightbox { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 4vh 4vw; background: rgba(8, 9, 11, 0.93); backdrop-filter: blur(10px); animation: fade 200ms ease both; }
 .sheet { position: relative; display: grid; grid-template-columns: 1.5fr 1fr; width: min(1240px, 100%); max-height: 92svh; background: var(--noir-2); border: 1px solid rgba(201, 162, 74, 0.2); }
 .viewer { position: relative; min-height: 0; background: var(--noir); }
@@ -46,14 +58,16 @@
   .heading { grid-template-columns: 1fr; gap: 24px; }
   .introduction { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
   .introduction p { margin: 0; font-size: 12px; }
-  .toolbar { align-items: flex-end; gap: 8px; margin-top: 34px; }
+  .stage { margin-top: 34px; }
+  .toolbar { align-items: flex-end; gap: 8px; }
   .filters { gap: 0 17px; }
   .filter { font-size: 10px; }
   .reelControls { gap: 4px; }
   .reelControls button { width: 44px; height: 44px; }
-  .grid { grid-auto-columns: 88%; gap: 18px; }
-  .imageFrame { height: 320px; }
+  .grid { grid-auto-columns: 80vw; gap: 18px; }
+  .imageFrame { height: min(320px, 40svh); }
   .caption { padding-top: 18px; }
 }
 @media (prefers-reduced-motion: reduce) { .imageFrame img,.filter::after { transition: none; } }
 .tag, .close { color:#fff; }
+.introduction p { font-family: var(--ff-signature); font-size: clamp(26px, 2vw, 34px); font-weight: 600; line-height: 1.4; letter-spacing: 0; }

@@ -18,7 +18,11 @@ type Failure = { message: string; code?: string };
 type Result = { data: unknown; error: Failure | null };
 type Row = { id: string; created_at: number; [column: string]: unknown };
 type CookieValue = { name: string; value: string; options?: Record<string, unknown> };
-type User = { app_metadata?: Record<string, unknown> } | null;
+type User = {
+  email?: string;
+  app_metadata?: Record<string, unknown>;
+  user_metadata?: Record<string, unknown>;
+} | null;
 
 const createState = () => ({
   tables: {} as Record<string, Row[]>,

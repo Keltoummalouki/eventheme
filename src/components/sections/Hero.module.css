@@ -155,3 +155,29 @@
 :global([data-theme='light']) .stage { --or:#c9a24a; --or-clair:#e5cf9a; --argent:#d3d5da; border-color:#c5b991; box-shadow:0 18px 40px rgba(45,39,25,.1); }
 :global([data-theme='light']) .worlds { border-color:var(--ligne); }
 :global([data-theme='light']) .whatsapp { border-color:var(--champ-filet); }
+/* Morning and night share the same interactive model. */
+.stage { overflow: hidden; }
+.stageCanvas > [role='region']:focus-visible { outline: 2px solid var(--or); outline-offset: -4px; }
+.stageOrbit { display: none; }
+:global([data-theme='light']) .stage { background: #d9e8ed; --or-clair: #654b16; --argent: #34414b; }
+:global([data-theme='light']) .stageTop,
+:global([data-theme='light']) .stageProjects,
+:global([data-theme='light']) .pause { color: #34414b; }
+@media (min-width: 961px) {
+  .hero { min-height: 100svh; }
+  .stage { height: clamp(360px, 58svh, 650px); }
+  .composition { padding-block: 20px; }
+}
+/* A taller, tightly set signature with room for the entrance masks. */
+.hero .title:not(.customTitle) { font-size: clamp(46px, 13.5vw, 82px); line-height: .86; letter-spacing: -.035em; }
+.hero .title:not(.customTitle) .lineMask { padding-block: .12em; margin-block: -.12em; }
+@media (min-width: 600px) and (max-width: 960px) {
+  .hero .title:not(.customTitle) { font-size: 11.5vw; }
+}
+@media (min-width: 961px) {
+  .hero .title:not(.customTitle) { font-size: clamp(78px, 7.5vw, 144px); margin-bottom: 26px; }
+}
+
+.hero .title:not(.customTitle) .lineMask + .lineMask { margin-top: -.24em; }
+/* Handwritten supporting copy, with a stronger stroke at reading size. */
+.hero .lede { font-family: var(--ff-signature); font-size: clamp(26px, 2vw, 34px); font-weight: 600; line-height: 1.4; letter-spacing: 0; max-width: 35ch; }

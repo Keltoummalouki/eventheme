@@ -21,7 +21,7 @@ export function ArrowIcon({ className }: { className?: string }) {
 type IconProps = { className?: string };
 
 /** Trait fin commun aux pictogrammes d'interface : décoratifs, jamais annoncés. */
-function Glyph({ className, children, mirror = false }: IconProps & { children: React.ReactNode; mirror?: boolean }) {
+export function Glyph({ className, children, mirror = false }: IconProps & { children: React.ReactNode; mirror?: boolean }) {
   return (
     <svg
       className={className}

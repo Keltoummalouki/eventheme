@@ -18,7 +18,7 @@ import {
 } from "./types";
 import { verifyContinuation } from "./continuation";
 import { attachmentPath, moroccanYear, nextReference } from "./requests";
-import { adminLogin, authConfigured, hasAdminRole } from "./auth";
+import { accountOf, adminLogin, authConfigured, hasAdminRole, type AdminAccount } from "./auth";
 export { authConfigured } from "./auth";
 
 export const configured = () =>
@@ -64,21 +64,27 @@ function database() {
 }
 // Every mode, including local data, requires a Supabase account with the admin role.
 // getUser() asks the Auth server, so a deleted or demoted account loses access at once.
-export async function isAdmin() {
-  if (!authConfigured()) return false;
+async function currentAdmin(): Promise<AdminAccount | null> {
+  if (!authConfigured()) return null;
   const client = await authClient();
   const {
     data: { user },
     error,
   } = await client.auth.getUser();
-  return !error && hasAdminRole(user);
+  return !error && hasAdminRole(user) ? accountOf(user) : null;
+}
+export async function isAdmin() {
+  return (await currentAdmin()) !== null;
 }
 export async function requireAdmin() {
   if (!(await isAdmin())) throw new Error("UNAUTHORIZED");
 }
 // For admin pages: send anyone without an admin session to the login page.
-export async function verifyAdmin() {
-  if (!(await isAdmin())) redirect(adminLogin);
+// Returns the signed-in account (greeting and account card of the back office).
+export async function verifyAdmin(): Promise<AdminAccount> {
+  const account = await currentAdmin();
+  if (!account) redirect(adminLogin);
+  return account;
 }
 
 type LocalStore = { entries: Entry[]; inquiries: Inquiry[] };

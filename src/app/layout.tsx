@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bebas_Neue, Noto_Kufi_Arabic, Noto_Sans_Arabic, Roboto } from "next/font/google";
+import { Allura, Bebas_Neue, Noto_Kufi_Arabic, Noto_Sans_Arabic, Roboto } from "next/font/google";
 import localFont from "next/font/local";
 import ComingSoon from "@/components/eventheme/ComingSoon";
 import { EventhemeProvider } from "@/components/eventheme/Provider";
@@ -35,11 +35,13 @@ const roboto = Roboto({
 });
 
 const signature = localFont({
-  src: "./fonts/Signature.otf",
+  src: "./fonts/Baltime.otf",
+  adjustFontFallback: false,
   weight: "400",
   display: "swap",
   variable: "--font-signature",
 });
+const signatureAccents = Allura({ weight: "400", subsets: ["latin", "latin-ext"], display: "swap", variable: "--font-signature-accents" });
 
 /**
  * Arabe (pages /ar) : titres en coufique géométrique, textes en Noto Sans
@@ -115,7 +117,7 @@ export default async function RootLayout({
       suppressHydrationWarning
       lang={locale}
       dir={direction(locale)}
-      className={`${bebas.variable} ${bebasAccents.variable} ${roboto.variable} ${signature.variable} ${arabicDisplay.variable} ${arabicBody.variable}`}
+      className={`${bebas.variable} ${bebasAccents.variable} ${roboto.variable} ${signature.variable} ${signatureAccents.variable} ${arabicDisplay.variable} ${arabicBody.variable}`}
     >
       <body>
         <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('eventheme-theme');document.documentElement.dataset.theme=t==='light'||t==='dark'?t:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}catch{document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}" }} />
