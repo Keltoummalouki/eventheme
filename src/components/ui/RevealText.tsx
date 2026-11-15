@@ -17,7 +17,7 @@ type RevealTextProps = {
 
 /**
  * Titre dévoilé ligne par ligne, chaque ligne remontant derrière son propre
- * masque. C'est le geste éditorial signature d'AURÉLYS : on l'utilise sur les
+ * masque. C'est le geste éditorial signature de la maquette d'origine : on l'utilise sur les
  * titres de section et la promesse d'accueil, jamais sur un paragraphe long
  * (au-delà de quelques lignes, la lecture devient laborieuse).
  *

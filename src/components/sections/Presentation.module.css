@@ -1,110 +1,41 @@
-/* Présentation rapide : manifeste, engagements. */
-
-.root {
-  padding: clamp(96px, 12vw, 160px) 6vw clamp(80px, 10vw, 130px);
-  max-width: 1440px;
-  margin: 0 auto;
+.root { padding: clamp(90px, 10vw, 160px) 6%; background: var(--noir); overflow: clip; }
+.intro { max-width: 1440px; margin: auto; display: grid; grid-template-columns: 1.25fr .75fr; gap: 32px 9%; align-items: end; }
+.intro > p { grid-column: 1 / -1; }
+.manifesto p { max-width: 41ch; color: var(--argent); font-family: var(--ff-body); font-weight: 400; font-size: 14px; line-height: 1.9; }
+.composition { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12%; max-width: 1440px; margin: 90px auto 0; }
+.visual { position: relative; padding: 24px 12% 50px 4%; }
+.photo { position: relative; transform: rotate(-5deg); }
+.photoCrop { aspect-ratio: 4 / 4.6; overflow: hidden; background: var(--noir-3); }
+.photoCrop img { height: 112%; margin-top: -6%; object-fit: cover; filter: saturate(.75); }
+.photo figcaption { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; font-size: 10px; color: var(--argent); }
+.photo figcaption span:last-child { font-size: 8px; color: var(--gris); }
+.orbit { position: absolute; inset: 6% -6%; border: 1px solid rgba(201, 162, 74, 0.23); border-radius: 50%; transform: rotate(-24deg); }
+.annotation { position: absolute; bottom: 0; inset-inline-end: -6%; color: var(--or); font-family: var(--ff-signature); font-style: normal; font-weight: 400; font-size: clamp(34px, 3.8vw, 58px); line-height: .95; letter-spacing: 0; transform: rotate(-6deg); }
+/* Une boîte par ligne, à la largeur du texte : chacune s'écrit à son tour. */
+.noteLine { display: block; width: fit-content; }
+.pillars { display: flex; flex-direction: column; }
+.pillar { position: relative; display: grid; grid-template-columns: 32px 1fr; gap: 14px; padding-block: 28px; }
+/* Filet entre deux métiers : un élément plutôt qu'une bordure, pour pouvoir le tracer dans le sens de lecture. */
+.rule { position: absolute; inset-block-start: 0; inset-inline: 0; height: 1px; background: var(--ligne); transform-origin: left; }
+[dir='rtl'] .rule { transform-origin: right; }
+.num { padding-top: 10px; font-size: 10px; color: var(--or); }
+.root .pillar h3 { font-family: var(--ff-display); font-weight: 400; font-size: clamp(28px, 2.8vw, 44px); line-height: 1.2; letter-spacing: -.035em; }
+.root .pillar p { margin-top: 12px; max-width: 35ch; font-size: 13px; line-height: 1.8; color: var(--argent); }
+@media (max-width: 767px) {
+  .intro { grid-template-columns: 1fr; gap: 24px; }
+  .manifesto p { max-width: 43ch; }
+  .composition { gap: 60px; grid-template-columns: 1fr; margin-top: 45px; }
+  .visual { max-width: 480px; width: 90%; padding: 15px 10% 42px 4%; }
+  .photoCrop { aspect-ratio: 1.12; }
+  .annotation { inset-inline-end: -6%; }
+  .pillar { padding-block: 22px; }
 }
-
-/* --- Manifeste ---------------------------------------------------------- */
-
-.root .manifesto {
-  margin: 0 auto clamp(80px, 10vw, 130px);
-  max-width: 24ch;
-  text-align: center;
-  font-family: var(--ff-display);
-  font-size: clamp(2rem, 4.4vw, 4rem);
-  line-height: 1.18;
-  letter-spacing: -0.02em;
-  color: var(--blanc);
-}
-
-.word {
-  will-change: opacity;
-}
-
-/* --- Engagements ------------------------------------------------------- */
-
-.pillars {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border-top: 1px solid var(--ligne);
-}
-
-.pillar {
-  position: relative;
-  padding: 36px 28px 10px 0;
-}
-
-.pillar + .pillar {
-  padding-left: 28px;
-  border-left: 1px solid var(--ligne);
-}
-
-/* Filet doré qui se déploie au survol, au-dessus de la bordure. */
-.pillar::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: var(--or);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.7s var(--ease);
-}
-
-.pillar:hover::before {
-  transform: scaleX(1);
-}
-
-.num {
-  font-family: var(--ff-display);
-  font-style: italic;
-  font-size: 1rem;
-  color: var(--or);
-}
-
-.root .pillar h3 {
-  margin: 14px 0 12px;
-  font-size: clamp(1.5rem, 2vw, 1.9rem);
-  color: var(--blanc);
-}
-
-.root .pillar p {
-  font-size: 0.88rem;
-  line-height: 1.8;
-  color: rgba(245, 241, 232, 0.6);
-}
-
-@media (max-width: 960px) {
-  .pillars {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .pillar:nth-child(3) {
-    padding-left: 0;
-    border-left: none;
-  }
-
-  .pillar:nth-child(n + 3) {
-    border-top: 1px solid var(--ligne);
-  }
-}
-
-@media (max-width: 560px) {
-  .pillars {
-    grid-template-columns: 1fr;
-  }
-
-  .pillar,
-  .pillar + .pillar {
-    padding-left: 0;
-    border-left: none;
-  }
-
-  .pillar + .pillar {
-    border-top: 1px solid var(--ligne);
-  }
-}
+/* The section's gold line and four rails follow reading progress. */
+.productionLabel { position: relative; padding-bottom: 18px; }
+.productionLine { position: absolute; bottom: 0; inset-inline: 0; height: 1px; background: var(--or); transform-origin: left; }
+.pillar { isolation: isolate; }
+.pillarAccent { position: absolute; inset: 0 -18px; z-index: -1; pointer-events: none; background: linear-gradient(90deg, rgba(201,162,74,.12), transparent); opacity: 0; }
+.pillarProgress { position: absolute; inset-inline-start: -18px; top: 24px; bottom: 24px; width: 2px; background: var(--or); transform-origin: top; }
+[dir='rtl'] .productionLine { transform-origin: right; }
+[dir='rtl'] .pillarAccent { background: linear-gradient(270deg, rgba(201,162,74,.12), transparent); }
+@media (prefers-reduced-motion: reduce) { .pillarAccent, .pillarProgress { display: none; } }

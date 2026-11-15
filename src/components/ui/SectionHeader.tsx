@@ -9,7 +9,7 @@ import styles from './SectionHeader.module.css';
 
 type SectionHeaderProps = {
   eyebrow: string;
-  /** Titre de section ; un `<em>` y prend l'italique doré de la charte. */
+  /** Titre de section ; un `<em>` y prend l'accent doré de la charte. */
   title: ReactNode;
   description?: ReactNode;
   centered?: boolean;

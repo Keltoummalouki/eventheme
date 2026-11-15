@@ -92,10 +92,10 @@
 
 .index {
   position: absolute;
-  left: 18px;
+  inset-inline-start: 18px;
   bottom: 14px;
   font-family: var(--ff-display);
-  font-style: italic;
+  font-style: normal;
   font-size: 2.6rem;
   line-height: 1;
   color: transparent;
@@ -105,12 +105,12 @@
 .tag {
   position: absolute;
   top: 14px;
-  left: 14px;
+  inset-inline-start: 14px;
   padding: 5px 10px;
   font-size: 0.56rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  background: rgba(5, 5, 5, 0.7);
+  background: rgba(8, 9, 11, 0.7);
   backdrop-filter: blur(8px);
   color: var(--blanc);
 }
@@ -200,7 +200,7 @@
   padding: 30px;
   border: 1px solid var(--ligne);
   background:
-    radial-gradient(ellipse at 100% 0%, rgba(201, 163, 78, 0.16), transparent 60%),
+    radial-gradient(ellipse at 100% 0%, rgba(201, 162, 74, 0.16), transparent 60%),
     var(--noir-2);
   transition: border-color 0.5s ease;
 }
@@ -224,7 +224,7 @@
 }
 
 .moreTitle em {
-  font-style: italic;
+  font-style: normal;
   color: var(--or-clair);
 }
 
@@ -266,12 +266,16 @@
 .fill {
   position: absolute;
   top: -1px;
-  left: 0;
+  inset-inline-start: 0;
   height: 3px;
   width: 100%;
   background: var(--or);
   transform: scaleX(0.12);
   transform-origin: left center;
+}
+/* De droite à gauche (arabe) : la barre part du côté du début de lecture. */
+[dir="rtl"] .fill {
+  transform-origin: right center;
 }
 
 @media (min-width: 960px) {
@@ -293,3 +297,4 @@
     margin-top: 0;
   }
 }
+.tag { color:#fff; }

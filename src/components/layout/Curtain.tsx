@@ -46,15 +46,17 @@ export default function Curtain() {
 
         // Les polices chargées, le logo et le titre sont prêts à être vus.
         let started = false;
+        let disposed = false;
+        let fontDelay: number | undefined;
         const start = () => {
-          if (started) return;
+          if (started || disposed) return;
           started = true;
           timeline.play();
         };
-        document.fonts?.ready.then(() => window.setTimeout(start, 350)).catch(start);
+        document.fonts?.ready.then(() => { if (!disposed) fontDelay = window.setTimeout(start, 180); }).catch(start);
         const safety = window.setTimeout(start, MAX_WAIT_MS);
 
-        return () => window.clearTimeout(safety);
+        return () => { disposed = true; window.clearTimeout(safety); window.clearTimeout(fontDelay); };
       }),
     { scope: ref },
   );

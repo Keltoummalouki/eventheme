@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type KeyboardEvent, type ReactNode, type Ref } from 'react';
-import { formText } from '@/data/ui';
+import { useFormText } from './locale';
 import { cx } from '@/lib/cx';
 import {
   clampNumber,
@@ -80,6 +80,7 @@ export default function NumberInput({
   onBlur,
   ref,
 }: NumberInputProps) {
+  const formText = useFormText();
   const ids = useFieldIds(id, hint, error);
   const bounds = { min, max };
   const locked = disabled || readOnly;

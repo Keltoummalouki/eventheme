@@ -8,6 +8,14 @@ export function checkOrigin(request: Request) {
   if (!origin || new URL(origin).origin !== new URL(expected).origin)
     throw new Error("Origine non autorisée.");
 }
+/**
+ * Adresse du client, telle que transmise par l’hébergeur (première entrée de
+ * x-forwarded-for). Absente en développement : le contrôle est alors ignoré.
+ */
+export function clientAddress(request: Request) {
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || request.headers.get("x-real-ip")?.trim() || "";
+}
 export async function readBody(request: Request): Promise<unknown> {
   return JSON.parse((await readBytes(request, 100000)).toString("utf8"));
 }

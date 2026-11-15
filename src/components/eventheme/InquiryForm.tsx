@@ -12,16 +12,20 @@ import {
   Select,
   Textarea,
 } from "@/components/ui/form";
-import { followersLabel } from "@/lib/eventheme/types";
+import { contactMethodLabel } from "@/data/locales";
+import { track } from "@/lib/eventheme/audience";
+import { followersLabel, siteSettings } from "@/lib/eventheme/types";
+import { fill } from "@/lib/i18n";
 import s from "./Eventheme.module.css";
 import { ArrowUpRightIcon } from "@/components/ui/icons";
-const contactMethods = ["WhatsApp", "Téléphone", "E-mail"].map((value) => ({
-  value,
-  label: value,
-}));
+/** Valeurs enregistrées en français ; le libellé suit la langue de la page. */
+const CONTACT_METHODS = ["WhatsApp", "Téléphone", "E-mail"];
 /** Formulaire de la page Contact. Les demandes de devis passent par « Mon devis ». */
 export default function InquiryForm() {
-  const { entries, local } = useEventheme();
+  const { entries, local, locale, t, href } = useEventheme();
+  const c = t.contact;
+  const settings = siteSettings(entries);
+  const contactMethods = CONTACT_METHODS.map((value) => ({ value, label: contactMethodLabel(locale, value) }));
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -38,6 +42,7 @@ export default function InquiryForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState("");
+  const [emailed, setEmailed] = useState(false);
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -47,7 +52,7 @@ export default function InquiryForm() {
     try {
       const response = await fetch("/api/inquiries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Locale": locale },
         body: JSON.stringify({
           ...form,
           kind: "contact",
@@ -57,13 +62,11 @@ export default function InquiryForm() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
-      setSent(result.id);
+      track("generate_lead", { lead_type: "contact" });
+      setSent(result.reference || String(result.id).slice(0, 8).toUpperCase());
+      setEmailed(result.emailed === true);
     } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Impossible d’envoyer votre message. Réessayez.",
-      );
+      setError(error instanceof Error && error.message ? error.message : c.failed);
     } finally {
       setBusy(false);
     }
@@ -72,32 +75,28 @@ export default function InquiryForm() {
     return (
       <section className={s.success}>
         <span className={s.successIcon}>✓</span>
-        <span className={s.eyebrow}>MESSAGE ENVOYÉ</span>
+        <span className={s.eyebrow}>{c.sentEyebrow}</span>
         <h1>
-          Merci pour
+          {c.sentStart}
           <br />
-          <em>votre message.</em>
+          <em>{c.sentEnd}</em>
         </h1>
-        <p>
-          {local
-            ? "Votre message de test a été enregistré dans l’administration locale. Aucun e-mail n’a été envoyé."
-            : "Notre équipe vous répondra dans les meilleurs délais."}
-        </p>
-        <p className={s.caption}>Référence : {sent.slice(0, 8).toUpperCase()}</p>
-        <Button href="/" icon={<ArrowUpRightIcon />} className={s.successAction}>
-          Retour à l’accueil
+        <p>{local ? c.sentLocal : `${c.sentText}${emailed ? c.sentEmailed : ""}`}</p>
+        <p className={s.caption}>{fill(c.reference, { reference: sent })}</p>
+        <Button href={href("home")} icon={<ArrowUpRightIcon />} className={s.successAction}>
+          {t.common.backHome}
         </Button>
       </section>
     );
   return (
     <>
-      <PageIntro id="contact" eyebrow="PARLONS DE VOTRE PROJET" />
+      <PageIntro id="contact" eyebrow={c.eyebrow} />
       <section className={`${s.section} ${s.formLayout}`}>
         <form onSubmit={submit} className={s.form}>
-          <h2 className={s.stepTitle}>Racontez-nous votre idée.</h2>
+          <h2 className={s.stepTitle}>{c.title}</h2>
           <div className={s.honeypot} aria-hidden="true">
             <label>
-              Site web
+              {t.quote.honeypot}
               <input
                 tabIndex={-1}
                 autoComplete="off"
@@ -108,7 +107,7 @@ export default function InquiryForm() {
           </div>
           <div className={s.formGrid}>
             <Input
-              label="Nom complet"
+              label={c.name}
               name="name"
               autoComplete="name"
               required
@@ -117,14 +116,14 @@ export default function InquiryForm() {
               onChange={(e) => set("name", e.target.value)}
             />
             <Input
-              label="Entreprise"
+              label={c.company}
               autoComplete="organization"
               maxLength={250}
               value={form.company}
               onChange={(e) => set("company", e.target.value)}
             />
             <Input
-              label="E-mail"
+              label={c.email}
               name="email"
               type="email"
               autoComplete="email"
@@ -133,24 +132,24 @@ export default function InquiryForm() {
               onChange={(e) => set("email", e.target.value)}
             />
             <PhoneInput
-              label="Téléphone"
+              label={c.phone}
               name="phone"
               required
               value={form.phone}
               onChange={(phone) => set("phone", phone)}
             />
             <Select
-              label="Contact préféré"
+              label={c.contactMethod}
               options={contactMethods}
               value={form.contactMethod}
               onChange={(value) => set("contactMethod", value)}
             />
             <Select
-              label="Type d’événement"
+              label={c.eventType}
               searchable
-              placeholder="À définir"
+              placeholder={c.toDefine}
               options={[
-                { value: "", label: "À définir" },
+                { value: "", label: c.toDefine },
                 ...entries
                   .filter((e) => e.kind === "events")
                   .map((e) => ({ value: e.id, label: e.title })),
@@ -159,7 +158,7 @@ export default function InquiryForm() {
               onChange={(value) => set("event", value)}
             />
             <Input
-              label="Objet"
+              label={c.subject}
               className={s.fullWidth}
               required
               maxLength={250}
@@ -167,7 +166,7 @@ export default function InquiryForm() {
               onChange={(e) => set("subject", e.target.value)}
             />
             <Textarea
-              label="Votre message"
+              label={c.message}
               className={s.fullWidth}
               required
               rows={5}
@@ -182,10 +181,9 @@ export default function InquiryForm() {
             checked={form.consent}
             onChange={(consent) => set("consent", consent)}
           >
-            J’accepte que mes coordonnées soient utilisées pour répondre à ma
-            demande et j’ai pris connaissance de la{" "}
-            <Link href="/politique-de-confidentialite" target="_blank">
-              politique de confidentialité
+            {c.consentStart}{" "}
+            <Link href={href("privacy")} target="_blank">
+              {t.quote.privacyPolicy}
             </Link>
             .
           </Checkbox>
@@ -196,20 +194,38 @@ export default function InquiryForm() {
           )}
           <div className={s.formActions}>
             <Button type="submit" loading={busy} icon={<ArrowUpRightIcon />}>
-              {busy ? "Envoi…" : "Envoyer mon message"}
+              {busy ? t.common.sending : c.submit}
             </Button>
           </div>
         </form>
         <aside className={s.summary}>
-          <span className={s.eyebrow}>RESTONS EN CONTACT</span>
-          <h3>À votre écoute.</h3>
-          <p>
-            Un projet précis ? Composez votre événement et recevez votre devis
-            estimatif.
-          </p>
-          <Button href="/devis" variant="link" icon={<ArrowUpRightIcon />}>
-            Mon devis
+          <span className={s.eyebrow}>{c.asideEyebrow}</span>
+          <h3>{c.asideTitle}</h3>
+          <p>{c.asideText}</p>
+          <Button href={href("quote")} variant="link" icon={<ArrowUpRightIcon />}>
+            {t.nav.quote}
           </Button>
+          {(settings.address || settings.hours) && (
+            <div className={s.contactDetails}>
+              {settings.address && (
+                <p>
+                  <strong>{c.address}</strong>
+                  <span className={s.preserveLines}>{settings.address}</span>
+                  {settings.map && (
+                    <a href={settings.map} target="_blank" rel="noreferrer" className={s.inlineLink}>
+                      {c.map}
+                    </a>
+                  )}
+                </p>
+              )}
+              {settings.hours && (
+                <p>
+                  <strong>{c.hours}</strong>
+                  <span className={s.preserveLines}>{settings.hours}</span>
+                </p>
+              )}
+            </div>
+          )}
           {entries
             .filter((e) => e.kind === "socials")
             .map((e) => (
@@ -223,7 +239,7 @@ export default function InquiryForm() {
                 <span>
                   {e.title}
                   <small>
-                    {[e.description, e.followers && followersLabel(e.followers)]
+                    {[e.description, e.followers && followersLabel(e.followers, locale)]
                       .filter(Boolean)
                       .join(" · ")}
                   </small>
@@ -232,10 +248,7 @@ export default function InquiryForm() {
               </a>
             ))}
           {local && (
-            <p className={s.demoNote}>
-              Aperçu local · Utilisez des coordonnées fictives. Les messages
-              sont enregistrés sur cet ordinateur.
-            </p>
+            <p className={s.demoNote}>{c.localNote}</p>
           )}
         </aside>
       </section>

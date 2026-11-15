@@ -1,7 +1,7 @@
 'use client';
 
 /* ==========================================================================
-   AURÉLYS — Socle d'animation (GSAP)
+   EVENTHEMES — Socle d'animation (GSAP)
 
    Point d'entrée unique : les plugins sont enregistrés une seule fois ici,
    et toutes les sections importent `gsap` depuis ce module plutôt que depuis

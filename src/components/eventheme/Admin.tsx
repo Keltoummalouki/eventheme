@@ -1,6 +1,9 @@
 "use client";
 import Link from "next/link";
 import {
+  useEffect,
+  useMemo,
+  useRef,
   useState,
   type Dispatch,
   type FormEvent,
@@ -8,6 +11,14 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { cx } from "@/lib/cx";
+import { gsap, prefersReducedMotion, useGSAP } from "@/lib/motion";
+import type { AdminAccount } from "@/lib/eventheme/auth";
+import { inquiryKindLabels, type AdminView } from "@/lib/eventheme/dashboard";
+import AdminShell, { locate, navigation } from "./admin/AdminShell";
+import Dashboard, { StatusPill } from "./admin/Dashboard";
+import type { PaletteItem } from "./admin/CommandPalette";
+import { DownloadIcon, ExternalIcon, LogoutIcon, MailIcon, PhoneIcon, PlusIcon, QuoteIcon } from "./admin/icons";
+import a from "./admin/Admin.module.css";
 import {
   kinds,
   labels,
@@ -18,13 +29,27 @@ import {
   priceLabel,
   followersLabel,
   socialNetworkOf,
+  participantsLabel,
+  referenceOf,
+  SETTINGS_ID,
+  translatedLocales,
   type Entry,
+  type EntryTranslation,
   type Inquiry,
   type Kind,
+  type SiteSettings,
+  type TranslatedLocale,
   type Variant,
 } from "@/lib/eventheme/types";
 import { adminLogin } from "@/lib/eventheme/auth";
+import { direction, pathFor, type PageKey } from "@/lib/i18n";
+import { isGeneratedId, slugify, uniqueSlug } from "@/lib/slug";
+import { categoryTrail, childCategories, topCategories } from "@/lib/eventheme/catalogue";
+import { sizeLabel } from "@/lib/eventheme/requests";
+import { projectCategories } from "@/data/eventheme";
+import { analytics, statisticsRows } from "@/lib/eventheme/analytics";
 import { Logo } from "./Shell";
+import Statistics from "./Statistics";
 import Button from "@/components/ui/Button";
 import { confirmDialog } from "@/components/ui/dialog";
 import { ArrowUpRightIcon, CloseIcon, SocialIcon } from "@/components/ui/icons";
@@ -46,31 +71,54 @@ const sitePages = [
   { id: "about", label: "À propos" },
   { id: "values", label: "Nos valeurs" },
   { id: "contact", label: "Contact" },
-  { id: "events-page", label: "Page Événements" },
   { id: "services-page", label: "Page Services" },
-  { id: "location-page", label: "Page Location" },
+  { id: "location-page", label: "Page Matériel" },
   { id: "projects-page", label: "Page Réalisations" },
+  { id: "cities-page", label: "Page Zones d’intervention" },
   { id: "legal", label: "Mentions légales" },
   { id: "privacy", label: "Politique de confidentialité" },
 ];
+/** Types de contenu listés dans « Votre site » ; les paramètres ont leur propre onglet. */
+const contentKinds: readonly Kind[] = kinds.filter((kind) => kind !== "settings");
+/** Contenus qui ont une adresse publique : un nouveau contenu prend un identifiant lisible, tiré de son titre. */
+const addressed: readonly Kind[] = ["services", "products", "categories", "events", "projects", "cities"];
+/** Page publique de chaque type de fiche (aperçu de l’adresse dans le formulaire). */
+const pageOf: Partial<Record<Kind, PageKey>> = {
+  services: "services",
+  products: "equipment",
+  projects: "projects",
+  cities: "cities",
+};
+/** Nouveau contenu : identifiant lisible et libre (« marrakech », « marrakech-2 »…) à la place de l’identifiant aléatoire. */
+const withReadableId = (entry: Entry, entries: Entry[]): Entry =>
+  addressed.includes(entry.kind) && isGeneratedId(entry.id) && !entries.some((e) => e.id === entry.id)
+    ? { ...entry, id: uniqueSlug(slugify(entry.title), entries.map((e) => e.id)) }
+    : entry;
 type FormField =
   | "title"
-  | "eventType"
+  | "discipline"
+  | "catalogue"
+  | "identity"
+  | "parent"
+  | "projectType"
   | "subtitle"
   | "description"
+  | "items"
   | "image"
   | "gallery"
   | "price"
   | "product"
   | "variants"
   | "project"
+  | "related"
   | "demo";
 /** Each form shows only the fields the public site actually reads for that kind. */
 const formFields: Record<Kind, readonly FormField[]> = {
-  services: ["title", "eventType", "description", "image", "price"],
+  services: ["title", "discipline", "description", "items", "related", "image", "price"],
   products: [
     "title",
-    "eventType",
+    "catalogue",
+    "identity",
     "description",
     "image",
     "gallery",
@@ -79,20 +127,38 @@ const formFields: Record<Kind, readonly FormField[]> = {
     "variants",
     "demo",
   ],
+  categories: ["title", "parent", "description", "image"],
   events: ["title", "description", "image", "price"],
   projects: [
     "title",
-    "eventType",
+    "projectType",
     "description",
+    "items",
     "image",
     "gallery",
     "project",
     "demo",
   ],
-  pages: ["title", "eventType", "subtitle", "description", "image", "gallery"],
+  pages: ["title", "subtitle", "description", "image", "gallery"],
+  // One page per city: the name, an optional page title, a text proper to that city, a photo.
+  cities: ["title", "subtitle", "description", "image"],
+  // Site settings have their own panel (SettingsPanel).
+  settings: [],
   // Social links have their own form: network, link, account name, followers.
   socials: [],
 };
+const kindNames = inquiryKindLabels;
+/** Nouvelle fiche vierge d'un type de contenu (bouton « Ajouter », raccourcis du tableau de bord). */
+const blankEntry = (kind: Kind): Entry => ({
+  id: crypto.randomUUID(),
+  kind,
+  title: "",
+  description: "",
+  published: true,
+  price: null,
+  pricing: "request",
+  variants: [],
+});
 async function api(body: object, path = "/api/admin") {
   const response = await fetch(path, {
     method: "POST",
@@ -190,23 +256,68 @@ export default function Admin({
   initialEntries,
   initialInquiries,
   local,
+  now,
+  offset,
+  mail,
+  account,
+  initialView = "dashboard",
 }: {
   initialEntries: Entry[];
   initialInquiries: Inquiry[];
   local: boolean;
+  /** E-mails automatiques : mode d’envoi et destinataires des alertes. */
+  mail: { mode: "provider" | "preview" | "off"; recipients: string[] };
+  /**
+   * Instant de référence des statistiques, daté par le serveur : la page rendue
+   * et la page hydratée comptent ainsi les mêmes journées.
+   */
+  now: number;
+  /**
+   * Décalage de Casablanca sur UTC à cet instant, lu par le serveur : le
+   * tableau de bord compte ses journées sans consulter les fuseaux du navigateur.
+   */
+  offset: number;
+  /** Le compte connecté : salutation et carte du menu. */
+  account: AdminAccount;
+  /** Onglet demandé par l’adresse (« /admin?vue=quotes »), pour qu’un rechargement garde sa place. */
+  initialView?: AdminView;
 }) {
   const router = useRouter();
   const [entries, setEntries] = useState(initialEntries);
   const [inquiries, setInquiries] = useState(initialInquiries);
-  const [tab, setTab] = useState<
-    Kind | "dashboard" | "quotes" | "messages" | "clients"
-  >("dashboard");
+  const [tab, setTab] = useState<AdminView>(initialView);
   const [edit, setEdit] = useState<Entry | null>(null);
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const view = useRef<HTMLDivElement>(null);
+  const detail = useRef<HTMLDivElement>(null);
+  const shown = useRef(false);
+
+  // Changement d’onglet : le contenu entre en fondu (sauf au premier affichage et en mouvement réduit).
+  useGSAP(
+    () => {
+      if (!shown.current) {
+        shown.current = true;
+        return;
+      }
+      if (!view.current || prefersReducedMotion()) return;
+      gsap.fromTo(
+        view.current,
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.45, ease: "power3.out", clearProps: "opacity,transform" },
+      );
+    },
+    { dependencies: [tab] },
+  );
+
+  // Une demande ouverte depuis une liste s’affiche sous elle : on l’amène à l’écran.
+  useEffect(() => {
+    if (inquiry)
+      detail.current?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
+  }, [inquiry?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   async function mutate(body: object, onSuccess?: () => void) {
     setBusy(true);
     setError("");
@@ -229,53 +340,50 @@ export default function Admin({
   }
   const quotes = inquiries.filter((i) => i.kind === "quote");
   const messages = inquiries.filter((i) => i.kind === "contact");
-  const title = kinds.includes(tab as Kind)
-    ? labels[tab as Kind]
-    : {
-        dashboard: "Vue d’ensemble",
-        quotes: "Demandes de devis",
-        messages: "Messages de contact",
-        clients: "Clients & contacts",
-      }[tab as "dashboard"];
-  function navigate(next: typeof tab) {
+  const stats = useMemo(
+    () => analytics(entries, inquiries, new Date(now)),
+    [entries, inquiries, now],
+  );
+  const here = locate(tab);
+  function navigate(next: AdminView) {
+    if (next !== tab) window.scrollTo({ top: 0 });
     setTab(next);
     setEdit(null);
     setInquiry(null);
     setSearch("");
     setError("");
-    setNotice("");
+    // L’adresse suit l’onglet : un rechargement ou un lien partagé y ramène.
+    window.history.replaceState(null, "", next === "dashboard" ? "/admin" : `/admin?vue=${next}`);
   }
-  function exportCsv() {
-    const rows = [
-      [
-        "Référence",
-        "Type",
-        "Nom",
-        "Entreprise",
-        "E-mail",
-        "Téléphone",
-        "Ville",
-        "Adresse",
-        "Date événement",
-        "Statut",
-        "Message",
-      ],
-      ...inquiries.map((i) => [
-        i.id,
-        i.kind,
-        i.name,
-        i.company,
-        i.email,
-        i.phone,
-        i.city,
-        i.address ?? "",
-        i.date,
-        i.status,
-        i.message,
-      ]),
-    ];
+  /** Ouvre une fiche dans son onglet. */
+  function editEntry(target: Entry) {
+    navigate(target.kind);
+    setEdit(structuredClone(target));
+  }
+  /** Nouvelle fiche d’un type de contenu, ouverte dans son onglet. */
+  function createEntry(kind: Kind) {
+    navigate(kind);
+    setEdit(blankEntry(kind));
+  }
+  async function logout() {
+    await api({ action: "logout" }, "/api/auth");
+    router.replace(adminLogin);
+  }
+  /** Ouvre une demande depuis les statistiques, dans la liste qui la contient. */
+  function openInquiry(target: Inquiry) {
+    navigate(
+      target.kind === "contact"
+        ? "messages"
+        : target.kind === "callback"
+          ? "clients"
+          : "quotes",
+    );
+    setInquiry(structuredClone(target));
+  }
+  /** Écrit un CSV lisible par Excel : séparateur « ; », BOM, cellules neutralisées. */
+  function downloadCsv(rows: string[][], name: string) {
     const csv =
-      "\uFEFF" +
+      "﻿" +
       rows
         .map((row) =>
           row
@@ -291,91 +399,148 @@ export default function Admin({
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "eventheme-demandes.csv";
+    a.download = name;
     a.click();
     URL.revokeObjectURL(url);
   }
+  function exportCsv() {
+    const eventTitle = (id: string) =>
+      entries.find((e) => e.id === id && e.kind === "events")?.title ?? "";
+    const rows = [
+      [
+        "Référence",
+        "Type",
+        "Statut",
+        "Reçue le",
+        "Nom",
+        "Entreprise",
+        "E-mail",
+        "Téléphone",
+        "Contact préféré",
+        "Événement",
+        "Date événement",
+        "Ville",
+        "Lieu",
+        "Participants",
+        "Budget estimatif (MAD)",
+        "Montant indicatif (MAD)",
+        "Pièces jointes",
+        "Message",
+      ],
+      ...inquiries.map((i) => [
+        referenceOf(i),
+        kindNames[i.kind],
+        i.status,
+        new Date(i.createdAt).toLocaleDateString("fr-FR"),
+        i.name,
+        i.company,
+        i.email,
+        i.phone,
+        i.contactMethod,
+        eventTitle(i.event),
+        i.date,
+        i.city,
+        i.address ?? "",
+        i.guests ? String(i.guests) : "",
+        i.budget ? String(i.budget) : "",
+        i.estimate ? String(i.estimate) : "",
+        String(i.attachments?.length ?? 0),
+        i.message,
+      ]),
+    ];
+    downloadCsv(rows, "eventhemes-demandes.csv");
+  }
+  /** Pastilles du menu : ce qui attend une première réponse. */
+  const fresh = (kind: Inquiry["kind"]) => inquiries.filter((i) => i.kind === kind && i.status === "Nouveau").length;
+  const counts = { quotes: fresh("quote"), messages: fresh("contact"), clients: fresh("callback") };
+  /** La palette de commandes : aller à un onglet, lancer une action, retrouver une demande ou une fiche. */
+  const paletteItems = useMemo<PaletteItem[]>(() => {
+    const kindIcons = { quote: <QuoteIcon />, callback: <PhoneIcon />, contact: <MailIcon /> };
+    const go: PaletteItem[] = navigation.flatMap((group) =>
+      group.items.map(({ view: target, label, icon: Icon }) => ({
+        id: `aller-${target}`,
+        group: "Aller à",
+        label,
+        hint: group.title,
+        icon: <Icon />,
+        run: () => navigate(target),
+      })),
+    );
+    const actions: PaletteItem[] = [
+      { id: "ajout-materiel", label: "Ajouter du matériel", kind: "products" as Kind },
+      { id: "ajout-realisation", label: "Nouvelle réalisation", kind: "projects" as Kind },
+      { id: "ajout-service", label: "Nouveau service", kind: "services" as Kind },
+      { id: "ajout-categorie", label: "Nouvelle catégorie du matériel", kind: "categories" as Kind },
+      { id: "ajout-ville", label: "Nouvelle zone d’intervention", kind: "cities" as Kind },
+    ].map(({ id, label, kind }) => ({ id, group: "Actions", label, icon: <PlusIcon />, run: () => createEntry(kind) }));
+    actions.push(
+      { id: "export-demandes", group: "Actions", label: "Exporter les demandes (CSV)", icon: <DownloadIcon />, run: exportCsv },
+      {
+        id: "export-statistiques",
+        group: "Actions",
+        label: "Exporter les statistiques (CSV)",
+        icon: <DownloadIcon />,
+        run: () => downloadCsv(statisticsRows(stats), "eventhemes-statistiques.csv"),
+      },
+      { id: "voir-site", group: "Actions", label: "Voir le site", hint: "Nouvel onglet", icon: <ExternalIcon />, run: () => window.open("/", "_blank", "noopener") },
+      { id: "deconnexion", group: "Actions", label: "Se déconnecter", icon: <LogoutIcon />, run: () => void logout() },
+    );
+    const requests: PaletteItem[] = inquiries.map((item) => ({
+      id: `demande-${item.id}`,
+      group: "Demandes",
+      label: item.name || "Demande sans nom",
+      hint: [kindNames[item.kind], referenceOf(item), item.city, item.status].filter(Boolean).join(" · "),
+      keywords: [item.company, item.email, item.phone, item.subject].join(" "),
+      icon: kindIcons[item.kind],
+      searchOnly: true,
+      run: () => openInquiry(item),
+    }));
+    const records: PaletteItem[] = entries
+      .filter((entry) => entry.kind !== "settings")
+      .map((entry) => {
+        const Icon = locate(entry.kind).icon;
+        return {
+          id: `fiche-${entry.kind}-${entry.id}`,
+          group: "Contenus",
+          label: entry.title || entry.id,
+          hint: `${labels[entry.kind]}${entry.published ? "" : " · Brouillon"}`,
+          keywords: [entry.id, entry.brand, entry.model, entry.reference, entry.category].filter(Boolean).join(" "),
+          icon: <Icon />,
+          searchOnly: true,
+          run: () => editEntry(entry),
+        };
+      });
+    return [...go, ...actions, ...requests, ...records];
+    // Les actions lisent l’état courant à chaque rendu : la liste est recalculée avec les données.
+  }, [entries, inquiries, stats]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div className={s.admin}>
-      <aside className={s.sidebar}>
-        <Link href="/">
-          <Logo />
-        </Link>
-        <span className={s.eyebrow}>ADMINISTRATION</span>
-        <nav aria-label="Administration">
-          <button
-            className={tab === "dashboard" ? s.sideActive : ""}
-            onClick={() => navigate("dashboard")}
-          >
-            ◈ Vue d’ensemble
-          </button>
-          <span>RELATION CLIENT</span>
-          <button
-            className={tab === "quotes" ? s.sideActive : ""}
-            onClick={() => navigate("quotes")}
-          >
-            Demandes de devis <b>{quotes.length}</b>
-          </button>
-          <button
-            className={tab === "messages" ? s.sideActive : ""}
-            onClick={() => navigate("messages")}
-          >
-            Messages <b>{messages.length}</b>
-          </button>
-          <button
-            className={tab === "clients" ? s.sideActive : ""}
-            onClick={() => navigate("clients")}
-          >
-            Clients & contacts
-          </button>
-          <span>VOTRE SITE</span>
-          {kinds.map((kind) => (
-            <button
-              key={kind}
-              className={tab === kind ? s.sideActive : ""}
-              onClick={() => navigate(kind)}
-            >
-              {labels[kind]}
-            </button>
-          ))}
-        </nav>
-        <Button
-          href="/"
-          target="_blank"
-          variant="link"
-          size="sm"
-          icon={<ArrowUpRightIcon />}
-          className={s.sidebarLink}
-        >
-          Voir le site
-        </Button>
-        <Button
-          variant="link"
-          size="sm"
-          className={s.sidebarLink}
-          onClick={async () => {
-            await api({ action: "logout" }, "/api/auth");
-            router.replace(adminLogin);
-          }}
-        >
-          Se déconnecter
-        </Button>
-      </aside>
-      <main className={s.adminMain}>
-        <header className={s.adminHeader}>
-          <div>
-            <span className={s.eyebrow}>EVENTHEME / {title}</span>
-            <h1>{title}</h1>
+    <AdminShell
+      view={tab}
+      navigate={navigate}
+      counts={counts}
+      account={account}
+      local={local}
+      onLogout={() => void logout()}
+      paletteItems={paletteItems}
+      notice={notice}
+      onNoticeShown={() => setNotice("")}
+    >
+      <div ref={view}>
+        {tab !== "dashboard" && (
+          <div className={a.pageHead}>
+            <p className={a.eyebrow}>{here.group}</p>
+            <h1>{here.label}</h1>
           </div>
-          <span className={s.modeBadge}>
-            {local ? "● Aperçu local" : "● Administration"}
-          </span>
-        </header>
-        {local && (
+        )}
+        {["quotes", "messages", "clients"].includes(tab) && (
           <p className={s.adminBanner}>
-            Les changements sont conservés sur cet ordinateur. Les formulaires
-            alimentent cette boîte de réception. Aucun e-mail n’est envoyé en
-            mode local.
+            {mail.mode === "off"
+              ? "Les e-mails automatiques ne sont pas configurés : les nouvelles demandes n’arrivent que dans cette administration."
+              : mail.mode === "preview"
+                ? "Aperçu local : les e-mails (alertes et accusés de réception) sont enregistrés dans .eventheme/emails/ pour relecture, pas envoyés."
+                : mail.recipients.length
+                  ? `Alertes e-mail envoyées à ${mail.recipients.join(", ")}. Les clients qui donnent leur e-mail reçoivent un accusé de réception.`
+                  : "Aucune adresse ne reçoit les alertes : ajoutez un lien « E-mail » dans Contact & réseaux, ou définissez EMAIL_TEAM."}
           </p>
         )}
         {error && (
@@ -383,69 +548,46 @@ export default function Admin({
             {error}
           </p>
         )}
-        {notice && (
-          <p className={s.saved} role="status">
-            ✓ {notice}
-          </p>
-        )}
         {tab === "dashboard" && (
+          <Dashboard
+            entries={entries}
+            inquiries={inquiries}
+            stats={stats}
+            now={now}
+            offset={offset}
+            account={account}
+            local={local}
+            mail={mail}
+            navigate={navigate}
+            openInquiry={openInquiry}
+            editEntry={editEntry}
+            createEntry={createEntry}
+          />
+        )}
+        {tab === "statistics" && (
           <>
-            <div className={s.metricGrid}>
-              {[
-                ["Demandes de devis", quotes.length],
-                ["Messages reçus", messages.length],
-                [
-                  "À traiter",
-                  inquiries.filter((i) => i.status === "Nouvelle demande")
-                    .length,
-                ],
-                [
-                  "Articles au catalogue",
-                  entries.filter((e) => e.kind === "products").length,
-                ],
-              ].map(([label, number]) => (
-                <div key={label}>
-                  <span>{label}</span>
-                  <strong>{number}</strong>
-                </div>
-              ))}
-            </div>
-            <div className={s.adminPanel}>
-              <h2>Les dernières demandes</h2>
-              <RequestTable
-                inquiries={inquiries.slice(0, 5)}
-                select={setInquiry}
-              />
+            <div className={s.adminToolbar}>
+              <p className={s.caption}>
+                Indicateurs calculés sur les demandes reçues et les contenus
+                publiés. Les montants sont indicatifs : ils proviennent du
+                configurateur et ne valent pas devis.
+              </p>
               <Button
-                variant="link"
-                icon="→"
-                onClick={() => navigate("quotes")}
+                variant="outline"
+                size="sm"
+                icon="↓"
+                className={s.toolbarAction}
+                onClick={() =>
+                  downloadCsv(
+                    statisticsRows(stats),
+                    "eventhemes-statistiques.csv",
+                  )
+                }
               >
-                Toutes les demandes
+                Exporter les statistiques CSV
               </Button>
             </div>
-            <div className={s.adminPanel}>
-              <h2>Votre site, à votre rythme.</h2>
-              <p>
-                Ajoutez vos réalisations, personnalisez les textes et renseignez
-                vos tarifs. Un prix vide signifie « sur devis ». Les tarifs
-                invités sont calculés par personne ; les lieux, types
-                d’événement et niveaux de prestation sont des montants fixes
-                additionnels.
-              </p>
-              <div className={s.actions}>
-                <Button icon={<ArrowUpRightIcon />} onClick={() => navigate("projects")}>
-                  Gérer les réalisations
-                </Button>
-                <Button
-                  variant="link"
-                  icon="→"
-                  onClick={() => navigate("pages")}
-                >
-                  Modifier les pages
-                </Button>
-              </div>
-            </div>
+            <Statistics stats={stats} select={openInquiry} />
           </>
         )}
         {["quotes", "messages", "clients"].includes(tab) && (
@@ -454,7 +596,7 @@ export default function Admin({
               <SearchInput
                 label="Rechercher les demandes"
                 className={s.toolbarSearch}
-                placeholder="Rechercher un nom, un e-mail, un statut…"
+                placeholder="Rechercher une référence, un nom, un e-mail, un statut…"
                 value={search}
                 onChange={setSearch}
               />
@@ -475,7 +617,7 @@ export default function Admin({
                   ? messages
                   : inquiries
               ).filter((i) =>
-                `${i.name} ${i.email} ${i.status}`
+                `${referenceOf(i)} ${i.name} ${i.company} ${i.email} ${i.phone} ${i.status}`
                   .toLowerCase()
                   .includes(search.toLowerCase()),
               )}
@@ -483,7 +625,14 @@ export default function Admin({
             />
           </div>
         )}
-        {kinds.includes(tab as Kind) && !edit && (
+        {tab === "settings" && (
+          <SettingsPanel
+            entries={entries}
+            busy={busy}
+            save={(value) => mutate({ action: "save", value })}
+          />
+        )}
+        {contentKinds.includes(tab as Kind) && !edit && (
           <div className={s.adminPanel}>
             <div className={s.adminToolbar}>
               <SearchInput
@@ -496,22 +645,19 @@ export default function Admin({
               <Button
                 icon="+"
                 className={s.toolbarAction}
-                onClick={() =>
-                  setEdit({
-                    id: crypto.randomUUID(),
-                    kind: tab as Kind,
-                    title: "",
-                    description: "",
-                    published: true,
-                    price: null,
-                    pricing: "request",
-                    variants: [],
-                  })
-                }
+                onClick={() => setEdit(blankEntry(tab as Kind))}
               >
                 Ajouter
               </Button>
             </div>
+            {tab === "cities" && (
+              <p className={s.caption}>
+                Une page par ville où EVENTHEMES intervient (référencement
+                local). Les villes proposées sont des brouillons non publiés :
+                rédigez un texte propre à chaque ville, puis publiez seulement
+                les villes réellement desservies.
+              </p>
+            )}
             {tab === "pages" && (
               <p className={s.caption}>
                 Chaque contenu correspond à une page, choisie dans la liste
@@ -524,7 +670,13 @@ export default function Admin({
                 <thead>
                   <tr>
                     <th>Contenu</th>
-                    <th>{tab === "socials" ? "Lien" : "Catégorie / tarif"}</th>
+                    <th>
+                      {tab === "socials"
+                        ? "Lien"
+                        : tab === "categories"
+                          ? "Rangement"
+                          : "Catégorie / tarif"}
+                    </th>
                     <th>Publication</th>
                     <th>Actions</th>
                   </tr>
@@ -534,7 +686,7 @@ export default function Admin({
                     .filter(
                       (e) =>
                         e.kind === tab &&
-                        `${e.title} ${e.category}`
+                        `${e.title} ${e.kind === "products" ? `${categoryTrail(entries, e)} ${e.brand ?? ""} ${e.model ?? ""} ${e.reference ?? ""}` : e.category ?? ""}`
                           .toLowerCase()
                           .includes(search.toLowerCase()),
                     )
@@ -551,10 +703,29 @@ export default function Admin({
                               <small>{followersLabel(entry.followers)}</small>
                             )}
                           </td>
+                        ) : entry.kind === "categories" ? (
+                          <td>
+                            {entry.parent
+                              ? `Sous-catégorie de « ${entries.find((c) => c.id === entry.parent)?.title ?? entry.parent} »`
+                              : "Catégorie principale"}
+                            <small>
+                              {(() => {
+                                const used = entries.filter(
+                                  (product) =>
+                                    product.kind === "products" &&
+                                    (product.category === entry.id || product.subcategory === entry.id),
+                                ).length;
+                                return `${used} matériel${used > 1 ? "s" : ""}`;
+                              })()}
+                            </small>
+                          </td>
                         ) : (
                           <td>
-                            {entry.category || "—"}
-                            <small>{priceLabel(entry)}</small>
+                            {(entry.kind === "products" ? categoryTrail(entries, entry) : entry.category) || "—"}
+                            <small>
+                              {entry.kind === "products" && entry.reference ? `Réf. ${entry.reference} · ` : ""}
+                              {priceLabel(entry)}
+                            </small>
                           </td>
                         )}
                         <td>
@@ -605,26 +776,24 @@ export default function Admin({
           <EntryEditor
             entry={edit}
             setEntry={setEdit}
-            eventTypes={entries
-              .filter((e) => e.kind === "events")
-              .map((e) => e.title)}
+            entries={entries}
             siblings={entries.filter(
               (e) => e.kind === edit.kind && e.id !== edit.id,
             )}
             isNew={!entries.some((e) => e.id === edit.id)}
             busy={busy}
             save={() =>
-              mutate({ action: "save", value: edit }, () => setEdit(null))
+              mutate({ action: "save", value: withReadableId(edit, entries) }, () => setEdit(null))
             }
             close={() => setEdit(null)}
           />
         )}
         {inquiry && (
-          <div className={s.adminPanel}>
+          <div ref={detail} className={cx(s.adminPanel, a.detail)}>
             <div className={s.sectionHeading}>
               <div>
                 <span className={s.eyebrow}>
-                  DEMANDE {inquiry.id.slice(0, 8).toUpperCase()}
+                  {kindNames[inquiry.kind].toUpperCase()} · {referenceOf(inquiry)}
                 </span>
                 <h2>{inquiry.name}</h2>
               </div>
@@ -660,6 +829,13 @@ export default function Admin({
                   )}
                   <br />
                   Contact préféré : {inquiry.contactMethod}
+                  {inquiry.locale && inquiry.locale !== "fr" && (
+                    <>
+                      <br />
+                      <strong>Langue : {inquiry.locale === "en" ? "anglais" : "arabe"}</strong> (demande envoyée
+                      depuis le site {inquiry.locale === "en" ? "anglais" : "arabe"})
+                    </>
+                  )}
                 </p>
                 <p>
                   Reçue le {new Date(inquiry.createdAt).toLocaleString("fr-FR")}
@@ -668,33 +844,65 @@ export default function Admin({
               <div>
                 <h3>Événement</h3>
                 <p>
-                  {inquiry.date}
+                  {entries.find((e) => e.id === inquiry.event && e.kind === "events")?.title ||
+                    "Type d’événement non précisé"}
+                  <br />
+                  {inquiry.date || "Date à préciser"}
                   {inquiry.duration > 0 && ` · ${hoursLabel(inquiry.duration)}`}
                   <br />
-                  {inquiry.guests} invités
+                  {participantsLabel(inquiry.guests)}
                   {inquiry.basket.products.length > 0 && (
                     <>
                       <br />
                       Location du matériel : {daysLabel(inquiry.rentalDays || 1)}
                     </>
                   )}
+                  {inquiry.budget > 0 && (
+                    <>
+                      <br />
+                      Budget estimatif : {money(inquiry.budget)}
+                    </>
+                  )}
                 </p>
               </div>
             </div>
-            <h3>Prestations et matériel</h3>
-            <ul className={s.requestSummary}>
-              {inquiry.summary.map((line, index) => (
-                <li key={index}>{line}</li>
-              ))}
-            </ul>
-            <p>
-              Montant indicatif : {money(inquiry.estimate)}{" "}
-              {inquiry.hasUnpriced && "(des postes restent à chiffrer)"}
-            </p>
+            {inquiry.kind === "quote" && (
+              <>
+                <h3>Prestations et matériel</h3>
+                <ul className={s.requestSummary}>
+                  {inquiry.summary.map((line, index) => (
+                    <li key={index}>{line}</li>
+                  ))}
+                </ul>
+                <p>
+                  Montant indicatif : {money(inquiry.estimate)}{" "}
+                  {inquiry.hasUnpriced && "(des postes restent à chiffrer)"}
+                </p>
+              </>
+            )}
             <h3>{inquiry.subject || "Message"}</h3>
             <p className={s.preserve}>
               {inquiry.message || "Aucun message complémentaire."}
             </p>
+            {!!inquiry.attachments?.length && (
+              <>
+                <h3>Pièces jointes</h3>
+                <ul className={s.requestSummary}>
+                  {inquiry.attachments.map((file) => (
+                    <li key={file.id}>
+                      <a
+                        href={`/api/admin/attachments?demande=${inquiry.id}&fichier=${file.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {file.name} <ArrowUpRightIcon className="inline-icon" />
+                      </a>{" "}
+                      <small>{sizeLabel(file.size)}</small>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
             <div className={s.formGrid}>
               <Select
                 label="Statut"
@@ -751,8 +959,8 @@ export default function Admin({
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </AdminShell>
   );
 }
 function RequestTable({
@@ -782,11 +990,14 @@ function RequestTable({
                 <small>{i.email}</small>
               </td>
               <td>
-                {i.kind === "quote" ? "Devis" : "Contact"}
-                <small>{i.city || i.subject}</small>
+                {kindNames[i.kind]}
+                <small>
+                  {[referenceOf(i), i.city || i.subject].filter(Boolean).join(" · ")}
+                  {!!i.attachments?.length && ` · ${i.attachments.length} pièce(s) jointe(s)`}
+                </small>
               </td>
               <td>
-                <span className={s.status}>{i.status}</span>
+                <StatusPill status={i.status} />
               </td>
               <td>{new Date(i.createdAt).toLocaleDateString("fr-FR")}</td>
               <td>
@@ -811,10 +1022,141 @@ function RequestTable({
     </div>
   );
 }
+/**
+ * Paramètres du site (cahier des charges §07) : informations générales,
+ * langues et mise en ligne. Le téléphone, l’e-mail, WhatsApp et les réseaux
+ * restent dans « Contact & réseaux ».
+ */
+function SettingsPanel({
+  entries,
+  busy,
+  save,
+}: {
+  entries: Entry[];
+  busy: boolean;
+  save: (entry: Entry) => void;
+}) {
+  const stored = entries.find((entry) => entry.kind === "settings")?.settings;
+  const [settings, setSettings] = useState<SiteSettings>(() => ({
+    english: true,
+    arabic: true,
+    comingSoon: false,
+    ...stored,
+  }));
+  const set = <K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) =>
+    setSettings((current) => ({ ...current, [key]: value }));
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    // Fermer le site est une décision lourde : elle est confirmée.
+    if (settings.comingSoon && !stored?.comingSoon) {
+      const confirmed = await confirmDialog({
+        title: "Afficher la page d’attente ?",
+        text: "Les visiteurs ne verront plus que la page « Bientôt en ligne » jusqu’à ce que vous décochiez cette option.",
+        confirmText: "Afficher la page d’attente",
+        danger: true,
+      });
+      if (!confirmed) return;
+    }
+    save({
+      id: SETTINGS_ID,
+      kind: "settings",
+      title: "Paramètres du site",
+      description: "",
+      published: true,
+      settings,
+    });
+  }
+  return (
+    <form className={s.adminPanel} onSubmit={submit}>
+      <fieldset>
+        <legend>Informations générales</legend>
+        <div className={s.formGrid}>
+          <Textarea
+            label="Adresse"
+            className={s.fullWidth}
+            rows={3}
+            maxLength={500}
+            hint="Affichée sur la page Contact et dans le pied de page, et donnée aux moteurs de recherche. Vide : non affichée."
+            value={settings.address || ""}
+            onChange={(e) => set("address", e.target.value)}
+          />
+          <Input
+            label="Lien de la carte (facultatif)"
+            type="url"
+            className={s.fullWidth}
+            placeholder="https://maps.app.goo.gl/…"
+            hint="Ouvert par « Voir sur la carte » sur la page Contact. Aucune carte n’est intégrée à la page : pas de cookie tiers."
+            value={settings.map || ""}
+            onChange={(e) => set("map", e.target.value)}
+          />
+          <Textarea
+            label="Horaires d’ouverture"
+            rows={4}
+            maxLength={1000}
+            hint="Une ligne par jour ou par période. Vide : non affichés."
+            value={settings.hours || ""}
+            onChange={(e) => set("hours", e.target.value)}
+          />
+          <Textarea
+            label="Horaires — version anglaise (facultative)"
+            rows={4}
+            maxLength={1000}
+            hint="Vide : les horaires français sont affichés sur le site anglais."
+            placeholder={settings.hours}
+            value={settings.hoursEn || ""}
+            onChange={(e) => set("hoursEn", e.target.value)}
+          />
+          <Textarea
+            label="Horaires — version arabe (facultative)"
+            rows={4}
+            maxLength={1000}
+            hint="Vide : les horaires français sont affichés sur le site arabe."
+            placeholder={settings.hours}
+            value={settings.hoursAr || ""}
+            onChange={(e) => set("hoursAr", e.target.value)}
+            lang="ar"
+            dir="rtl"
+          />
+        </div>
+        <p className={s.caption}>
+          Téléphone, e-mail, WhatsApp et réseaux sociaux : onglet « Contact &amp; réseaux ».
+        </p>
+      </fieldset>
+      <fieldset>
+        <legend>Langues</legend>
+        <Checkbox checked={settings.english !== false} onChange={(english) => set("english", english)}>
+          Publier la version anglaise du site (/en)
+        </Checkbox>
+        <Checkbox checked={settings.arabic !== false} onChange={(arabic) => set("arabic", arabic)}>
+          Publier la version arabe du site (/ar)
+        </Checkbox>
+        <p className={s.caption}>
+          Une version décochée disparaît du sélecteur de langue, ses pages renvoient vers leur version
+          française et le plan du site ne les liste plus. À cocher une fois ses textes validés.
+        </p>
+      </fieldset>
+      <fieldset>
+        <legend>Mise en ligne</legend>
+        <Checkbox checked={settings.comingSoon === true} onChange={(comingSoon) => set("comingSoon", comingSoon)}>
+          Afficher la page d’attente à la place du site public
+        </Checkbox>
+        <p className={s.caption}>
+          Les visiteurs ne voient que la page « Bientôt en ligne », qui n’est pas indexée par les moteurs
+          de recherche. L’administration reste accessible.
+        </p>
+      </fieldset>
+      <div className={s.formActions}>
+        <Button type="submit" loading={busy}>
+          {busy ? "Enregistrement…" : "Enregistrer les paramètres"}
+        </Button>
+      </div>
+    </form>
+  );
+}
 function EntryEditor({
   entry,
   setEntry,
-  eventTypes,
+  entries,
   siblings,
   isNew,
   busy,
@@ -823,7 +1165,8 @@ function EntryEditor({
 }: {
   entry: Entry;
   setEntry: Dispatch<SetStateAction<Entry | null>>;
-  eventTypes: string[];
+  /** Every entry: catalogue categories for the selects. */
+  entries: Entry[];
   /** The other entries of the same kind: pages and networks already in use. */
   siblings: Entry[];
   isNew: boolean;
@@ -887,24 +1230,43 @@ function EntryEditor({
   // Only the home page reads a gallery: the hero slideshow.
   const gallery =
     has("gallery") && (entry.kind !== "pages" || entry.id === "home");
-  const typeRequired = entry.kind === "projects";
-  // Keep a category saved before the list existed selectable, so it is never dropped silently.
-  const eventTypeOptions = [
-    ...(typeRequired ? [] : [{ value: "", label: "Aucun" }]),
-    ...(entry.category && !eventTypes.includes(entry.category)
-      ? [
-          {
-            value: entry.category,
-            label: entry.category,
-            description: "Absent des types d’événement : à remplacer",
-          },
-        ]
-      : []),
-    ...[...new Set(eventTypes)].map((title) => ({
-      value: title,
-      label: title,
-    })),
+  // A value saved before its list existed stays selectable, so it is never dropped silently.
+  const keep = (known: readonly string[], value: string | undefined, why: string) =>
+    value && !known.includes(value) ? [{ value, label: value, description: why }] : [];
+  const projectTypeOptions = [
+    ...keep(projectCategories, entry.category, "Absent du classement : à remplacer"),
+    ...projectCategories.map((title) => ({ value: title, label: title })),
   ];
+  const mainCategories = topCategories(entries);
+  const categoryOptions = [
+    ...keep(
+      mainCategories.map((c) => c.id),
+      entry.kind === "products" ? entry.category : undefined,
+      "Catégorie libre d’un contenu antérieur : choisissez-en une de la liste",
+    ),
+    ...mainCategories.map((c) => ({ value: c.id, label: c.title })),
+  ];
+  const subcategories = entry.category ? childCategories(entries, entry.category) : [];
+  const parentOptions = [
+    { value: "", label: "Aucune — catégorie principale" },
+    ...mainCategories
+      .filter((c) => c.id !== entry.id)
+      .map((c) => ({ value: c.id, label: c.title })),
+  ];
+  const hasChildren = entry.kind === "categories" && childCategories(entries, entry.id).length > 0;
+  // Adresse publique de la fiche ; pour un nouveau contenu, celle que donnera son titre.
+  const page = pageOf[entry.kind];
+  const address = page && pathFor("fr", page, isNew && isGeneratedId(entry.id) ? slugify(entry.title) || "…" : entry.id);
+  // Versions traduites (sites /en et /ar) : les champs traduisibles de ce type de contenu.
+  const setVersion = (language: TranslatedLocale, field: keyof EntryTranslation, value: string) =>
+    setEntry(
+      (current) =>
+        current && {
+          ...current,
+          translations: { ...current.translations, [language]: { ...current.translations?.[language], [field]: value } },
+        },
+    );
+  const translatable = has("title") || has("description") || entry.kind === "socials";
   const network = socialNetworkOf(entry);
   const networkInfo = socialNetworks.find((n) => n.key === network);
   const takenNetworks = siblings.map(socialNetworkOf);
@@ -987,12 +1349,19 @@ function EntryEditor({
         )}
         {has("title") && (
           <Input
-            label="Titre"
+            label={entry.kind === "cities" ? "Ville" : "Titre"}
             required
             maxLength={250}
+            hint={entry.kind === "cities" ? "Le nom de la ville, tel qu’il doit apparaître sur le site." : undefined}
             value={entry.title}
             onChange={(e) => set("title", e.target.value)}
           />
+        )}
+        {address && (
+          <p className={cx(s.caption, s.fullWidth)}>
+            Adresse de la page : <code>{address}</code>
+            {isNew && isGeneratedId(entry.id) ? " (fixée à l’enregistrement, d’après le titre)" : ""}
+          </p>
         )}
         {entry.kind === "pages" && (
           <Select
@@ -1021,20 +1390,111 @@ function EntryEditor({
             onChange={(id) => set("id", id)}
           />
         )}
-        {has("eventType") && (
+        {has("discipline") && (
+          <Input
+            label="Discipline (surtitre)"
+            hint="Affichée au-dessus du titre, par exemple « Son » ou « Lumière »."
+            maxLength={60}
+            value={entry.category || ""}
+            onChange={(e) => set("category", e.target.value)}
+          />
+        )}
+        {has("projectType") && (
           <Select
             label="Type d’événement"
-            required={typeRequired}
-            hint="Liste gérée dans l’onglet « Types d’événement »."
-            emptyText="Ajoutez d’abord un type d’événement."
-            options={eventTypeOptions}
+            required
+            hint="Classement des réalisations : il alimente les filtres de la galerie."
+            options={projectTypeOptions}
             value={entry.category || ""}
             onChange={(category) => set("category", category)}
           />
         )}
+        {has("parent") && (
+          <Select
+            label="Catégorie parente"
+            disabled={hasChildren}
+            hint={
+              hasChildren
+                ? "Cette catégorie a des sous-catégories : elle reste une catégorie principale."
+                : "Laisser « Aucune » pour une catégorie principale ; sinon, elle devient une sous-catégorie."
+            }
+            options={parentOptions}
+            value={entry.parent || ""}
+            onChange={(parent) => set("parent", parent || undefined)}
+          />
+        )}
+        {has("catalogue") && (
+          <>
+            <Select
+              label="Catégorie"
+              required
+              hint="Liste gérée dans l’onglet « Catégories du matériel »."
+              emptyText="Ajoutez d’abord une catégorie dans « Catégories du matériel »."
+              options={categoryOptions}
+              value={entry.category || ""}
+              onChange={(category) =>
+                setEntry(
+                  (current) =>
+                    current && {
+                      ...current,
+                      category,
+                      // A sub-category always belongs to the chosen category.
+                      subcategory: childCategories(entries, category).some((c) => c.id === current.subcategory)
+                        ? current.subcategory
+                        : undefined,
+                    },
+                )
+              }
+            />
+            <Select
+              label="Sous-catégorie (type de matériel)"
+              disabled={!subcategories.length}
+              hint={
+                subcategories.length
+                  ? "Facultative : elle affine le filtre du catalogue."
+                  : "Cette catégorie n’a pas de sous-catégorie."
+              }
+              options={[
+                { value: "", label: "Aucune" },
+                ...subcategories.map((c) => ({ value: c.id, label: c.title })),
+              ]}
+              value={entry.subcategory || ""}
+              onChange={(subcategory) => set("subcategory", subcategory || undefined)}
+            />
+          </>
+        )}
+        {has("identity") && (
+          <>
+            <Input
+              label="Marque"
+              hint="Lorsqu’elle est connue. Elle apparaît sur la fiche et dans le filtre « Marque »."
+              maxLength={250}
+              value={entry.brand || ""}
+              onChange={(e) => set("brand", e.target.value)}
+            />
+            <Input
+              label="Modèle"
+              maxLength={250}
+              value={entry.model || ""}
+              onChange={(e) => set("model", e.target.value)}
+            />
+            <Input
+              label="Référence interne (facultatif)"
+              hint="Affichée sur la fiche ; la recherche du catalogue la trouve."
+              maxLength={250}
+              value={entry.reference || ""}
+              onChange={(e) => set("reference", e.target.value)}
+            />
+          </>
+        )}
         {has("subtitle") && (
           <Input
-            label="Sous-titre / surtitre"
+            label={entry.kind === "cities" ? "Titre de la page (facultatif)" : "Sous-titre / surtitre"}
+            hint={
+              entry.kind === "cities"
+                ? `Vide : « Production technique événementielle à ${entry.title || "…"} ».`
+                : undefined
+            }
             className={s.fullWidth}
             value={entry.subtitle || ""}
             onChange={(e) => set("subtitle", e.target.value)}
@@ -1042,12 +1502,58 @@ function EntryEditor({
         )}
         {has("description") && (
           <Textarea
-            label="Description"
+            label={entry.kind === "cities" ? "Texte de la page" : "Description"}
+            hint={
+              entry.kind === "cities"
+                ? "Propre à cette ville : lieux, types d’événements, délais, logistique. Un texte copié d’une ville à l’autre nuit au référencement."
+                : undefined
+            }
             className={s.fullWidth}
-            rows={4}
+            rows={entry.kind === "cities" ? 7 : 4}
             maxLength={10000}
             value={entry.description}
             onChange={(e) => set("description", e.target.value)}
+          />
+        )}
+        {has("related") && (
+          <fieldset className={cx(s.fullWidth, s.relatedField)}>
+            <legend>Matériel associé (affiché sur la page du service)</legend>
+            <div className={s.checkGrid}>
+              {mainCategories.map((category) => (
+                <Checkbox
+                  key={category.id}
+                  checked={entry.related?.includes(category.id) ?? false}
+                  onChange={(on) =>
+                    set(
+                      "related",
+                      on
+                        ? [...(entry.related ?? []), category.id]
+                        : (entry.related ?? []).filter((id) => id !== category.id),
+                    )
+                  }
+                >
+                  {category.title}
+                </Checkbox>
+              ))}
+            </div>
+          </fieldset>
+        )}
+        {has("items") && (
+          <Textarea
+            label={
+              entry.kind === "services"
+                ? "Prestations incluses (une par ligne)"
+                : "Prestations réalisées (une par ligne)"
+            }
+            hint={
+              entry.kind === "services"
+                ? "Vide : la liste du cahier des charges est affichée."
+                : "Facultatif : affichées sur la fiche du projet."
+            }
+            className={s.fullWidth}
+            rows={5}
+            value={entry.specifications || ""}
+            onChange={(e) => set("specifications", e.target.value)}
           />
         )}
         {has("image") && (
@@ -1193,6 +1699,7 @@ function EntryEditor({
             </div>
             <Textarea
               label="Caractéristiques techniques"
+              hint="Une par ligne. « Puissance : 1 000 W » s’affiche en tableau sur la fiche."
               className={s.fullWidth}
               value={entry.specifications || ""}
               onChange={(e) => set("specifications", e.target.value)}
@@ -1227,15 +1734,17 @@ function EntryEditor({
               checked={entry.available !== false}
               onChange={(available) => set("available", available)}
             >
-              Disponible à la demande
+              Disponible (à confirmer selon la date)
             </Checkbox>
           )}
-          <Checkbox
-            checked={entry.published}
-            onChange={(published) => set("published", published)}
-          >
-            Publié sur le site
-          </Checkbox>
+          {entry.kind !== "categories" && (
+            <Checkbox
+              checked={entry.published}
+              onChange={(published) => set("published", published)}
+            >
+              Publié sur le site
+            </Checkbox>
+          )}
           {has("demo") && (
             <Checkbox
               checked={entry.demo || false}
@@ -1328,6 +1837,123 @@ function EntryEditor({
           </p>
         </fieldset>
       )}
+      {translatable &&
+        translatedLocales.map((language) => {
+          const version = entry.translations?.[language] ?? {};
+          const setField = (name: keyof EntryTranslation, value: string) => setVersion(language, name, value);
+          // Les champs arabes se saisissent de droite à gauche.
+          const text = { lang: language, dir: direction(language) } as const;
+          return (
+        <fieldset key={language} className={s.translation}>
+          <legend>{language === "en" ? "Version anglaise (facultative)" : "Version arabe (facultative)"}</legend>
+          <p className={s.caption}>
+            {language === "en"
+              ? "Affichée sur le site anglais (/en)."
+              : "Affichée sur le site arabe (/ar), écrit de droite à gauche."}{" "}
+            Un champ vide reprend le texte français, indiqué en gris.
+          </p>
+          <div className={s.formGrid}>
+            {entry.kind === "socials" && (
+              <Input
+                label="Accroche"
+                hint="Le nom du compte (@…) n’a pas besoin d’être traduit."
+                maxLength={250}
+                placeholder={entry.description}
+                value={version.description || ""}
+                onChange={(e) => setField("description", e.target.value)}
+                {...text}
+              />
+            )}
+            {has("title") && (
+              <Input
+                label="Titre"
+                maxLength={250}
+                placeholder={entry.title}
+                value={version.title || ""}
+                onChange={(e) => setField("title", e.target.value)}
+                {...text}
+              />
+            )}
+            {has("discipline") && (
+              <Input
+                label="Discipline (surtitre)"
+                maxLength={60}
+                placeholder={entry.category}
+                value={version.category || ""}
+                onChange={(e) => setField("category", e.target.value)}
+                {...text}
+              />
+            )}
+            {has("subtitle") && (
+              <Input
+                label="Sous-titre / surtitre"
+                className={s.fullWidth}
+                placeholder={entry.subtitle}
+                value={version.subtitle || ""}
+                onChange={(e) => setField("subtitle", e.target.value)}
+                {...text}
+              />
+            )}
+            {has("description") && (
+              <Textarea
+                label="Description"
+                className={s.fullWidth}
+                rows={4}
+                maxLength={10000}
+                placeholder={entry.description}
+                value={version.description || ""}
+                onChange={(e) => setField("description", e.target.value)}
+                {...text}
+              />
+            )}
+            {has("product") && (
+              <Input
+                label="Couleur / finition"
+                maxLength={250}
+                placeholder={entry.color}
+                value={version.color || ""}
+                onChange={(e) => setField("color", e.target.value)}
+                {...text}
+              />
+            )}
+            {has("variants") && !!entry.variants?.length && (
+              <Textarea
+                label="Noms des variantes (un par ligne)"
+                hint="Dans le même ordre que les variantes ci-dessus ; une ligne vide garde le nom français."
+                className={s.fullWidth}
+                rows={Math.min(6, entry.variants.length)}
+                placeholder={entry.variants.map((variant) => variant.name).join("\n")}
+                value={version.variants || ""}
+                onChange={(e) => setField("variants", e.target.value)}
+                {...text}
+              />
+            )}
+            {(has("items") || has("product")) && (
+              <Textarea
+                label={
+                  has("product")
+                    ? "Caractéristiques techniques"
+                    : entry.kind === "services"
+                      ? "Prestations incluses (une par ligne)"
+                      : "Prestations réalisées (une par ligne)"
+                }
+                hint={
+                  entry.kind === "services"
+                    ? "Vide : la liste par défaut, traduite, est affichée."
+                    : "Une par ligne, dans le même ordre que le français."
+                }
+                className={s.fullWidth}
+                rows={5}
+                placeholder={entry.specifications}
+                value={version.specifications || ""}
+                onChange={(e) => setField("specifications", e.target.value)}
+                {...text}
+              />
+            )}
+          </div>
+        </fieldset>
+          );
+        })}
       <div className={s.formActions}>
         <Button type="submit" loading={busy} disabled={uploading !== null}>
           {busy ? "Enregistrement…" : "Enregistrer les modifications"}

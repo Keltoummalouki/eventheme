@@ -52,7 +52,7 @@
   border: 1px solid var(--champ-filet);
   outline: none;
   scrollbar-width: thin;
-  scrollbar-color: rgba(201, 163, 78, 0.4) transparent;
+  scrollbar-color: rgba(201, 162, 74, 0.4) transparent;
   transition: border-color 0.2s;
 }
 
@@ -100,7 +100,7 @@
 }
 
 .cell[aria-disabled='true'] {
-  color: rgba(245, 241, 232, 0.18);
+  color: rgba(255, 255, 255, 0.18);
   cursor: not-allowed;
 }
 
@@ -112,7 +112,7 @@
 
 /* « Valider » reste à droite, même sans « Effacer ». */
 .confirm {
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 /* Au doigt : des cases plus hautes, un chiffre plus lisible. */

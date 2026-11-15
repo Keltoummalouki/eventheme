@@ -5,6 +5,7 @@ export function ArrowIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
+      data-mirror=""
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -20,10 +21,11 @@ export function ArrowIcon({ className }: { className?: string }) {
 type IconProps = { className?: string };
 
 /** Trait fin commun aux pictogrammes d'interface : décoratifs, jamais annoncés. */
-function Glyph({ className, children }: IconProps & { children: React.ReactNode }) {
+export function Glyph({ className, children, mirror = false }: IconProps & { children: React.ReactNode; mirror?: boolean }) {
   return (
     <svg
       className={className}
+      data-mirror={mirror ? "" : undefined}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -46,7 +48,7 @@ function Glyph({ className, children }: IconProps & { children: React.ReactNode 
  */
 export function ArrowUpRightIcon({ className }: IconProps) {
   return (
-    <Glyph className={className}>
+    <Glyph className={className} mirror>
       <path d="M7.5 16.5 16.5 7.5M9 7.5h7.5V15" />
     </Glyph>
   );

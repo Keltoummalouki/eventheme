@@ -21,7 +21,7 @@ type SmartImageProps = {
  * On conserve volontairement <img> plutôt que next/image : les visuels sont
  * servis par des CDN externes, ils dépendent des filtres et transformations CSS
  * de la charte, et un repli `onError` est nécessaire tant que les photos
- * définitives d'AURÉLYS ne sont pas livrées.
+ * définitives d'EVENTHEMES ne sont pas livrées.
  */
 export default function SmartImage({
   src,

@@ -1,8 +1,15 @@
+import { dictionaries } from "@/data/locales";
+import { fill, type Locale } from "@/lib/i18n";
 import type { Basket, Entry, EstimateLine, InquiryInput } from "./types";
+/**
+ * Estimation indicative d’une demande. Les libellés des lignes suivent
+ * `locale` (affichage) ; le résumé enregistré pour l’équipe reste en français.
+ */
 export function estimate(
   entries: Entry[],
   input: Pick<InquiryInput, "event" | "rentalDays">,
   basket: Basket,
+  locale: Locale = "fr",
 ) {
   let total = 0;
   let hasUnpriced = false;
@@ -36,9 +43,11 @@ export function estimate(
       product,
       item.quantity * (product?.pricing === "daily" ? days : 1),
       variant ? variant.price : product?.price,
-      [variant?.name, product?.pricing === "daily" ? `${item.quantity} unité(s) × ${days} jour(s)` : ""].filter(Boolean).join(" · "),
+      [variant && (variant.label || variant.name), product?.pricing === "daily" ? fill(dictionaries[locale].format.unitsByDays, { units: item.quantity, days }) : ""]
+        .filter(Boolean)
+        .join(" · "),
     );
-    if (variant) summary.push(`Finition : ${variant.name}`);
+    if (variant) summary.push(`Variante : ${variant.name}`);
   }
   return { total, hasUnpriced, summary, lines };
 }

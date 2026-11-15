@@ -7,7 +7,9 @@ import { useEventheme } from '@/components/eventheme/Provider';
 import Button from '@/components/ui/Button';
 import SectionHeader from '@/components/ui/SectionHeader';
 import { cx } from '@/lib/cx';
+import { productCategory } from '@/lib/eventheme/catalogue';
 import { priceLabel } from '@/lib/eventheme/types';
+import { isRtl } from '@/lib/i18n';
 import { DESKTOP, FULL_MOTION, gsap, motionSafe, useGSAP } from '@/lib/motion';
 import styles from './Rental.module.css';
 import { ArrowUpRightIcon } from '@/components/ui/icons';
@@ -32,7 +34,9 @@ export default function Rental() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
-  const { entries, add } = useEventheme();
+  const { entries, add, locale, t, href } = useEventheme();
+  // De droite à gauche (arabe), le rail se prolonge vers la gauche : il avance vers la droite.
+  const rtl = isRtl(locale);
   const products = entries.filter((e) => e.kind === 'products');
 
   const [pinned, setPinned] = useState(false);
@@ -58,7 +62,7 @@ export default function Rental() {
           // Recalculée à chaque rafraîchissement : la largeur dépend des visuels.
           const distance = () => Math.max(0, track.scrollWidth - wrap.clientWidth);
           const rail = gsap.to(track, {
-            x: () => -distance(),
+            x: () => (rtl ? distance() : -distance()),
             ease: 'none',
             scrollTrigger: {
               trigger: section,
@@ -74,15 +78,15 @@ export default function Rental() {
           for (const pan of gsap.utils.toArray<HTMLElement>(`.${styles.pan}`, track)) {
             gsap.fromTo(
               pan,
-              { xPercent: -DRIFT },
+              { xPercent: rtl ? DRIFT : -DRIFT },
               {
-                xPercent: DRIFT,
+                xPercent: rtl ? -DRIFT : DRIFT,
                 ease: 'none',
                 scrollTrigger: {
                   trigger: pan,
                   containerAnimation: rail,
-                  start: 'left right',
-                  end: 'right left',
+                  start: rtl ? 'right left' : 'left right',
+                  end: rtl ? 'left right' : 'right left',
                   scrub: true,
                 },
               },
@@ -99,7 +103,8 @@ export default function Rental() {
     const wrap = wrapRef.current;
     if (!wrap || pinned) return;
     const max = wrap.scrollWidth - wrap.clientWidth;
-    setFill(max > 0 ? wrap.scrollLeft / max : 0);
+    // De droite à gauche, la position de défilement est négative.
+    setFill(max > 0 ? Math.abs(wrap.scrollLeft) / max : 0);
   }, [pinned, setFill]);
 
   /* Glisser à la souris : la barre de défilement est masquée par la charte. */
@@ -143,22 +148,22 @@ export default function Rental() {
   };
 
   return (
-    <section className={styles.root} id="location" ref={sectionRef}>
+    <section className={styles.root} id="materiel" ref={sectionRef}>
       <div className={styles.stage}>
         <div className={styles.head}>
           <SectionHeader
-            eyebrow="Location de matériel"
+            eyebrow={t.rental.eyebrow}
             title={
               <>
-                Les détails font
+                {t.rental.titleStart}
                 <br />
-                <em>la différence.</em>
+                <em>{t.rental.titleEnd}</em>
               </>
             }
-            description="Mobilier, décoration, lumière, son et image : composez votre sélection et ajoutez-la directement à votre devis."
+            description={t.rental.description}
             action={
-              <Button href="/location" variant="link" icon={<ArrowUpRightIcon />}>
-                Tout le catalogue
+              <Button href={href('equipment')} variant="link" icon={<ArrowUpRightIcon />}>
+                {t.rental.all}
               </Button>
             }
           />
@@ -173,24 +178,24 @@ export default function Rental() {
           onDragStart={(event) => event.preventDefault()}
           {...(pinned
             ? {}
-            : { role: 'group', 'aria-label': 'Catalogue de location — faire défiler horizontalement', tabIndex: 0 })}
+            : { role: 'group', 'aria-label': t.rental.region, tabIndex: 0 })}
         >
           <div className={styles.track} ref={trackRef}>
             {products.map((product, index) => (
               <article key={product.id} className={styles.card}>
-                <Link href={`/location/${product.id}`} className={styles.thumb} tabIndex={-1} aria-hidden="true">
+                <Link href={href('equipment', product.id)} className={styles.thumb} tabIndex={-1} aria-hidden="true">
                   <div className={styles.pan}>
                     <img src={product.image || '/eventheme.jpg'} alt="" loading="lazy" decoding="async" />
                   </div>
                   <span className={styles.index}>{String(index + 1).padStart(2, '0')}</span>
-                  {product.demo && <span className={styles.tag}>Exemple</span>}
+                  {product.demo && <span className={styles.tag}>{t.common.example}</span>}
                 </Link>
                 <div className={styles.meta}>
-                  <span>{product.category}</span>
-                  <span className={styles.price}>{priceLabel(product)}</span>
+                  <span>{productCategory(entries, product).category}</span>
+                  <span className={styles.price}>{priceLabel(product, locale)}</span>
                 </div>
                 <h3 className={styles.name}>
-                  <Link href={`/location/${product.id}`}>{product.title}</Link>
+                  <Link href={href('equipment', product.id)}>{product.title}</Link>
                 </h3>
                 <button
                   type="button"
@@ -199,17 +204,17 @@ export default function Rental() {
                   onClick={() => add(product)}
                 >
                   <span aria-hidden="true">+</span>
-                  {product.available === false ? 'Indisponible' : 'Ajouter au devis'}
+                  {product.available === false ? t.common.unavailable : t.common.addToQuote}
                   <span className="visually-hidden"> : {product.title}</span>
                 </button>
               </article>
             ))}
-            <Link href="/location" className={styles.more}>
-              <span className={styles.moreLabel}>Découvrir</span>
+            <Link href={href('equipment')} className={styles.more}>
+              <span className={styles.moreLabel}>{t.common.discover}</span>
               <span className={styles.moreTitle}>
-                Tout le
+                {t.rental.moreStart}
                 <br />
-                <em>catalogue</em>
+                <em>{t.rental.moreEnd}</em>
               </span>
               <span className={styles.moreArrow} aria-hidden="true">
                 <ArrowUpRightIcon />

@@ -2,47 +2,65 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Button from "@/components/ui/Button";
 import { ArrowUpRightIcon, CloseIcon } from "@/components/ui/icons";
-import { DatePicker, Input, NumberInput, Select, Textarea } from "@/components/ui/form";
+import { DatePicker, FileInput, Input, NumberInput, SearchInput, Select, Textarea } from "@/components/ui/form";
 import { serviceItems } from "@/data/eventheme";
+import { contactMethodLabel, dictionaries } from "@/data/locales";
 import { isMoroccanCity, moroccanCities } from "@/data/moroccanCities";
 import { cx } from "@/lib/cx";
 import { formatLongDate, parseIsoDate, toIsoDate, today } from "@/lib/dates";
+import { categoryTrail, inCategory, matchesSearch, topCategories, usedCategories } from "@/lib/eventheme/catalogue";
 import { estimate } from "@/lib/eventheme/pricing";
+import { ATTACHMENT_ACCEPT, attachmentHint, attachmentProblem, sizeLabel } from "@/lib/eventheme/requests";
 import {
   daysLabel,
   hoursLabel,
   lineAmount,
   lineLabel,
+  MAX_ATTACHMENTS,
   MAX_DURATION_HOURS,
+  MAX_PARTICIPANTS,
   MAX_RENTAL_DAYS,
   money,
+  participantsLabel,
   priceLabel,
+  variantLabel,
   type Basket,
   type QuoteDetails,
+  type SentAttachment,
 } from "@/lib/eventheme/types";
+import { track } from "@/lib/eventheme/audience";
+import { uploadAttachment } from "@/lib/eventheme/upload";
+import { fill, intlLocale, isRtl } from "@/lib/i18n";
 import { gsap, MOTION, prefersReducedMotion } from "@/lib/motion";
 import { useEventheme, useQuote } from "./Provider";
 import s from "./QuoteStudio.module.css";
 
-const STEPS = ["L’événement", "Les prestations", "Le matériel", "Récapitulatif"];
-const GUESTS = { min: 10, max: 1000, step: 10 };
+const PARTICIPANTS = { min: 10, max: 2000, step: 10 };
 const CITY_OPTIONS = moroccanCities.map((city) => ({ value: city, label: city }));
 
-type Errors = Partial<Record<keyof QuoteDetails, string>>;
+type Errors = Partial<Record<keyof QuoteDetails | "files", string>>;
 
 /**
- * Personnalisation de l'événement, en quatre étapes, avec estimation en direct.
+ * Personnalisation de l'événement, en cinq étapes, avec estimation en direct.
  * Les services et le matériel alimentent le même panier que les boutons
- * « Ajouter à mon devis » du site : rien n'est saisi deux fois.
+ * « Ajouter au devis » du site : rien n'est saisi deux fois. Seuls l’événement,
+ * la date et la ville sont obligatoires.
  */
 export default function QuoteConfigurator() {
-  const { entries, basket, setBasket, local } = useEventheme();
+  const { entries, basket, setBasket, local, locale, t, href } = useEventheme();
   const { quote, setQuote } = useQuote();
-  const { details, contact, lead, step } = quote;
+  /** Étapes du cahier des charges (§05) ; les coordonnées et le consentement précèdent, au rappel. */
+  const steps = t.configurator.steps;
+  const number = (value: number) => new Intl.NumberFormat(intlLocale[locale]).format(value);
+  const longDate = (date: Date) => formatLongDate(date, intlLocale[locale]);
+  const { details, contact, lead, step, files } = quote;
   const [errors, setErrors] = useState<Errors>({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState("");
   const [variants, setVariants] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
   const [startedAt] = useState(() => Date.now());
   const panel = useRef<HTMLDivElement>(null);
   const stepTitle = useRef<HTMLHeadingElement>(null);
@@ -50,10 +68,17 @@ export default function QuoteConfigurator() {
   const shownTotal = useRef<number | null>(null);
 
   const options = (kind: string) => entries.filter((e) => e.kind === kind);
-  const label = (id: string) => entries.find((e) => e.id === id)?.title || "À définir";
-  const calculation = estimate(entries, details, basket);
+  const label = (id: string) => entries.find((e) => e.id === id)?.title || t.configurator.recap.toDefine;
+  /** Nom affiché de la variante choisie pour un matériel. */
+  const optionLabel = (id: string, variant: string) => variantLabel(entries.find((e) => e.id === id), variant);
+  const calculation = estimate(entries, details, basket, locale);
   const articles = basket.products.reduce((n, p) => n + p.quantity, 0);
   const minDate = toIsoDate(today());
+  const products = options("products").filter((p) => p.available !== false);
+  const categoryOptions = usedCategories(topCategories(entries), products);
+  const shownProducts = products.filter(
+    (product) => (!category || inCategory(product, category)) && matchesSearch(entries, product, search),
+  );
 
   const setDetails = (patch: Partial<QuoteDetails>) => setQuote((q) => ({ ...q, details: { ...q.details, ...patch } }));
   const goTo = (next: number) => {
@@ -78,7 +103,7 @@ export default function QuoteConfigurator() {
     if (!prefersReducedMotion() && panel.current)
       gsap.fromTo(
         panel.current.querySelectorAll(`.${s.stepBody} > *`),
-        { autoAlpha: 0, x: 28 },
+        { autoAlpha: 0, x: isRtl(locale) ? -28 : 28 },
         {
           autoAlpha: 1,
           x: 0,
@@ -88,18 +113,19 @@ export default function QuoteConfigurator() {
           clearProps: "transform,opacity,visibility",
         },
       );
-  }, [step]);
+  }, [step, locale]);
 
   /* Montant estimé : le chiffre défile de l'ancienne à la nouvelle valeur.
      Le nœud n'a pas d'enfant React : seul cet effet écrit dedans. */
   useEffect(() => {
     const node = total.current;
     if (!node) return;
+    const onRequest = dictionaries[locale].format.onRequest;
     const next = calculation.total;
     const from = shownTotal.current;
     shownTotal.current = next;
     const write = (value: number) => {
-      node.textContent = value > 0 ? money(Math.round(value)) : "Sur devis";
+      node.textContent = value > 0 ? money(Math.round(value), locale) : onRequest;
     };
     if (from == null || from === 0 || next === 0 || prefersReducedMotion()) {
       write(next);
@@ -111,24 +137,25 @@ export default function QuoteConfigurator() {
       tween.kill();
       write(next);
     };
-  }, [calculation.total]);
+  }, [calculation.total, locale]);
 
   function validate(current: number): Errors {
     const found: Errors = {};
     if (current === 0) {
-      if (!details.event) found.event = "Choisissez votre événement.";
-      if (!parseIsoDate(details.date) || details.date < minDate) found.date = "Choisissez une date à venir.";
-      if (!isMoroccanCity(details.city)) found.city = "Choisissez la ville de l’événement.";
+      if (!details.event) found.event = t.configurator.errors.event;
+      if (!parseIsoDate(details.date) || details.date < minDate) found.date = t.configurator.errors.date;
+      if (!isMoroccanCity(details.city)) found.city = t.configurator.errors.city;
       if (details.duration < 0 || details.duration > MAX_DURATION_HOURS)
-        found.duration = `Indiquez une durée de ${MAX_DURATION_HOURS} heures au plus.`;
-      if (!Number.isInteger(details.guests) || details.guests < 1 || details.guests > 10000)
-        found.guests = "Indiquez un nombre d’invités entre 1 et 10 000.";
+        found.duration = fill(t.configurator.errors.duration, { max: MAX_DURATION_HOURS });
+      if (details.guests !== 0 && (!Number.isInteger(details.guests) || details.guests < 1 || details.guests > MAX_PARTICIPANTS))
+        found.guests = fill(t.configurator.errors.guests, { max: number(MAX_PARTICIPANTS) });
     }
     if (
       current === 2 &&
       (!Number.isInteger(details.rentalDays) || details.rentalDays < 1 || details.rentalDays > MAX_RENTAL_DAYS)
     )
-      found.rentalDays = `Indiquez entre 1 et ${MAX_RENTAL_DAYS} jours de location.`;
+      found.rentalDays = fill(t.configurator.errors.rentalDays, { max: MAX_RENTAL_DAYS });
+    if (current === 3 && (details.budget < 0 || details.budget > 1e9)) found.budget = t.configurator.errors.budget;
     return found;
   }
 
@@ -137,31 +164,33 @@ export default function QuoteConfigurator() {
     const found = validate(step);
     setErrors(found);
     if (Object.keys(found).length) {
-      setError("Quelques informations manquent encore.");
+      setError(t.common.missing);
       return;
     }
     setError("");
-    if (step < STEPS.length - 1) return goTo(step + 1);
+    if (step < steps.length - 1) return goTo(step + 1);
     // Dernier contrôle de toutes les étapes, au cas où l'on y serait revenu.
-    for (const index of [0, 2]) {
+    for (const index of [0, 2, 3]) {
       const missing = validate(index);
       if (Object.keys(missing).length) {
         setQuote((q) => ({ ...q, step: index }));
         setErrors(missing);
-        setError("Quelques informations manquent encore.");
+        setError(t.common.missing);
         return;
       }
     }
     if (!lead) return;
     setBusy(true);
+    setProgress("");
     try {
       const response = await fetch("/api/inquiries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Locale": locale },
         body: JSON.stringify({
           kind: "quote",
           ...details,
           name: contact.name,
+          company: contact.company,
           phone: contact.phone,
           email: contact.email,
           contactMethod: contact.contactMethod,
@@ -170,19 +199,30 @@ export default function QuoteConfigurator() {
           startedAt,
           subject: "",
           basket,
+          attachments: files.length,
           callbackId: lead.id,
           token: lead.token,
         }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
+      track("generate_lead", { lead_type: "quote" });
+      // La demande est enregistrée : les fichiers suivent, un par un. Un échec
+      // n’annule pas la demande, il est signalé sur le devis estimatif.
+      const sent: SentAttachment[] = [];
+      for (const [index, file] of files.entries()) {
+        setProgress(fill(t.configurator.uploading, { index: index + 1, total: files.length }));
+        sent.push(await uploadAttachment(file, { id: result.id, token: lead.token }, locale));
+      }
       const sentBasket: Basket = basket;
       setQuote((q) => ({
         ...q,
         phase: "done",
         step: 0,
+        files: [],
         result: {
           id: result.id,
+          reference: result.reference ?? lead.reference,
           sentAt: new Date().toISOString(),
           estimate: result.estimate ?? calculation.total,
           hasUnpriced: result.hasUnpriced ?? calculation.hasUnpriced,
@@ -190,13 +230,16 @@ export default function QuoteConfigurator() {
           contact: q.contact,
           details: q.details,
           basket: sentBasket,
+          attachments: sent,
+          emailed: result.emailed === true,
         },
       }));
       setBasket({ services: [], products: [] });
     } catch (cause) {
-      setError(cause instanceof Error && cause.message ? cause.message : "Impossible d’envoyer votre demande. Réessayez.");
+      setError(cause instanceof Error && cause.message ? cause.message : t.configurator.errors.failed);
     } finally {
       setBusy(false);
+      setProgress("");
     }
   }
 
@@ -221,37 +264,70 @@ export default function QuoteConfigurator() {
     setBasket({ ...basket, products });
   };
 
+  /* --- Pièces jointes ---------------------------------------------------- */
+  function addFiles(list: File[]) {
+    const problems: string[] = [];
+    const accepted = list.filter((file) => {
+      const problem = attachmentProblem(file, locale);
+      if (problem) problems.push(problem);
+      return !problem;
+    });
+    const room = Math.max(0, MAX_ATTACHMENTS - files.length);
+    if (accepted.length > room)
+      problems.push(fill(t.configurator.errors.tooMany, { max: MAX_ATTACHMENTS, count: accepted.length - room }));
+    setQuote((q) => ({ ...q, files: [...q.files, ...accepted.slice(0, room)] }));
+    setErrors((current) => ({ ...current, files: problems.join(" ") || undefined }));
+  }
+  const removeFile = (index: number) => {
+    setQuote((q) => ({ ...q, files: q.files.filter((_, i) => i !== index) }));
+    setErrors((current) => ({ ...current, files: undefined }));
+  };
+
   const eventDate = parseIsoDate(details.date);
   // Coordonnées : saisies au premier formulaire, elles ne se modifient pas ici.
+  const r = t.configurator.recap;
   const recap: [term: string, value: string, step: number | null][] = [
-    ["Événement", label(details.event), 0],
+    [r.event, label(details.event), 0],
     [
-      "Date",
-      `${eventDate ? formatLongDate(eventDate) : "À définir"}${details.duration ? ` · ${hoursLabel(details.duration)}` : ""}`,
+      r.date,
+      `${eventDate ? longDate(eventDate) : r.toDefine}${details.duration ? ` · ${hoursLabel(details.duration, locale)}` : ""}`,
       0,
     ],
-    ["Lieu", [details.city || "À définir", details.address].filter(Boolean).join(", "), 0],
-    ["Invités", `${details.guests}`, 0],
-    ["Services", basket.services.map(label).join(", ") || "Aucun service sélectionné", 1],
+    [r.place, [details.city || r.toDefine, details.address].filter(Boolean).join(", "), 0],
+    [r.participants, details.guests ? participantsLabel(details.guests, locale) : r.toSpecify, 0],
+    [r.services, basket.services.map(label).join(", ") || r.noServices, 1],
     [
-      "Matériel",
+      r.equipment,
       basket.products.length
-        ? `${basket.products.map((p) => `${label(p.id)}${p.variant ? ` ${p.variant}` : ""} × ${p.quantity}`).join(", ")} · ${daysLabel(details.rentalDays)}`
-        : "Aucun matériel sélectionné",
+        ? `${basket.products.map((p) => `${label(p.id)}${p.variant ? ` ${optionLabel(p.id, p.variant)}` : ""} × ${p.quantity}`).join(", ")} · ${daysLabel(details.rentalDays, locale)}`
+        : r.noEquipment,
       2,
     ],
+    [r.budget, details.budget ? money(details.budget, locale) : r.notSpecified, 3],
+    [r.description, details.message || r.noDescription, 3],
+    [r.attachments, files.length ? files.map((file) => file.name).join(", ") : r.noAttachments, 3],
     [
-      "Vos coordonnées",
-      [contact.name, contact.phone, contact.email, `Contact : ${contact.contactMethod}`].filter(Boolean).join(" · "),
+      r.contact,
+      [
+        contact.name,
+        contact.company,
+        contact.phone,
+        contact.email,
+        fill(r.contactWay, { method: contactMethodLabel(locale, contact.contactMethod) }),
+      ]
+        .filter(Boolean)
+        .join(" · "),
       null,
     ],
   ];
 
+  const shownParticipants = Math.min(PARTICIPANTS.max, Math.max(PARTICIPANTS.min, details.guests || PARTICIPANTS.min));
+
   return (
     <div className={s.configurator} ref={panel}>
       <div className={s.main}>
-        <ol className={s.steps} style={{ ["--progress" as string]: step / (STEPS.length - 1) }}>
-          {STEPS.map((title, index) => (
+        <ol className={s.steps} style={{ ["--progress" as string]: step / (steps.length - 1) }}>
+          {steps.map((title, index) => (
             <li key={title} className={cx(index < step && s.passed, index === step && s.here)}>
               <button
                 type="button"
@@ -268,17 +344,15 @@ export default function QuoteConfigurator() {
 
         <form className={s.stepForm} onSubmit={next} noValidate>
           <h3 ref={stepTitle} tabIndex={-1} className={s.stepTitle}>
-            <small>
-              Étape {step + 1} / {STEPS.length}
-            </small>
-            {STEPS[step]}
+            <small>{fill(t.configurator.step, { step: step + 1, total: steps.length })}</small>
+            {steps[step]}
           </h3>
 
           <div className={s.stepBody} key={step}>
             {step === 0 && (
               <>
                 <Select
-                  label="Votre événement"
+                  label={t.configurator.event}
                   required
                   searchable
                   options={options("events").map((e) => ({ value: e.id, label: e.title }))}
@@ -288,7 +362,7 @@ export default function QuoteConfigurator() {
                 />
                 <div className={s.grid2}>
                   <DatePicker
-                    label="Date de l’événement"
+                    label={t.configurator.date}
                     name="date"
                     required
                     min={minDate}
@@ -297,13 +371,13 @@ export default function QuoteConfigurator() {
                     onChange={(value) => setDetails({ date: value })}
                   />
                   <NumberInput
-                    label="Durée de l’événement (facultatif)"
+                    label={t.configurator.duration}
                     name="duration"
                     min={1}
                     max={MAX_DURATION_HOURS}
                     decimals={1}
-                    suffix="heures"
-                    placeholder="Si vous la connaissez"
+                    suffix={t.configurator.hours}
+                    placeholder={t.configurator.durationPlaceholder}
                     value={details.duration || null}
                     error={errors.duration}
                     onChange={(duration) => setDetails({ duration: duration ?? 0 })}
@@ -311,57 +385,57 @@ export default function QuoteConfigurator() {
                 </div>
                 <div className={s.grid2}>
                   <Select
-                    label="Ville"
+                    label={t.configurator.city}
                     name="city"
                     required
                     searchable
-                    placeholder="Choisir une ville"
-                    emptyText="Ville non listée : choisissez la plus proche, puis précisez l’adresse."
+                    placeholder={t.configurator.cityPlaceholder}
+                    emptyText={t.configurator.cityEmpty}
                     options={CITY_OPTIONS}
                     value={details.city}
                     error={errors.city}
                     onChange={(value) => setDetails({ city: value })}
                   />
                   <Input
-                    label="Adresse du lieu (facultatif)"
+                    label={t.configurator.place}
                     maxLength={250}
                     autoComplete="street-address"
-                    placeholder="Nom du lieu, quartier, rue…"
+                    placeholder={t.configurator.placePlaceholder}
                     value={details.address}
                     onChange={(e) => setDetails({ address: e.target.value })}
                   />
                 </div>
                 <div className={s.guests}>
                   <div className={s.guestsHead}>
-                    <span className={s.guestsLabel}>
-                      Nombre d’invités <span aria-hidden="true">*</span>
-                    </span>
-                    <output htmlFor="devis-invites devis-invites-curseur">
-                      {details.guests || 0} <small>invités</small>
+                    <span className={s.guestsLabel}>{t.configurator.participants}</span>
+                    <output htmlFor="devis-participants devis-participants-curseur">
+                      {details.guests ? number(details.guests) : "—"} <small>{t.configurator.participantsUnit}</small>
                     </output>
                   </div>
                   <input
-                    id="devis-invites-curseur"
+                    id="devis-participants-curseur"
                     className={s.range}
                     type="range"
-                    aria-label="Nombre d’invités, réglage rapide"
-                    min={GUESTS.min}
-                    max={GUESTS.max}
-                    step={GUESTS.step}
-                    value={Math.min(GUESTS.max, Math.max(GUESTS.min, details.guests || GUESTS.min))}
+                    aria-label={t.configurator.participantsRange}
+                    min={PARTICIPANTS.min}
+                    max={PARTICIPANTS.max}
+                    step={PARTICIPANTS.step}
+                    value={shownParticipants}
                     style={{
-                      ["--fill" as string]: `${((Math.min(GUESTS.max, Math.max(GUESTS.min, details.guests)) - GUESTS.min) / (GUESTS.max - GUESTS.min)) * 100}%`,
+                      ["--fill" as string]: details.guests
+                        ? `${((shownParticipants - PARTICIPANTS.min) / (PARTICIPANTS.max - PARTICIPANTS.min)) * 100}%`
+                        : "0%",
                     }}
                     onChange={(e) => setDetails({ guests: Number(e.target.value) })}
                   />
                   <NumberInput
-                    id="devis-invites"
-                    label="Nombre exact"
+                    id="devis-participants"
+                    label={t.configurator.participantsExact}
                     min={1}
-                    max={10000}
+                    max={MAX_PARTICIPANTS}
                     value={details.guests || null}
                     error={errors.guests}
-                    hint="Au-delà de 1 000 invités, saisissez le nombre exact."
+                    hint={fill(t.configurator.participantsHint, { max: number(PARTICIPANTS.max) })}
                     onChange={(guests) => setDetails({ guests: guests ?? 0 })}
                   />
                 </div>
@@ -370,10 +444,7 @@ export default function QuoteConfigurator() {
 
             {step === 1 && (
               <>
-                <p className={s.stepLede}>
-                  Sélectionnez les expertises qui vous intéressent. Vous pouvez aussi les ajouter depuis la section
-                  Services du site.
-                </p>
+                <p className={s.stepLede}>{t.configurator.servicesLede}</p>
                 <div className={s.services}>
                   {options("services").map((service) => {
                     const on = basket.services.includes(service.id);
@@ -385,8 +456,8 @@ export default function QuoteConfigurator() {
                         </span>
                         <span className={s.serviceText}>
                           <strong>{service.title}</strong>
-                          <small>{serviceItems(service).slice(0, 4).join(" · ")}</small>
-                          <em>{priceLabel(service)}</em>
+                          <small>{serviceItems(service, t.serviceDetails).slice(0, 4).join(" · ")}</small>
+                          <em>{priceLabel(service, locale)}</em>
                         </span>
                         <span className={s.tick} aria-hidden="true">
                           {on ? "✓" : "+"}
@@ -400,73 +471,92 @@ export default function QuoteConfigurator() {
 
             {step === 2 && (
               <>
-                <p className={s.stepLede}>
-                  Composez votre sélection de matériel. Les quantités restent modifiables jusqu’à l’envoi.
-                </p>
-                <div className={s.products}>
-                  {options("products")
-                    .filter((p) => p.available !== false)
-                    .map((product) => {
-                      const variant = variants[product.id] ?? product.variants?.[0]?.name ?? "";
-                      const count = quantity(product.id, variant);
-                      return (
-                        <article key={product.id} className={cx(s.product, count > 0 && s.productOn)}>
-                          <div className={s.productImage}>
-                            <img src={product.image || "/eventheme.jpg"} alt="" loading="lazy" />
-                            {product.demo && <span>Exemple</span>}
-                          </div>
-                          <div className={s.productBody}>
-                            <small>{product.category}</small>
-                            <strong>{product.title}</strong>
-                            <em>
-                              {priceLabel({
-                                ...product,
-                                price: product.variants?.find((v) => v.name === variant)?.price ?? product.price,
-                              })}
-                            </em>
-                            {!!product.variants?.length && (
-                              <div className={s.variants} role="group" aria-label={`Finition — ${product.title}`}>
-                                {product.variants.map((v) => (
-                                  <button
-                                    key={v.name}
-                                    type="button"
-                                    aria-pressed={variant === v.name}
-                                    onClick={() => setVariants((all) => ({ ...all, [product.id]: v.name }))}
-                                  >
-                                    {v.name}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                            <Stepper
-                              label={`${product.title}${variant ? ` ${variant}` : ""}`}
-                              value={count}
-                              onChange={(value) => setQuantity(product.id, variant, value)}
-                            />
-                          </div>
-                        </article>
-                      );
-                    })}
+                <p className={s.stepLede}>{t.configurator.equipmentLede}</p>
+                <div className={s.materialTools}>
+                  <SearchInput
+                    label={t.configurator.search}
+                    placeholder={t.configurator.searchPlaceholder}
+                    value={search}
+                    onChange={setSearch}
+                  />
+                  {categoryOptions.length > 1 && (
+                    <Select
+                      label={t.configurator.category}
+                      hideLabel
+                      options={[
+                        { value: "", label: t.configurator.allCategories },
+                        ...categoryOptions.map((item) => ({ value: item.id, label: item.title })),
+                      ]}
+                      value={category}
+                      onChange={setCategory}
+                    />
+                  )}
                 </div>
+                <div className={s.products}>
+                  {shownProducts.map((product) => {
+                    const variant = variants[product.id] ?? product.variants?.[0]?.name ?? "";
+                    const count = quantity(product.id, variant);
+                    return (
+                      <article key={product.id} className={cx(s.product, count > 0 && s.productOn)}>
+                        <div className={s.productImage}>
+                          <img src={product.image || "/eventheme.jpg"} alt="" loading="lazy" />
+                          {product.demo && <span>{t.common.example}</span>}
+                        </div>
+                        <div className={s.productBody}>
+                          <small>{categoryTrail(entries, product)}</small>
+                          <strong>{product.title}</strong>
+                          <em>
+                            {priceLabel(
+                              { ...product, price: product.variants?.find((v) => v.name === variant)?.price ?? product.price },
+                              locale,
+                            )}
+                          </em>
+                          {!!product.variants?.length && (
+                            <div className={s.variants} role="group" aria-label={fill(t.configurator.variant, { title: product.title })}>
+                              {product.variants.map((v) => (
+                                <button
+                                  key={v.name}
+                                  type="button"
+                                  aria-pressed={variant === v.name}
+                                  onClick={() => setVariants((all) => ({ ...all, [product.id]: v.name }))}
+                                >
+                                  {v.label || v.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          <Stepper
+                            label={`${product.title}${variant ? ` ${optionLabel(product.id, variant)}` : ""}`}
+                            value={count}
+                            onChange={(value) => setQuantity(product.id, variant, value)}
+                          />
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+                {!shownProducts.length && (
+                  <p className={s.caption}>{t.configurator.noMatch}</p>
+                )}
                 {basket.products.length > 0 && (
                   <div className={s.selection}>
-                    <h4>Votre sélection · {articles} article(s)</h4>
+                    <h4>{fill(t.configurator.selection, { count: articles })}</h4>
                     <ul>
                       {basket.products.map((item) => (
                         <li key={`${item.id}-${item.variant}`}>
                           <span>
                             {label(item.id)}
-                            {item.variant && <small> · {item.variant}</small>}
+                            {item.variant && <small> · {optionLabel(item.id, item.variant)}</small>}
                           </span>
                           <Stepper
-                            label={`${label(item.id)} ${item.variant}`}
+                            label={`${label(item.id)} ${optionLabel(item.id, item.variant)}`}
                             value={item.quantity}
                             onChange={(value) => setQuantity(item.id, item.variant, value)}
                           />
                           <button
                             type="button"
                             className={s.remove}
-                            aria-label={`Retirer ${label(item.id)}`}
+                            aria-label={fill(t.configurator.remove, { title: label(item.id) })}
                             onClick={() => setQuantity(item.id, item.variant, 0)}
                           >
                             <CloseIcon />
@@ -478,48 +568,94 @@ export default function QuoteConfigurator() {
                 )}
                 {basket.products.length > 0 && (
                   <NumberInput
-                    label="Nombre de jours de location"
+                    label={t.configurator.rentalDays}
                     name="rentalDays"
                     min={1}
                     max={MAX_RENTAL_DAYS}
                     decimals={0}
-                    suffix="jour(s)"
+                    suffix={t.configurator.rentalUnit}
                     value={details.rentalDays}
                     error={errors.rentalDays}
-                    hint="Le matériel est tarifé à la journée. Indiquez plus d’un jour pour une location prolongée."
+                    hint={t.configurator.rentalHint}
                     onChange={(rentalDays) => setDetails({ rentalDays: rentalDays ?? 1 })}
                   />
                 )}
-                <Button href="/location" variant="link" icon={<ArrowUpRightIcon />}>
-                  Explorer le catalogue complet
+                <Button href={href("equipment")} variant="link" icon={<ArrowUpRightIcon />}>
+                  {t.configurator.catalogue}
                 </Button>
               </>
             )}
 
             {step === 3 && (
               <>
-                <dl className={s.recap}>
-                  {recap.map(([term, value, target]) => (
-                    <div key={term}>
-                      <dt>{term}</dt>
-                      <dd>{value}</dd>
-                      {target != null && (
-                        <button type="button" onClick={() => goTo(target)}>
-                          Modifier<span className="visually-hidden"> : {term}</span>
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </dl>
+                <p className={s.stepLede}>{t.configurator.detailsLede}</p>
                 <Textarea
-                  label="Informations complémentaires (facultatif)"
-                  rows={4}
+                  label={t.configurator.description}
+                  rows={5}
                   maxLength={5000}
-                  placeholder="Déroulé souhaité, contraintes du lieu, prestations particulières…"
+                  placeholder={t.configurator.descriptionPlaceholder}
                   value={details.message}
                   onChange={(e) => setDetails({ message: e.target.value })}
                 />
+                <NumberInput
+                  label={t.configurator.budget}
+                  name="budget"
+                  min={0}
+                  step={1000}
+                  decimals={0}
+                  suffix="MAD"
+                  placeholder={t.configurator.budgetPlaceholder}
+                  value={details.budget || null}
+                  error={errors.budget}
+                  hint={t.configurator.budgetHint}
+                  onChange={(budget) => setDetails({ budget: budget ?? 0 })}
+                />
+                <FileInput
+                  label={t.configurator.attachments}
+                  hint={fill(t.configurator.attachmentsHint, { limits: attachmentHint(locale) })}
+                  multiple
+                  accept={ATTACHMENT_ACCEPT}
+                  error={errors.files}
+                  disabled={files.length >= MAX_ATTACHMENTS}
+                  onFiles={addFiles}
+                />
+                {files.length > 0 && (
+                  <ul className={s.files} aria-label={t.configurator.selectedFiles}>
+                    {files.map((file, index) => (
+                      <li key={`${file.name}-${index}`}>
+                        <span>
+                          {file.name}
+                          <small> · {sizeLabel(file.size, locale)}</small>
+                        </span>
+                        <button
+                          type="button"
+                          className={s.remove}
+                          aria-label={fill(t.configurator.remove, { title: file.name })}
+                          onClick={() => removeFile(index)}
+                        >
+                          <CloseIcon />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </>
+            )}
+
+            {step === 4 && (
+              <dl className={s.recap}>
+                {recap.map(([term, value, target]) => (
+                  <div key={term}>
+                    <dt>{term}</dt>
+                    <dd>{value}</dd>
+                    {target != null && (
+                      <button type="button" onClick={() => goTo(target)}>
+                        {r.edit}<span className="visually-hidden"> : {term}</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </dl>
             )}
           </div>
 
@@ -530,65 +666,61 @@ export default function QuoteConfigurator() {
           )}
           <div className={s.stepActions}>
             {step > 0 && (
-              <Button variant="link" onClick={() => goTo(step - 1)}>
-                ← Précédent
+              <Button variant="link" onClick={() => goTo(step - 1)} disabled={busy}>
+                {t.configurator.previous}
               </Button>
             )}
-            <Button type="submit" icon={<ArrowUpRightIcon />} loading={busy} magnetic={step === STEPS.length - 1}>
-              {busy ? "Envoi…" : step === STEPS.length - 1 ? "Recevoir mon devis" : "Continuer"}
+            <Button type="submit" icon={<ArrowUpRightIcon />} loading={busy} magnetic={step === steps.length - 1}>
+              {busy ? progress || t.common.sending : step === steps.length - 1 ? t.configurator.send : t.configurator.continue}
             </Button>
           </div>
-          {step === STEPS.length - 1 && (
-            <p className={s.caption}>
-              Sans engagement et sans paiement en ligne. Disponibilités et tarifs confirmés par notre équipe.
+          {busy && progress && (
+            <p className={s.caption} role="status">
+              {progress}
             </p>
           )}
-          {local && <p className={s.demo}>Aperçu local : les demandes sont enregistrées sur cet ordinateur.</p>}
+          {step === steps.length - 1 && <p className={s.caption}>{t.configurator.terms}</p>}
+          {local && <p className={s.demo}>{t.configurator.localNote}</p>}
         </form>
       </div>
 
-      <aside className={s.live} aria-label="Estimation en direct">
-        <span className={s.liveKicker}>Estimation en direct</span>
-        <h3>{details.event ? label(details.event) : "Votre événement"}</h3>
+      <aside className={s.live} aria-label={t.configurator.live.label}>
+        <span className={s.liveKicker}>{t.configurator.live.kicker}</span>
+        <h3>{details.event ? label(details.event) : t.configurator.live.yourEvent}</h3>
         <p className={s.liveMeta}>
-          {[eventDate && formatLongDate(eventDate), details.city, details.guests && `${details.guests} invités`]
+          {[eventDate && longDate(eventDate), details.city, details.guests > 0 && participantsLabel(details.guests, locale)]
             .filter(Boolean)
-            .join(" · ") || "Date, lieu et invités à préciser"}
+            .join(" · ") || t.configurator.live.toSpecify}
         </p>
         <div className={s.total}>
-          <small>{calculation.hasUnpriced && calculation.total > 0 ? "Postes déjà chiffrés" : "Montant indicatif"}</small>
+          <small>{calculation.hasUnpriced && calculation.total > 0 ? t.configurator.live.priced : t.configurator.live.indicative}</small>
           <span ref={total} className={s.totalValue} aria-hidden="true" />
           <span className="visually-hidden" aria-live="polite">
-            {calculation.total > 0 ? money(calculation.total) : "Sur devis"}
+            {calculation.total > 0 ? money(calculation.total, locale) : t.format.onRequest}
           </span>
         </div>
         <ul className={s.lines}>
           {calculation.lines.map((line, index) => (
             <li key={`${line.kind}-${line.label}-${index}`}>
               <span>
-                {lineLabel(line)}
+                {lineLabel(line, locale)}
                 {line.quantity > 1 && <small> × {line.quantity}</small>}
               </span>
-              <b>{lineAmount(line)}</b>
+              <b>{lineAmount(line, locale)}</b>
             </li>
           ))}
-          {!calculation.lines.length && <li className={s.linesEmpty}>Vos choix apparaîtront ici.</li>}
+          {!calculation.lines.length && <li className={s.linesEmpty}>{t.configurator.live.empty}</li>}
         </ul>
-        <p className={s.liveNote}>
-          {calculation.hasUnpriced
-            ? "Certaines prestations sont chiffrées sur devis : notre équipe vous communiquera le montant définitif."
-            : "Estimation indicative, non contractuelle, à confirmer par notre équipe."}
-        </p>
+        <p className={s.liveNote}>{calculation.hasUnpriced ? t.configurator.live.onRequestNote : t.configurator.live.note}</p>
         <p className={s.liveCount}>
-          {basket.services.length} service(s) · {articles} article(s)
+          {fill(t.configurator.live.count, { services: basket.services.length, articles })}
+          {files.length > 0 && fill(t.configurator.live.files, { count: files.length })}
         </p>
       </aside>
 
       <div className={s.mobileBar} aria-hidden="true">
-        <span>
-          Étape {step + 1}/{STEPS.length}
-        </span>
-        <b>{calculation.total > 0 ? money(calculation.total) : "Sur devis"}</b>
+        <span>{fill(t.configurator.mobileStep, { step: step + 1, total: steps.length })}</span>
+        <b>{calculation.total > 0 ? money(calculation.total, locale) : t.format.onRequest}</b>
       </div>
     </div>
   );
@@ -596,9 +728,11 @@ export default function QuoteConfigurator() {
 
 /** Quantité réglable : −, valeur saisissable, +. */
 function Stepper({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  const { t } = useEventheme();
+  const name = fill(t.configurator.quantity, { label });
   return (
-    <div className={s.stepper} role="group" aria-label={`Quantité — ${label}`}>
-      <button type="button" onClick={() => onChange(value - 1)} disabled={value <= 0} aria-label="Retirer un">
+    <div className={s.stepper} role="group" aria-label={name}>
+      <button type="button" onClick={() => onChange(value - 1)} disabled={value <= 0} aria-label={t.configurator.removeOne}>
         −
       </button>
       <input
@@ -607,10 +741,10 @@ function Stepper({ label, value, onChange }: { label: string; value: number; onC
         min={0}
         max={1000}
         value={value}
-        aria-label={`Quantité — ${label}`}
+        aria-label={name}
         onChange={(e) => onChange(Number(e.target.value))}
       />
-      <button type="button" onClick={() => onChange(value + 1)} disabled={value >= 1000} aria-label="Ajouter un">
+      <button type="button" onClick={() => onChange(value + 1)} disabled={value >= 1000} aria-label={t.configurator.addOne}>
         +
       </button>
     </div>

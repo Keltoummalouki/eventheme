@@ -2,7 +2,7 @@
 
 import { useRef, type ReactNode } from 'react';
 import { CloseIcon, SearchIcon } from '@/components/ui/icons';
-import { formText } from '@/data/ui';
+import { useFormText } from './locale';
 import Input, { type InputProps } from './Input';
 import s from './controls.module.css';
 
@@ -28,6 +28,7 @@ export default function SearchInput({
   onKeyDown,
   ...props
 }: SearchInputProps) {
+  const formText = useFormText();
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (

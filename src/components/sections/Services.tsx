@@ -21,7 +21,7 @@ import styles from './Services.module.css';
  */
 export default function Services() {
   const ref = useRef<HTMLElement>(null);
-  const { entries, basket, setBasket, add } = useEventheme();
+  const { entries, basket, setBasket, add, t, href } = useEventheme();
   const services = entries.filter((e) => e.kind === 'services');
   const [active, setActive] = useState(0);
 
@@ -59,18 +59,18 @@ export default function Services() {
   return (
     <section className={styles.root} id="services" ref={ref}>
       <SectionHeader
-        eyebrow="Nos expertises"
+        eyebrow={t.homeServices.eyebrow}
         title={
           <>
-            Tout un savoir-faire.
+            {t.homeServices.titleStart}
             <br />
-            <em>Une seule signature.</em>
+            <em>{t.homeServices.titleEnd}</em>
           </>
         }
-        description="Un accompagnement complet ou une expertise à la carte : composez les prestations qui donneront vie à votre événement."
+        description={t.homeServices.description}
         action={
-          <Button href="/services" variant="link" icon={<ArrowUpRightIcon />}>
-            Tous nos services
+          <Button href={href('services')} variant="link" icon={<ArrowUpRightIcon />}>
+            {t.homeServices.all}
           </Button>
         }
       />
@@ -78,7 +78,7 @@ export default function Services() {
       <div className={styles.panels}>
         {services.map((service, index) => {
           const chosen = basket.services.includes(service.id);
-          const items = serviceItems(service);
+          const items = serviceItems(service, t.serviceDetails);
           return (
             <article
               key={service.id}
@@ -115,10 +115,10 @@ export default function Services() {
                     aria-pressed={chosen}
                     onClick={() => toggle(service.id)}
                   >
-                    {chosen ? 'Dans mon devis' : 'Ajouter à mon devis'}
+                    {chosen ? t.common.inQuote : t.common.addToQuote}
                   </Button>
-                  <Button href="/services" variant="link" size="sm" icon={<ArrowUpRightIcon />}>
-                    En savoir plus
+                  <Button href={href('services', service.id)} variant="link" size="sm" icon={<ArrowUpRightIcon />}>
+                    {t.common.learnMore}
                   </Button>
                 </div>
               </div>
@@ -126,7 +126,7 @@ export default function Services() {
           );
         })}
       </div>
-      <p className={styles.caption}>Photographies d’ambiance et d’illustration.</p>
+      <p className={styles.caption}>{t.homeServices.caption}</p>
     </section>
   );
 }

@@ -1,13 +1,17 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import Butterflies from "@/components/ui/Butterflies";
+import Truss from "@/components/ui/Truss";
 import Button from "@/components/ui/Button";
 import Eyebrow from "@/components/ui/Eyebrow";
 import { Checkbox, Input, PhoneInput } from "@/components/ui/form";
+import { contactMethodLabel } from "@/data/locales";
 import { cx } from "@/lib/cx";
 import { findSocial, type QuoteContact, type QuotePhase } from "@/lib/eventheme/types";
 import { gsap, MOTION, prefersReducedMotion, revealSafe, useGSAP } from "@/lib/motion";
+import { isMoroccanCity } from "@/data/moroccanCities";
+import { track } from "@/lib/eventheme/audience";
+import { fill, isolate } from "@/lib/i18n";
 import { isValidPhone } from "@/lib/phone";
 import { useEventheme, useQuote } from "./Provider";
 import QuoteConfigurator from "./QuoteConfigurator";
@@ -16,9 +20,9 @@ import s from "./QuoteStudio.module.css";
 import { ArrowUpRightIcon } from "@/components/ui/icons";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Valeurs enregistrées (en français) ; le libellé suit la langue de la page. */
 const CONTACT_METHODS = ["Téléphone", "WhatsApp", "E-mail"];
-/** Les trois temps du parcours, tels que le visiteur les perçoit. */
-const JOURNEY = ["Faisons connaissance", "Imaginez votre événement", "Recevez votre devis"];
+/** Les trois temps du parcours, tels que le visiteur les perçoit (t.quote.journey). */
 const journeyIndex: Record<QuotePhase, number> = { lead: 0, invite: 1, waiting: 1, configure: 1, done: 2 };
 
 /**
@@ -39,13 +43,16 @@ const journeyIndex: Record<QuotePhase, number> = { lead: 0, invite: 1, waiting: 
 export default function QuoteStudio({
   as: Heading = "h2",
   eventId = "",
+  city = "",
 }: {
   as?: "h1" | "h2";
   eventId?: string;
+  /** Ville préremplie (/devis?ville=Marrakech, depuis une page ville). */
+  city?: string;
 }) {
   const ref = useRef<HTMLElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
-  const { entries, local } = useEventheme();
+  const { entries, local, locale, t, href } = useEventheme();
   const { quote, setQuote, pickEvent } = useQuote();
   const events = entries.filter((e) => e.kind === "events");
   const whatsapp = findSocial(entries, "whatsapp");
@@ -67,6 +74,14 @@ export default function QuoteStudio({
     applied.current = eventId;
     if (events.some((e) => e.id === eventId)) pickEvent(eventId);
   }, [eventId, events, pickEvent]);
+
+  // Ville transmise par l’adresse : appliquée une fois, sans remplacer une ville déjà choisie.
+  const cityApplied = useRef(false);
+  useEffect(() => {
+    if (cityApplied.current || !isMoroccanCity(city)) return;
+    cityApplied.current = true;
+    setQuote((q) => (q.details.city ? q : { ...q, details: { ...q.details, city } }));
+  }, [city, setQuote]);
 
   // À chaque changement d'étape du parcours, le titre reprend le focus et la
   // section revient à l'écran si elle en était sortie.
@@ -119,26 +134,26 @@ export default function QuoteStudio({
     event.preventDefault();
     setError("");
     const found: typeof errors = {};
-    if (!contact.name.trim()) found.name = "Indiquez votre nom.";
-    if (!isValidPhone(contact.phone)) found.phone = "Indiquez un numéro de téléphone valide.";
-    if (contact.email.trim() && !EMAIL.test(contact.email.trim())) found.email = "Cette adresse e-mail semble incomplète.";
-    else if (contact.contactMethod === "E-mail" && !contact.email.trim())
-      found.email = "Ajoutez votre e-mail, ou choisissez un autre moyen de contact.";
-    if (!details.event) found.event = "Choisissez votre événement.";
-    if (!contact.consent) found.consent = "Votre accord est nécessaire pour être recontacté.";
+    if (!contact.name.trim()) found.name = t.quote.errors.name;
+    if (!isValidPhone(contact.phone)) found.phone = t.quote.errors.phone;
+    if (contact.email.trim() && !EMAIL.test(contact.email.trim())) found.email = t.quote.errors.email;
+    else if (contact.contactMethod === "E-mail" && !contact.email.trim()) found.email = t.quote.errors.emailMethod;
+    if (!details.event) found.event = t.quote.errors.event;
+    if (!contact.consent) found.consent = t.quote.errors.consent;
     setErrors(found);
     if (Object.keys(found).length) {
-      setError("Quelques informations manquent encore.");
+      setError(t.common.missing);
       return;
     }
     setBusy(true);
     try {
       const response = await fetch("/api/inquiries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Locale": locale },
         body: JSON.stringify({
           kind: "callback",
           name: contact.name,
+          company: contact.company,
           phone: contact.phone,
           email: contact.email,
           event: details.event,
@@ -152,65 +167,39 @@ export default function QuoteStudio({
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
+      track("generate_lead", { lead_type: "callback" });
       setQuote((q) => ({
         ...q,
         phase: "invite",
-        lead: { id: result.id, token: result.token, name: q.contact.name, phone: q.contact.phone, email: q.contact.email, event: q.details.event },
+        lead: { id: result.id, reference: result.reference, emailed: result.emailed === true, token: result.token, name: q.contact.name, phone: q.contact.phone, email: q.contact.email, event: q.details.event },
       }));
     } catch (cause) {
-      setError(cause instanceof Error && cause.message ? cause.message : "L’envoi a échoué. Réessayez.");
+      setError(cause instanceof Error && cause.message ? cause.message : t.quote.errors.failed);
     } finally {
       setBusy(false);
     }
   }
 
-  const title =
-    phase === "lead" ? (
-      <>
-        Votre événement
-        <br />
-        <em>commence ici.</em>
-      </>
-    ) : phase === "invite" ? (
-      <>
-        C’est noté{firstName && `, ${firstName}`}.
-        <br />
-        <em>Et si l’on imaginait la suite ?</em>
-      </>
-    ) : phase === "waiting" ? (
-      <>
-        À très bientôt{firstName && `, ${firstName}`}.
-        <br />
-        <em>Nous vous rappelons.</em>
-      </>
-    ) : phase === "configure" ? (
-      <>
-        Composez votre
-        <br />
-        <em>événement.</em>
-      </>
-    ) : (
-      <>
-        Votre devis
-        <br />
-        <em>est prêt.</em>
-      </>
-    );
-  const intro = {
-    lead: "Laissez-nous vos coordonnées : notre équipe vous rappelle. Ensuite, si vous le souhaitez, composez votre événement et découvrez son estimation.",
-    invite: "Votre demande de rappel est enregistrée. Vous pouvez vous arrêter ici, ou nous en dire plus et voir, poste par poste, ce que représente votre événement.",
-    waiting: `Notre équipe vous contactera au ${lead?.phone || contact.phone} dans les meilleurs délais. Vous pouvez toujours composer votre événement en attendant.`,
-    configure: "Choisissez vos prestations et votre matériel : l’estimation évolue en direct avec vos choix. Rien n’est engagé avant notre échange.",
-    done: "Merci pour votre demande. Notre équipe vous contactera dans les meilleurs délais afin de préparer une proposition adaptée à votre événement.",
-  }[phase];
+  // « {name} » : le prénom, précédé d’une virgule, s’il est connu.
+  const name = firstName ? `${t.quote.nameSeparator}${firstName}` : "";
+  const [titleStart, titleEnd] = t.quote.titles[phase];
+  const title = (
+    <>
+      {fill(titleStart, { name })}
+      <br />
+      <em>{fill(titleEnd, { name })}</em>
+    </>
+  );
+  // Le numéro reste lisible (chiffres dans l’ordre) au milieu d’une phrase arabe.
+  const intro = fill(t.quote.intros[phase], { phone: isolate(lead?.phone || contact.phone) });
   const wide = phase === "configure" || phase === "done";
 
   return (
     <section className={cx(s.studio, wide && s.wide)} id="devis" ref={ref} aria-labelledby="devis-titre">
-      <Butterflies count={2} />
+      <Truss className={s.rig} />
       <div className={s.inner}>
         <div className={s.head}>
-          <Eyebrow>Mon devis</Eyebrow>
+          <Eyebrow>{t.quote.eyebrow}</Eyebrow>
           <Heading id="devis-titre" ref={heading} tabIndex={-1} className={s.title}>
             {title}
           </Heading>
@@ -218,7 +207,7 @@ export default function QuoteStudio({
           {/* Pendant la personnalisation, les étapes du configurateur suffisent. */}
           {phase !== "configure" && (
             <ol className={s.journey} style={{ ["--progress" as string]: journeyIndex[phase] / 2 }}>
-              {JOURNEY.map((label, index) => (
+              {t.quote.journey.map((label, index) => (
                 <li
                   key={label}
                   className={cx(index < journeyIndex[phase] && s.passed, index === journeyIndex[phase] && s.here)}
@@ -232,13 +221,13 @@ export default function QuoteStudio({
           )}
           {!wide && (
             <p className={s.reassurance}>
-              Sans engagement · Sans paiement en ligne · À votre rythme
+              {t.quote.reassurance}
               {whatsapp?.url && (
                 <>
                   <br />
-                  Vous préférez écrire ?{" "}
+                  {t.quote.preferWriting}{" "}
                   <a href={whatsapp.url} target="_blank" rel="noreferrer">
-                    Échangeons sur WhatsApp <ArrowUpRightIcon className="inline-icon" />
+                    {t.quote.whatsapp} <ArrowUpRightIcon className="inline-icon" />
                   </a>
                 </>
               )}
@@ -249,10 +238,10 @@ export default function QuoteStudio({
         <div className={s.stage}>
           {phase === "lead" && (
             <form className={s.card} onSubmit={sendLead} noValidate>
-              <span className={s.cardKicker}>01 — Faisons connaissance</span>
+              <span className={s.cardKicker}>{t.quote.leadKicker}</span>
               <div className={s.fields}>
                 <Input
-                  label="Nom complet"
+                  label={t.quote.name}
                   name="name"
                   required
                   autoComplete="name"
@@ -261,8 +250,16 @@ export default function QuoteStudio({
                   error={errors.name}
                   onChange={(e) => setContact({ name: e.target.value })}
                 />
+                <Input
+                  label={t.quote.company}
+                  name="organization"
+                  autoComplete="organization"
+                  maxLength={250}
+                  value={contact.company}
+                  onChange={(e) => setContact({ company: e.target.value })}
+                />
                 <PhoneInput
-                  label="Téléphone"
+                  label={t.quote.phone}
                   name="phone"
                   required
                   value={contact.phone}
@@ -270,7 +267,7 @@ export default function QuoteStudio({
                   onChange={(phone) => setContact({ phone })}
                 />
                 <Input
-                  label="E-mail (facultatif)"
+                  label={t.quote.email}
                   name="email"
                   type="email"
                   autoComplete="email"
@@ -281,7 +278,7 @@ export default function QuoteStudio({
                 />
               </div>
               <fieldset className={s.group}>
-                <legend>Comment préférez-vous être contacté ?</legend>
+                <legend>{t.quote.contactMethod}</legend>
                 <div className={s.chips}>
                   {CONTACT_METHODS.map((method) => (
                     <label key={method} className={cx(s.chip, contact.contactMethod === method && s.chipOn)}>
@@ -292,14 +289,14 @@ export default function QuoteStudio({
                         checked={contact.contactMethod === method}
                         onChange={() => setContact({ contactMethod: method })}
                       />
-                      {method}
+                      {contactMethodLabel(locale, method)}
                     </label>
                   ))}
                 </div>
               </fieldset>
               <fieldset className={s.occasions} aria-describedby={errors.event ? "occasion-erreur" : undefined}>
                 <legend>
-                  Votre événement <span aria-hidden="true">*</span>
+                  {t.quote.event} <span aria-hidden="true">*</span>
                 </legend>
                 <div className={s.chips}>
                   {events.map((e) => (
@@ -323,7 +320,7 @@ export default function QuoteStudio({
               </fieldset>
               <div className={s.honeypot} aria-hidden="true">
                 <label>
-                  Site web
+                  {t.quote.honeypot}
                   <input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
                 </label>
               </div>
@@ -334,9 +331,9 @@ export default function QuoteStudio({
                 error={errors.consent}
                 onChange={(consent) => setContact({ consent })}
               >
-                J’accepte d’être contacté au sujet de mon événement et la{" "}
-                <Link href="/politique-de-confidentialite" target="_blank">
-                  politique de confidentialité
+                {t.quote.consentStart}{" "}
+                <Link href={href("privacy")} target="_blank">
+                  {t.quote.privacyPolicy}
                 </Link>
                 .
               </Checkbox>
@@ -346,12 +343,10 @@ export default function QuoteStudio({
                 </p>
               )}
               <Button type="submit" loading={busy} icon={<ArrowUpRightIcon />} block magnetic>
-                {busy ? "Envoi…" : "Être recontacté"}
+                {busy ? t.common.sending : t.quote.submit}
               </Button>
-              <p className={s.caption}>
-                Ensuite, si vous le souhaitez : personnalisation de votre événement et estimation détaillée.
-              </p>
-              {local && <p className={s.demo}>Aperçu local · utilisez des coordonnées fictives.</p>}
+              <p className={s.caption}>{t.quote.next}</p>
+              {local && <p className={s.demo}>{t.quote.localLead}</p>}
             </form>
           )}
 
@@ -361,29 +356,28 @@ export default function QuoteStudio({
                 <circle cx="30" cy="30" r="28" />
                 <path d="M19 31 l7 7 l15 -16" />
               </svg>
-              <span className={s.cardKicker}>Demande reçue · Réf. {lead.id.slice(0, 8).toUpperCase()}</span>
-              <h3>{phase === "invite" ? "Envie d’aller un peu plus loin ?" : "Votre demande est entre de bonnes mains."}</h3>
-              <p>
-                {phase === "invite"
-                  ? "En quelques étapes, choisissez vos prestations et votre matériel, découvrez l’estimation de votre événement et recevez votre devis détaillé."
-                  : "Si l’envie vous prend, composez votre événement : votre devis estimatif sera prêt en quelques minutes."}
-              </p>
+              <span className={s.cardKicker}>
+                {fill(t.quote.received, { reference: lead.reference || lead.id.slice(0, 8).toUpperCase() })}
+              </span>
+              <h3>{phase === "invite" ? t.quote.inviteTitle : t.quote.waitingTitle}</h3>
+              {lead.emailed && lead.email && <p className={s.caption}>{fill(t.quote.emailed, { email: lead.email })}</p>}
+              <p>{phase === "invite" ? t.quote.inviteText : t.quote.waitingText}</p>
               <ul className={s.perks}>
-                <li>Estimation en direct, poste par poste</li>
-                <li>Devis imprimable et envoyable sur WhatsApp</li>
-                <li>Votre demande reste enregistrée, quoi que vous choisissiez</li>
+                {t.quote.perks.map((perk) => (
+                  <li key={perk}>{perk}</li>
+                ))}
               </ul>
               <div className={s.inviteActions}>
                 <Button icon={<ArrowUpRightIcon />} magnetic onClick={() => go("configure")}>
-                  Personnaliser mon événement
+                  {t.quote.customise}
                 </Button>
                 {phase === "invite" && (
                   <Button variant="link" onClick={() => go("waiting")}>
-                    Je préfère être rappelé
+                    {t.quote.callMe}
                   </Button>
                 )}
               </div>
-              {local && <p className={s.demo}>Aperçu local : demande enregistrée sur cet ordinateur, sans e-mail.</p>}
+              {local && <p className={s.demo}>{t.quote.localInvite}</p>}
             </div>
           )}
 

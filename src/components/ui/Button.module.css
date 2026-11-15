@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Bouton EVENTHEME — or plein, filet doré, contour discret ou lien souligné.
+   Bouton EVENTHEMES — or plein, filet doré, contour discret ou lien souligné.
    Au survol, une couche glisse depuis la gauche (transform seul, sans
    recalcul de mise en page).
    ========================================================================== */
@@ -37,6 +37,10 @@
   transform: translateX(-101%);
   transition: transform 0.45s var(--ease);
 }
+/* De droite à gauche : le remplissage arrive par la droite. */
+[dir="rtl"] .btn::before {
+  transform: translateX(101%);
+}
 
 .label {
   display: inline-flex;
@@ -68,7 +72,7 @@
 }
 
 .outline {
-  border-color: rgba(201, 163, 78, 0.7);
+  border-color: rgba(201, 162, 74, 0.7);
   color: var(--or-clair);
 }
 
@@ -77,8 +81,8 @@
 }
 
 .ghost {
-  border-color: rgba(245, 241, 232, 0.22);
-  color: rgba(245, 241, 232, 0.8);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.8);
   font-weight: 500;
 }
 
@@ -101,7 +105,7 @@
    l'or plein de l'action `fill` qu'il remplace. */
 .outline[aria-pressed='true'] {
   border-color: var(--or);
-  background: rgba(201, 163, 78, 0.14);
+  background: rgba(201, 162, 74, 0.14);
   color: var(--or-clair);
 }
 
@@ -110,7 +114,7 @@
   padding: 8px 0;
   overflow: visible;
   border: 0;
-  border-bottom: 1px solid rgba(201, 163, 78, 0.45);
+  border-bottom: 1px solid rgba(201, 162, 74, 0.45);
   color: inherit;
   font-size: 0.75rem;
   font-weight: 400;
@@ -125,6 +129,10 @@
   background: var(--or);
   transform: scaleX(0);
   transform-origin: left;
+}
+/* De droite à gauche (arabe) : la barre part du côté du début de lecture. */
+[dir="rtl"] .link::before {
+  transform-origin: right center;
 }
 
 .link .icon {
@@ -217,8 +225,8 @@
     content: '';
     position: absolute;
     top: 50%;
-    left: 0;
-    right: 0;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
     height: 44px;
     transform: translateY(-50%);
   }
@@ -259,7 +267,7 @@
   width: 0.75em;
   height: 0.75em;
   border: 1px solid currentColor;
-  border-right-color: transparent;
+  border-inline-end-color: transparent;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

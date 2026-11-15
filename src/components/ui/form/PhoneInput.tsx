@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { CheckIcon, ChevronIcon, SearchIcon } from '@/components/ui/icons';
 import { preferredPhoneCountries } from '@/data/phoneCountries';
-import { formText } from '@/data/ui';
+import { useFormLocale, useFormText } from './locale';
 import { useFlagFont } from '@/hooks/useFlagFont';
 import { useDismiss, useFlip } from '@/hooks/usePopover';
 import { cx } from '@/lib/cx';
@@ -71,6 +71,8 @@ export default function PhoneInput({
   'aria-label': ariaLabel,
   onBlur,
 }: PhoneInputProps) {
+  const formText = useFormText();
+  const locale = useFormLocale();
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -106,9 +108,9 @@ export default function PhoneInput({
   const optionId = (index: number) => `${listId}-${index}`;
   const expanded = open && !disabled;
   const invalidMessage = unfinished ? formText.phoneInvalid : '';
-  const dialLabel = `${formText.phoneDialCode} +${country.dial}, ${countryName(country)}`;
+  const dialLabel = `${formText.phoneDialCode} +${country.dial}, ${countryName(country, locale)}`;
 
-  const { items: visible, pinned } = expanded ? countryList(query) : { items: [], pinned: 0 };
+  const { items: visible, pinned } = expanded ? countryList(query, locale) : { items: [], pinned: 0 };
   const searching = query.trim() !== '';
   const activeIndex = visible[active] ? active : -1;
 
@@ -143,7 +145,7 @@ export default function PhoneInput({
   function openList(touch: boolean) {
     touchOpen.current = touch;
     setQuery('');
-    setActive(countryList('').items.findIndex((option) => option.country === country));
+    setActive(countryList('', locale).items.findIndex((option) => option.country === country));
     setOpen(true);
   }
 
@@ -221,6 +223,8 @@ export default function PhoneInput({
       <div ref={rootRef} className={s.anchor}>
         <div
           className={cx(s.control, s.withCountry)}
+          // Un numéro se lit de gauche à droite, indicatif en tête, même sur une page en arabe.
+          dir="ltr"
           data-invalid={shownError ? '' : undefined}
           data-disabled={disabled ? '' : undefined}
         >
@@ -229,7 +233,7 @@ export default function PhoneInput({
             type="button"
             className={s.country}
             disabled={disabled}
-            aria-label={`${formText.phoneCountry} : ${countryName(country)} (+${country.dial})`}
+            aria-label={`${formText.phoneCountry} : ${countryName(country, locale)} (+${country.dial})`}
             aria-haspopup="listbox"
             aria-expanded={expanded}
             aria-controls={expanded ? listId : undefined}
@@ -365,8 +369,8 @@ export default function PhoneInput({
 }
 
 /** Pays fréquents en tête puis tous les pays, ou les résultats d'une recherche. */
-function countryList(query: string): { items: readonly CountryOption[]; pinned: number } {
-  const options = countryOptions();
+function countryList(query: string, locale: string): { items: readonly CountryOption[]; pinned: number } {
+  const options = countryOptions(locale);
   if (query.trim()) return { items: filterOptions(options, query), pinned: 0 };
   const preferred = preferredPhoneCountries.flatMap((iso) =>
     options.filter((option) => option.country.iso === iso),

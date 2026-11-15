@@ -11,17 +11,20 @@
 }
 
 .head .title {
+  font-family: var(--ff-body);
+  font-weight: 400;
   margin-top: 22px;
   font-size: clamp(2.4rem, 4.6vw, 4.3rem);
   line-height: 1.04;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.055em;
   color: var(--blanc);
   white-space: normal;
 }
 
 .head .title em {
-  font-style: italic;
-  color: var(--or-clair);
+  font-family: inherit;
+  font-style: normal;
+  color: var(--or);
 }
 
 /* Le filet doré du sur-titre se dessine à l'entrée : GSAP anime cette variable
@@ -33,7 +36,7 @@
 
 .head .lede {
   margin-top: 22px;
-  color: rgba(245, 241, 232, 0.66);
+  color: rgba(255, 255, 255, 0.66);
   font-size: 0.95rem;
   line-height: 1.85;
   max-width: 52ch;
@@ -57,6 +60,6 @@
 
 .centered .text,
 .centered .lede {
-  margin-left: auto;
-  margin-right: auto;
+  margin-inline-start: auto;
+  margin-inline-end: auto;
 }

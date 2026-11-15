@@ -6,19 +6,19 @@ import { quoteMessage, whatsappLink } from "../src/lib/eventheme/whatsapp";
 
 test("the WhatsApp message fills every bracket of the specified template", () => {
   const message = quoteMessage({
-    event: "Mariage",
+    event: "Gala & cérémonie",
     date: "2027-06-12",
     city: "Casablanca",
-    services: ["Organisation", "Décoration"],
-    name: "Test Eventheme",
+    services: ["Écrans LED & vidéo", "Sonorisation"],
+    name: "Test Eventhemes",
     phone: "+212 600 000 000",
     email: "",
     reference: "EVT-ABCD1234",
   });
-  assert.match(message, /^Bonjour EVENTHEME, je souhaite demander un devis pour un événement de type Mariage, /);
+  assert.match(message, /^Bonjour EVENTHEMES, je souhaite demander un devis pour un événement de type Gala & cérémonie, /);
   assert.match(message, /prévu le samedi 12 juin 2027, à Casablanca\./);
-  assert.match(message, /Les services souhaités sont : Organisation, Décoration\./);
-  assert.match(message, /Voici mes informations : Test Eventheme, \+212 600 000 000\./);
+  assert.match(message, /Les services souhaités sont : Écrans LED & vidéo, Sonorisation\./);
+  assert.match(message, /Voici mes informations : Test Eventhemes, \+212 600 000 000\./);
   assert.match(message, /EVT-ABCD1234/);
   assert.doesNotMatch(message, /\[|\]/);
 });
