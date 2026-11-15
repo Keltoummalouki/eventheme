@@ -1,6 +1,6 @@
 import { dictionaries } from "@/data/locales";
 import { isSocialNetwork, type SocialNetwork } from "@/data/socials";
-import { fill, intlLocale, type Locale } from "@/lib/i18n";
+import { defaultLocale, fill, intlLocale, locales, type Locale } from "@/lib/i18n";
 /** Nombre au format de la langue. */
 const number = (value: number, locale: Locale, options?: Intl.NumberFormatOptions) =>
   new Intl.NumberFormat(intlLocale[locale], options).format(value);
@@ -13,8 +13,29 @@ export const kinds = [
   "pages",
   "cities",
   "socials",
+  "settings",
 ] as const;
 export type Kind = (typeof kinds)[number];
+/** Identifiant de l’unique contenu « Paramètres du site ». */
+export const SETTINGS_ID = "settings";
+/**
+ * Paramètres du site (cahier des charges §07) : informations générales,
+ * langues et mise en ligne. Tout y est public (affiché sur le site) : aucune
+ * valeur privée ici, elles restent dans les variables d’environnement.
+ */
+export type SiteSettings = {
+  /** Adresse postale, sur plusieurs lignes ; vide : non affichée. */
+  address?: string;
+  /** Lien https vers une carte (Google Maps…), ouvert depuis la page Contact. */
+  map?: string;
+  /** Horaires d’ouverture, sur plusieurs lignes, et leur version anglaise facultative. */
+  hours?: string;
+  hoursEn?: string;
+  /** Version anglaise publiée (oui par défaut). */
+  english?: boolean;
+  /** Page d’attente à la place du site public (non par défaut). */
+  comingSoon?: boolean;
+};
 export type Variant = {
   /** Nom saisi dans l’administration : la clé enregistrée dans le panier et vérifiée par le serveur. */
   name: string;
@@ -44,6 +65,8 @@ export type Entry = {
   parent?: string;
   /** Service : catégories du catalogue présentées sur sa page (« Le matériel associé »). */
   related?: string[];
+  /** Contenu « settings » : les paramètres du site. */
+  settings?: SiteSettings;
   /** Matériel : marque, modèle et référence interne, lorsqu’ils sont connus. */
   brand?: string;
   model?: string;
@@ -243,7 +266,16 @@ export const labels: Record<Kind, string> = {
   pages: "Contenu des pages",
   cities: "Zones d’intervention",
   socials: "Contact & réseaux",
+  settings: "Paramètres",
 };
+/** Paramètres du site, avec leurs valeurs par défaut s’ils n’ont jamais été enregistrés. */
+export function siteSettings(entries: Entry[]): SiteSettings & { english: boolean; comingSoon: boolean } {
+  const stored = entries.find((entry) => entry.kind === "settings")?.settings;
+  return { ...stored, english: stored?.english !== false, comingSoon: stored?.comingSoon === true };
+}
+/** Langues publiées : le français toujours, l’anglais si les paramètres le permettent. */
+export const publishedLocales = (entries: Entry[]): readonly Locale[] =>
+  siteSettings(entries).english ? locales : [defaultLocale];
 export const money = (value: number, locale: Locale = "fr") =>
   new Intl.NumberFormat(locale === "fr" ? "fr-MA" : intlLocale[locale], {
     style: "currency",

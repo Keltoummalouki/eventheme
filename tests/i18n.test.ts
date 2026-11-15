@@ -187,6 +187,7 @@ test("the admin keeps a trimmed English version and drops empty fields", () => {
 test("every starter entry with text has an English draft, limited to translatable fields", () => {
   for (const entry of seed) {
     if (entry.kind === "socials" && entry.network !== "whatsapp") continue;
+    if (entry.kind === "settings") continue; // its English opening hours have their own field
     const english = entry.translations?.en;
     assert.ok(english && Object.keys(english).length, `${entry.id} has no English version`);
     for (const field of Object.keys(english)) assert.ok((translatableFields as readonly string[]).includes(field), `${entry.id}.${field}`);

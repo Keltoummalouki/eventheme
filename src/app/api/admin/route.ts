@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     } else if (body.action === "delete") {
       const entries = await getEntries(true);
       const target = entries.find((entry) => entry.id === String(body.id));
+      if (target?.kind === "settings") throw new Error("Les paramètres du site ne peuvent pas être supprimés.");
       const inUse = target?.kind === "categories" ? categoryInUse(entries, target.id) : null;
       if (inUse) throw new Error(inUse);
       await deleteEntry(String(body.id));

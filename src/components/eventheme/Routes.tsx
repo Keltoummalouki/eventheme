@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { brand } from "@/data/eventheme";
 import { dictionaries } from "@/data/locales";
-import { alternatesFor, detailPages, fill, pageFromSlug, pathFor, type Locale, type PageKey } from "@/lib/i18n";
+import {
+  alternatesFor,
+  defaultLocale,
+  detailPages,
+  fill,
+  pageFromSlug,
+  pathFor,
+  type Locale,
+  type PageKey,
+} from "@/lib/i18n";
 import { siteUrl } from "@/lib/eventheme/locale";
 import { getEntries } from "@/lib/eventheme/server";
 import {
@@ -17,7 +26,7 @@ import {
   website,
 } from "@/lib/eventheme/structured";
 import { localizeEntries, localizeEntry } from "@/lib/eventheme/translations";
-import type { Entry, Kind } from "@/lib/eventheme/types";
+import { publishedLocales, type Entry, type Kind } from "@/lib/eventheme/types";
 import Home from "./Home";
 import InquiryForm from "./InquiryForm";
 import { About, Catalog, Detail, Legal, Services } from "./Pages";
@@ -32,28 +41,38 @@ import Shell from "./Shell";
  */
 type Query = Record<string, string | string[] | undefined>;
 
-const alternates = (locale: Locale, key: PageKey, id?: string): Metadata["alternates"] => ({
+/** Adresse canonique et équivalents dans les langues publiées (paramètres du site). */
+const alternates = (locale: Locale, key: PageKey, id: string | undefined, available: readonly Locale[]): Metadata["alternates"] => ({
   canonical: pathFor(locale, key, id),
-  languages: { ...alternatesFor(key, id), "x-default": pathFor("fr", key, id) },
+  languages: { ...alternatesFor(key, id, available), "x-default": pathFor(defaultLocale, key, id) },
 });
+
+/** Langue non publiée (version anglaise désactivée) : renvoi temporaire vers la page française. */
+async function requirePublished(locale: Locale, key: PageKey, id?: string) {
+  const available = publishedLocales(await getEntries());
+  if (!available.includes(locale)) redirect(pathFor(defaultLocale, key, id));
+  return available;
+}
 
 /** Données structurées d’une page, dans une balise <script type="application/ld+json">. */
 function StructuredData({ data }: { data: Record<string, unknown>[] }) {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(data) }} />;
 }
 
-export function pageMetadata(locale: Locale, key: PageKey): Metadata {
-  if (key === "home") return { alternates: alternates(locale, key) };
+export async function pageMetadata(locale: Locale, key: PageKey): Promise<Metadata> {
+  const available = publishedLocales(await getEntries());
+  if (key === "home") return { alternates: alternates(locale, key, undefined, available) };
   const page = dictionaries[locale].pages[key];
   return {
     title: page.title,
     description: fill(page.description, { brand: brand.name }),
-    alternates: alternates(locale, key),
+    alternates: alternates(locale, key, undefined, available),
   };
 }
 
 /** Accueil : l’entreprise et le site, décrits pour les moteurs de recherche. */
 export async function homePage(locale: Locale) {
+  await requirePublished(locale, "home");
   const base = await siteUrl();
   const entries = localizeEntries(await getEntries(), locale);
   return (
@@ -64,13 +83,14 @@ export async function homePage(locale: Locale) {
   );
 }
 
-export function slugMetadata(locale: Locale, slug: string): Metadata {
+export async function slugMetadata(locale: Locale, slug: string): Promise<Metadata> {
   const key = pageFromSlug(locale, slug);
   return key ? pageMetadata(locale, key) : {};
 }
 
 export async function renderPage(locale: Locale, slug: string, query: Query) {
   const key = pageFromSlug(locale, slug);
+  await requirePublished(locale, key ?? "home");
   if (!key) notFound();
   const value = (name: string) => (typeof query[name] === "string" ? (query[name] as string) : "");
   // Les zones d’intervention n’existent qu’avec au moins une ville publiée.
@@ -133,10 +153,11 @@ export async function detailMetadata(locale: Locale, slug: string, id: string): 
   const found = await findDetail(locale, slug, decodeURIComponent(id));
   if (!found) return { title: dictionaries[locale].notFound.title };
   const title = detailTitle(locale, found.key, found.entry);
+  const available = publishedLocales(await getEntries());
   return {
     title,
     description: excerpt(found.entry.description) || undefined,
-    alternates: alternates(locale, found.key, found.entry.id),
+    alternates: alternates(locale, found.key, found.entry.id, available),
     openGraph: {
       title: `${title} | ${brand.name}`,
       ...(found.entry.image ? { images: [found.entry.image] } : {}),
@@ -148,6 +169,7 @@ export async function detailMetadata(locale: Locale, slug: string, id: string): 
 
 export async function renderDetail(locale: Locale, slug: string, id: string) {
   const found = await findDetail(locale, slug, decodeURIComponent(id));
+  await requirePublished(locale, found?.key ?? pageFromSlug(locale, slug) ?? "home", found?.entry.id);
   if (!found) notFound();
   const { key, entry } = found;
   const base = await siteUrl();

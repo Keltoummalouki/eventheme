@@ -514,6 +514,9 @@ export const seed: Entry[] = [
       ...en({ ...(titleEn !== title ? { title: titleEn } : {}), description: descriptionEn }),
     }),
   ),
+  // Paramètres du site : adresse et horaires vides tant qu’EVENTHEMES ne les a pas fournis ;
+  // version anglaise publiée, site ouvert (pas de page d’attente).
+  entry("settings", "settings", "Paramètres du site", "", { settings: { english: true, comingSoon: false } }),
   entry("instagram", "socials", "Instagram", "@eventhemes", {
     network: "instagram",
     url: "https://www.instagram.com/eventhemes/",

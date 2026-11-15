@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/form";
 import { contactMethodLabel } from "@/data/locales";
 import { track } from "@/lib/eventheme/audience";
-import { followersLabel } from "@/lib/eventheme/types";
+import { followersLabel, siteSettings } from "@/lib/eventheme/types";
 import { fill } from "@/lib/i18n";
 import s from "./Eventheme.module.css";
 import { ArrowUpRightIcon } from "@/components/ui/icons";
@@ -24,6 +24,7 @@ const CONTACT_METHODS = ["WhatsApp", "Téléphone", "E-mail"];
 export default function InquiryForm() {
   const { entries, local, locale, t, href } = useEventheme();
   const c = t.contact;
+  const settings = siteSettings(entries);
   const contactMethods = CONTACT_METHODS.map((value) => ({ value, label: contactMethodLabel(locale, value) }));
   const [form, setForm] = useState({
     name: "",
@@ -204,6 +205,27 @@ export default function InquiryForm() {
           <Button href={href("quote")} variant="link" icon={<ArrowUpRightIcon />}>
             {t.nav.quote}
           </Button>
+          {(settings.address || settings.hours) && (
+            <div className={s.contactDetails}>
+              {settings.address && (
+                <p>
+                  <strong>{c.address}</strong>
+                  <span className={s.preserveLines}>{settings.address}</span>
+                  {settings.map && (
+                    <a href={settings.map} target="_blank" rel="noreferrer" className={s.inlineLink}>
+                      {c.map}
+                    </a>
+                  )}
+                </p>
+              )}
+              {settings.hours && (
+                <p>
+                  <strong>{c.hours}</strong>
+                  <span className={s.preserveLines}>{settings.hours}</span>
+                </p>
+              )}
+            </div>
+          )}
           {entries
             .filter((e) => e.kind === "socials")
             .map((e) => (

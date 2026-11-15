@@ -1,7 +1,7 @@
 import { brand } from "@/data/eventheme";
 import { dictionaries } from "@/data/locales";
 import { fill, pathFor, type Locale, type PageKey } from "@/lib/i18n";
-import type { Entry } from "./types";
+import { siteSettings, type Entry } from "./types";
 
 /**
  * Données structurées (schema.org, JSON-LD) — cahier des charges §10.
@@ -28,6 +28,7 @@ export function organization(base: string, locale: Locale, entries: Entry[]): Th
   const profiles = links.filter((url) => url.startsWith("https://") && !/^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(url));
   const telephone = links.find((url) => url.startsWith("tel:"))?.slice(4);
   const email = links.find((url) => url.startsWith("mailto:"))?.slice(7).split("?")[0];
+  const { address, map } = siteSettings(entries);
   const t = dictionaries[locale];
   return {
     "@context": CONTEXT,
@@ -39,6 +40,16 @@ export function organization(base: string, locale: Locale, entries: Entry[]): Th
     description: t.brand.summary,
     slogan: brand.signature,
     areaServed: { "@type": "Country", name: t.brand.market },
+    ...(address
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: address.split(/\n+/).map((line) => line.trim()).filter(Boolean).join(", "),
+            addressCountry: "MA",
+          },
+        }
+      : {}),
+    ...(map ? { hasMap: map } : {}),
     ...(profiles.length ? { sameAs: profiles } : {}),
     ...(telephone || email
       ? {

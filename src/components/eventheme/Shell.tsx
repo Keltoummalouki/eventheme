@@ -6,6 +6,7 @@ import MobileMenu from "@/components/layout/MobileMenu";
 import { brand, navigation } from "@/data/eventheme";
 import { dictionaries } from "@/data/locales";
 import { measurementId, reopenConsent } from "@/lib/eventheme/audience";
+import { siteSettings } from "@/lib/eventheme/types";
 import Consent from "./Consent";
 
 /** Mesure d’audience : active seulement si l’identifiant Google Analytics est configuré (au build). */
@@ -59,6 +60,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   const socials = entries.filter((e) => e.kind === "socials");
   const services = entries.filter((e) => e.kind === "services");
   const cities = entries.filter((e) => e.kind === "cities");
+  const settings = siteSettings(entries);
   const count =
     basket.services.length +
     basket.products.reduce((n, p) => n + p.quantity, 0);
@@ -185,7 +187,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
-        {languageLink(s.language)}
+        {settings.english && languageLink(s.language)}
         {quoteButton}
         <button
           id="menu-toggle"
@@ -209,7 +211,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         socials={socials}
         onNavigate={() => setOpen(false)}
         label={t.nav.mobile}
-        language={languageLink(s.menuLanguage)}
+        language={settings.english ? languageLink(s.menuLanguage) : undefined}
         action={
           <Button href={quoteHref} icon={<ArrowUpRightIcon />} onClick={() => setOpen(false)}>
             {t.nav.quote} {count > 0 && `(${count})`}
@@ -259,6 +261,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           </div>
           <div>
             <h3>{t.footer.meet}</h3>
+            {settings.address && <address className={s.footerAddress}>{settings.address}</address>}
             <Link href={href("contact")}>{t.footer.talk}</Link>
             {cities.length > 0 && <Link href={href("cities")}>{t.footer.areas}</Link>}
             <Link href={quoteHref}>{t.nav.quote}</Link>

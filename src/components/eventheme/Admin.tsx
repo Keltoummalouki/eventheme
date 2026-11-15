@@ -21,10 +21,12 @@ import {
   socialNetworkOf,
   participantsLabel,
   referenceOf,
+  SETTINGS_ID,
   type Entry,
   type EntryTranslation,
   type Inquiry,
   type Kind,
+  type SiteSettings,
   type Variant,
 } from "@/lib/eventheme/types";
 import { adminLogin } from "@/lib/eventheme/auth";
@@ -73,6 +75,8 @@ const sitePages = [
   { id: "legal", label: "Mentions légales" },
   { id: "privacy", label: "Politique de confidentialité" },
 ];
+/** Types de contenu listés dans « Votre site » ; les paramètres ont leur propre onglet. */
+const contentKinds: readonly Kind[] = kinds.filter((kind) => kind !== "settings");
 /** Contenus qui ont une adresse publique : un nouveau contenu prend un identifiant lisible, tiré de son titre. */
 const addressed: readonly Kind[] = ["services", "products", "categories", "events", "projects", "cities"];
 /** Page publique de chaque type de fiche (aperçu de l’adresse dans le formulaire). */
@@ -135,6 +139,8 @@ const formFields: Record<Kind, readonly FormField[]> = {
   pages: ["title", "subtitle", "description", "image", "gallery"],
   // One page per city: the name, an optional page title, a text proper to that city, a photo.
   cities: ["title", "subtitle", "description", "image"],
+  // Site settings have their own panel (SettingsPanel).
+  settings: [],
   // Social links have their own form: network, link, account name, followers.
   socials: [],
 };
@@ -430,7 +436,7 @@ export default function Admin({
             Clients & contacts
           </button>
           <span>VOTRE SITE</span>
-          {kinds.map((kind) => (
+          {contentKinds.map((kind) => (
             <button
               key={kind}
               className={tab === kind ? s.sideActive : ""}
@@ -439,6 +445,12 @@ export default function Admin({
               {labels[kind]}
             </button>
           ))}
+          <button
+            className={tab === "settings" ? s.sideActive : ""}
+            onClick={() => navigate("settings")}
+          >
+            {labels.settings}
+          </button>
         </nav>
         <Button
           href="/"
@@ -644,7 +656,14 @@ export default function Admin({
             />
           </div>
         )}
-        {kinds.includes(tab as Kind) && !edit && (
+        {tab === "settings" && (
+          <SettingsPanel
+            entries={entries}
+            busy={busy}
+            save={(value) => mutate({ action: "save", value })}
+          />
+        )}
+        {contentKinds.includes(tab as Kind) && !edit && (
           <div className={s.adminPanel}>
             <div className={s.adminToolbar}>
               <SearchInput
@@ -1042,6 +1061,122 @@ function RequestTable({
       Aucune demande pour le moment.
       <p>Les messages envoyés depuis le site apparaîtront ici.</p>
     </div>
+  );
+}
+/**
+ * Paramètres du site (cahier des charges §07) : informations générales,
+ * langues et mise en ligne. Le téléphone, l’e-mail, WhatsApp et les réseaux
+ * restent dans « Contact & réseaux ».
+ */
+function SettingsPanel({
+  entries,
+  busy,
+  save,
+}: {
+  entries: Entry[];
+  busy: boolean;
+  save: (entry: Entry) => void;
+}) {
+  const stored = entries.find((entry) => entry.kind === "settings")?.settings;
+  const [settings, setSettings] = useState<SiteSettings>(() => ({
+    english: true,
+    comingSoon: false,
+    ...stored,
+  }));
+  const set = <K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) =>
+    setSettings((current) => ({ ...current, [key]: value }));
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    // Fermer le site est une décision lourde : elle est confirmée.
+    if (settings.comingSoon && !stored?.comingSoon) {
+      const confirmed = await confirmDialog({
+        title: "Afficher la page d’attente ?",
+        text: "Les visiteurs ne verront plus que la page « Bientôt en ligne » jusqu’à ce que vous décochiez cette option.",
+        confirmText: "Afficher la page d’attente",
+        danger: true,
+      });
+      if (!confirmed) return;
+    }
+    save({
+      id: SETTINGS_ID,
+      kind: "settings",
+      title: "Paramètres du site",
+      description: "",
+      published: true,
+      settings,
+    });
+  }
+  return (
+    <form className={s.adminPanel} onSubmit={submit}>
+      <fieldset>
+        <legend>Informations générales</legend>
+        <div className={s.formGrid}>
+          <Textarea
+            label="Adresse"
+            className={s.fullWidth}
+            rows={3}
+            maxLength={500}
+            hint="Affichée sur la page Contact et dans le pied de page, et donnée aux moteurs de recherche. Vide : non affichée."
+            value={settings.address || ""}
+            onChange={(e) => set("address", e.target.value)}
+          />
+          <Input
+            label="Lien de la carte (facultatif)"
+            type="url"
+            className={s.fullWidth}
+            placeholder="https://maps.app.goo.gl/…"
+            hint="Ouvert par « Voir sur la carte » sur la page Contact. Aucune carte n’est intégrée à la page : pas de cookie tiers."
+            value={settings.map || ""}
+            onChange={(e) => set("map", e.target.value)}
+          />
+          <Textarea
+            label="Horaires d’ouverture"
+            rows={4}
+            maxLength={1000}
+            hint="Une ligne par jour ou par période. Vide : non affichés."
+            value={settings.hours || ""}
+            onChange={(e) => set("hours", e.target.value)}
+          />
+          <Textarea
+            label="Horaires — version anglaise (facultative)"
+            rows={4}
+            maxLength={1000}
+            hint="Vide : les horaires français sont affichés sur le site anglais."
+            placeholder={settings.hours}
+            value={settings.hoursEn || ""}
+            onChange={(e) => set("hoursEn", e.target.value)}
+          />
+        </div>
+        <p className={s.caption}>
+          Téléphone, e-mail, WhatsApp et réseaux sociaux : onglet « Contact &amp; réseaux ».
+        </p>
+      </fieldset>
+      <fieldset>
+        <legend>Langues</legend>
+        <Checkbox checked={settings.english !== false} onChange={(english) => set("english", english)}>
+          Publier la version anglaise du site (/en)
+        </Checkbox>
+        <p className={s.caption}>
+          Décochée : le sélecteur de langue disparaît, les pages anglaises renvoient vers leur version
+          française et le plan du site ne les liste plus. À cocher une fois les textes anglais validés.
+        </p>
+      </fieldset>
+      <fieldset>
+        <legend>Mise en ligne</legend>
+        <Checkbox checked={settings.comingSoon === true} onChange={(comingSoon) => set("comingSoon", comingSoon)}>
+          Afficher la page d’attente à la place du site public
+        </Checkbox>
+        <p className={s.caption}>
+          Les visiteurs ne voient que la page « Bientôt en ligne », qui n’est pas indexée par les moteurs
+          de recherche. L’administration reste accessible.
+        </p>
+      </fieldset>
+      <div className={s.formActions}>
+        <Button type="submit" loading={busy}>
+          {busy ? "Enregistrement…" : "Enregistrer les paramètres"}
+        </Button>
+      </div>
+    </form>
   );
 }
 function EntryEditor({

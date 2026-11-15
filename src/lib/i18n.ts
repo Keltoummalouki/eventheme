@@ -101,9 +101,9 @@ export function translatePath(pathname: string, target: Locale) {
   return pathFor(target, key ?? "home", id);
 }
 
-/** Adresses d’une page dans toutes les langues (hreflang, plan du site). */
-export const alternatesFor = (key: PageKey, id?: string) =>
-  Object.fromEntries(locales.map((locale) => [locale, pathFor(locale, key, id)])) as Record<Locale, string>;
+/** Adresses d’une page dans les langues publiées (hreflang, plan du site). */
+export const alternatesFor = (key: PageKey, id?: string, available: readonly Locale[] = locales) =>
+  Object.fromEntries(available.map((locale) => [locale, pathFor(locale, key, id)])) as Partial<Record<Locale, string>>;
 
 /** « {name} » → valeur. Les dictionnaires restent du texte pur, sérialisable. */
 export const fill = (template: string, values: Record<string, string | number>) =>

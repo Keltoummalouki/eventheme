@@ -8,6 +8,11 @@ export async function requestLocale(): Promise<Locale> {
   return isLocale(value) ? value : defaultLocale;
 }
 
+/** Vrai pour une page du site public (le proxy y pose la langue), faux pour l’administration. */
+export async function isPublicRequest() {
+  return (await headers()).has(LOCALE_HEADER);
+}
+
 /** Adresse absolue du site (données structurées) : APP_URL, sinon l’hôte de la requête. */
 export async function siteUrl() {
   const configured = process.env.APP_URL?.trim().replace(/\/$/, "");

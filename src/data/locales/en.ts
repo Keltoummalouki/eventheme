@@ -562,6 +562,9 @@ export const en: Dictionary = {
     sentText: "Our team will reply as soon as possible.",
     sentEmailed: " An acknowledgement has been sent to you by email.",
     reference: "Reference: {reference}",
+    address: "Address",
+    map: "View on the map",
+    hours: "Opening hours",
   },
 
   attachments: {
@@ -576,6 +579,12 @@ export const en: Dictionary = {
   },
 
   contactMethods: { Téléphone: "Phone", WhatsApp: "WhatsApp", "E-mail": "Email" },
+
+  comingSoon: {
+    title: "Coming soon",
+    titleStart: "Something",
+    titleEnd: "extraordinary is coming.",
+  },
 
   notFound: {
     eyebrow: "404 — PAGE NOT FOUND",

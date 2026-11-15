@@ -12,6 +12,9 @@ import { translatableFields, type Entry } from "./types";
  */
 export function localizeEntry(entry: Entry, locale: Locale): Entry {
   if (locale === "fr") return entry;
+  // Paramètres du site : les horaires en anglais, s’ils sont renseignés.
+  if (entry.kind === "settings")
+    return entry.settings?.hoursEn ? { ...entry, settings: { ...entry.settings, hours: entry.settings.hoursEn } } : entry;
   const translation = entry.translations?.[locale];
   if (!translation) return entry;
   const localized = { ...entry };

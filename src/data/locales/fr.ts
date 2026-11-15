@@ -573,6 +573,9 @@ export const fr = {
     sentText: "Notre équipe vous répondra dans les meilleurs délais.",
     sentEmailed: " Un accusé de réception vous a été envoyé par e-mail.",
     reference: "Référence : {reference}",
+    address: "Adresse",
+    map: "Voir sur la carte",
+    hours: "Horaires",
   },
 
   /** Pièces jointes : consignes, poids et refus, vérifiés dans le navigateur. */
@@ -589,6 +592,13 @@ export const fr = {
 
   /** Libellés des moyens de contact ; les valeurs enregistrées restent en français. */
   contactMethods: { Téléphone: "Téléphone", WhatsApp: "WhatsApp", "E-mail": "E-mail" },
+
+  /** Page d’attente (« Bientôt en ligne »), imposée depuis les paramètres du site. */
+  comingSoon: {
+    title: "Bientôt en ligne",
+    titleStart: "Quelque chose",
+    titleEnd: "d’extraordinaire arrive.",
+  },
 
   notFound: {
     eyebrow: "404 — PAGE INTROUVABLE",

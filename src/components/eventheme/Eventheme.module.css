@@ -1053,8 +1053,34 @@
   height: 14px;
   color: var(--or);
 }
-/* Consentement à la mesure d’audience : discret, en bas de l’écran, sans bloquer la page. */
-.consent {
+/* Coordonnées (paramètres du site) : page Contact et pied de page. */
+.contactDetails {
+  margin-block: 24px 8px;
+}
+.contactDetails p {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.contactDetails strong {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--or);
+}
+.footerAddress {
+  font-style: normal;
+  white-space: pre-line;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--argent);
+}
+/* Bandeau de consentement à la mesure d’audience : discret, en bas de l’écran, sans bloquer la page.
+   Nom distinct de `.consent`, qui désigne la case de consentement des formulaires. */
+.cookieBanner {
   position: fixed;
   inset-inline: 16px auto;
   inset-block-end: 16px;
@@ -1065,13 +1091,13 @@
   background: rgba(8, 9, 11, 0.96);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
-.consent p {
+.cookieBanner p {
   margin: 0 0 14px;
   font-size: 12px;
   line-height: 1.7;
   color: var(--argent);
 }
-.consent strong {
+.cookieBanner strong {
   display: block;
   margin-block-end: 6px;
   font-size: 10px;
@@ -1080,12 +1106,12 @@
   text-transform: uppercase;
   color: var(--or);
 }
-.consent a {
+.cookieBanner a {
   color: var(--argent);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.consentActions {
+.cookieActions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -1105,7 +1131,7 @@
   .pageVisual {
     aspect-ratio: 4 / 3;
   }
-  .consent {
+  .cookieBanner {
     inset-inline: 12px;
     inset-block-end: 12px;
     max-width: none;

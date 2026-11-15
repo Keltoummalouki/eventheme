@@ -6,10 +6,12 @@ import {
   MAX_DURATION_HOURS,
   MAX_PARTICIPANTS,
   MAX_RENTAL_DAYS,
+  SETTINGS_ID,
   translatableFields,
   type Entry,
   type EntryTranslation,
   type InquiryInput,
+  type SiteSettings,
 } from "./types";
 const ENTRY_ID = /^[a-zA-Z0-9_-]{1,100}$/;
 export function safeUrl(value: unknown, local = false): value is string {
@@ -44,6 +46,7 @@ export function validateEntry(value: unknown): Entry {
   const v = value as Entry;
   if (!kinds.includes(v.kind) || !ENTRY_ID.test(v.id))
     throw new Error("Type ou identifiant invalide.");
+  if (v.kind === "settings") return settingsEntry(v);
   const result: Entry = {
     id: v.id,
     kind: v.kind,
@@ -159,6 +162,23 @@ export function validateEntry(value: unknown): Entry {
   const english = translation(v.translations);
   if (english) result.translations = { en: english };
   return result;
+}
+/** Paramètres du site : un seul contenu, des champs connus, des valeurs par défaut sûres. */
+function settingsEntry(v: Entry): Entry {
+  if (v.id !== SETTINGS_ID) throw new Error("Paramètres invalides.");
+  const raw = (v.settings && typeof v.settings === "object" ? v.settings : {}) as Record<string, unknown>;
+  const optional = (key: keyof SiteSettings, max: number) => (raw[key] == null ? undefined : text(raw[key], max) || undefined);
+  const map = optional("map", 500);
+  if (map && !/^https:\/\/\S+$/.test(map)) throw new Error("Le lien de la carte doit être une adresse https://.");
+  const settings: SiteSettings = {
+    address: optional("address", 500),
+    map,
+    hours: optional("hours", 1000),
+    hoursEn: optional("hoursEn", 1000),
+    english: raw.english !== false,
+    comingSoon: raw.comingSoon === true,
+  };
+  return { id: SETTINGS_ID, kind: "settings", title: "Paramètres du site", description: "", published: true, settings };
 }
 /**
  * Version anglaise facultative d’un contenu : seuls les champs traduisibles,

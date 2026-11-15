@@ -59,12 +59,12 @@ export default function Consent({ id }: { id: string }) {
 
   if (stored !== null && !reopened) return null;
   return (
-    <section className={s.consent} aria-label={t.consent.label}>
+    <section className={s.cookieBanner} aria-label={t.consent.label}>
       <p>
         <strong>{t.consent.label}</strong>
         {t.consent.text} <Link href={href("privacy")}>{t.consent.more}</Link>
       </p>
-      <div className={s.consentActions}>
+      <div className={s.cookieActions}>
         <Button size="sm" onClick={() => decide("granted")}>
           {t.consent.accept}
         </Button>
