@@ -27,7 +27,9 @@ test("saved settings keep known fields only, trimmed, with safe defaults", () =>
     map: "https://maps.app.goo.gl/abc123",
     hours: "Lundi–vendredi : 9 h – 18 h",
     hoursEn: undefined,
+    hoursAr: undefined,
     english: true,
+    arabic: true,
     comingSoon: false,
   });
   assert.equal(validateEntry(settingsEntry({ english: false, comingSoon: true })).settings?.english, false);
@@ -43,9 +45,10 @@ test("invalid settings are refused", () => {
 });
 
 test("without saved settings the site is open and bilingual", () => {
-  assert.deepEqual(siteSettings([]), { english: true, comingSoon: false });
-  assert.deepEqual(publishedLocales([]), ["fr", "en"]);
-  const french = [settingsEntry({ english: false })];
+  assert.deepEqual(siteSettings([]), { english: true, arabic: true, comingSoon: false });
+  assert.deepEqual(publishedLocales([]), ["fr", "en", "ar"]);
+  assert.deepEqual(publishedLocales([settingsEntry({ arabic: false })]), ["fr", "en"]);
+  const french = [settingsEntry({ english: false, arabic: false })];
   assert.deepEqual(publishedLocales(french), ["fr"]);
   assert.deepEqual(alternatesFor("services", "regie", publishedLocales(french)), { fr: "/services/regie" });
 });
@@ -72,5 +75,14 @@ test("the starter content has one settings entry, open, bilingual and without in
   const all = seed.filter((entry) => entry.kind === "settings");
   assert.equal(all.length, 1);
   assert.equal(all[0].id, SETTINGS_ID);
-  assert.deepEqual(validateEntry(all[0]).settings, { address: undefined, map: undefined, hours: undefined, hoursEn: undefined, english: true, comingSoon: false });
+  assert.deepEqual(validateEntry(all[0]).settings, {
+    address: undefined,
+    map: undefined,
+    hours: undefined,
+    hoursEn: undefined,
+    hoursAr: undefined,
+    english: true,
+    arabic: true,
+    comingSoon: false,
+  });
 });

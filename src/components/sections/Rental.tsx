@@ -9,6 +9,7 @@ import SectionHeader from '@/components/ui/SectionHeader';
 import { cx } from '@/lib/cx';
 import { productCategory } from '@/lib/eventheme/catalogue';
 import { priceLabel } from '@/lib/eventheme/types';
+import { isRtl } from '@/lib/i18n';
 import { DESKTOP, FULL_MOTION, gsap, motionSafe, useGSAP } from '@/lib/motion';
 import styles from './Rental.module.css';
 import { ArrowUpRightIcon } from '@/components/ui/icons';
@@ -34,6 +35,8 @@ export default function Rental() {
   const trackRef = useRef<HTMLDivElement>(null);
   const fillRef = useRef<HTMLDivElement>(null);
   const { entries, add, locale, t, href } = useEventheme();
+  // De droite à gauche (arabe), le rail se prolonge vers la gauche : il avance vers la droite.
+  const rtl = isRtl(locale);
   const products = entries.filter((e) => e.kind === 'products');
 
   const [pinned, setPinned] = useState(false);
@@ -59,7 +62,7 @@ export default function Rental() {
           // Recalculée à chaque rafraîchissement : la largeur dépend des visuels.
           const distance = () => Math.max(0, track.scrollWidth - wrap.clientWidth);
           const rail = gsap.to(track, {
-            x: () => -distance(),
+            x: () => (rtl ? distance() : -distance()),
             ease: 'none',
             scrollTrigger: {
               trigger: section,
@@ -75,15 +78,15 @@ export default function Rental() {
           for (const pan of gsap.utils.toArray<HTMLElement>(`.${styles.pan}`, track)) {
             gsap.fromTo(
               pan,
-              { xPercent: -DRIFT },
+              { xPercent: rtl ? DRIFT : -DRIFT },
               {
-                xPercent: DRIFT,
+                xPercent: rtl ? -DRIFT : DRIFT,
                 ease: 'none',
                 scrollTrigger: {
                   trigger: pan,
                   containerAnimation: rail,
-                  start: 'left right',
-                  end: 'right left',
+                  start: rtl ? 'right left' : 'left right',
+                  end: rtl ? 'left right' : 'right left',
                   scrub: true,
                 },
               },
@@ -100,7 +103,8 @@ export default function Rental() {
     const wrap = wrapRef.current;
     if (!wrap || pinned) return;
     const max = wrap.scrollWidth - wrap.clientWidth;
-    setFill(max > 0 ? wrap.scrollLeft / max : 0);
+    // De droite à gauche, la position de défilement est négative.
+    setFill(max > 0 ? Math.abs(wrap.scrollLeft) / max : 0);
   }, [pinned, setFill]);
 
   /* Glisser à la souris : la barre de défilement est masquée par la charte. */

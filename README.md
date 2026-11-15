@@ -25,7 +25,9 @@ In development, content and test requests are stored in `.eventheme/data.json` (
 | `npm run build` / `npm start` | Production build and server |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript, no emit |
-| `npm test` | Unit tests (pricing, validation, forms, analytics, WhatsApp) |
+| `npm test` | Unit and integration tests: logic, validation, server handlers, local and Supabase data layers, e-mails, SQL migrations and RLS (PGlite) |
+| `npm run test:coverage` | The same, with coverage thresholds (lines 90 %, functions 90 %, branches 80 %) |
+| `npm run test:e2e` | End-to-end tests in a real browser (Playwright), desktop and phone, French, English and Arabic |
 | `npm run content:export` | Write the public content to `supabase/seed.sql` |
 | `npm run admin:role -- grant <email>` | Give a Supabase user the admin role |
 
@@ -80,18 +82,20 @@ src/
 │   ├── layout/     Intro curtain, mobile menu, motion root
 │   ├── sections/   Home sections (hero, services, gallery, equipment, why us, CTA…)
 │   └── ui/         Buttons, forms, dialogs, Truss ornament, icons
-├── data/           Brand constants, navigation, demo seed; locales/ (French and English interface texts)
+├── data/           Brand constants, navigation, demo seed; locales/ (French, English and Arabic interface texts)
 ├── hooks/          Behaviour
 ├── lib/            Pure logic: pricing, validation, WhatsApp, dates, motion, server data layer
 └── styles/         Tokens, base, utilities
+tests/              Unit and integration tests (node:test), SQL tests in PGlite, smoke scripts
+e2e/                End-to-end tests (Playwright)
 ```
 
 ---
 
 ## Status
 
-**Done:** multi-page site; EVENTHEMES rebrand (palette, typography, copy, truss motif, technical demo content); catalogue with managed categories and sub-categories, brand, model and reference, filters and search; quote basket and five-step quote request with optional budget and private attachments; readable request references (`EVT-2026-0001`) and the specified statuses; admin with request management and CSV export; automatic e-mails (team alert and client acknowledgement) through Resend or Brevo, previewed locally until a provider is configured; Supabase schema with RLS and rate limiting; French and English versions (`/` and `/en/…`), with optional English fields for every piece of content in the admin and acknowledgements in the visitor's language; one page per service and per service area (city), structured data, a bilingual sitemap, consent-based Google Analytics and Search Console verification (both off until configured); a Settings tab for the address and opening hours, publishing the English version and showing the waiting page during preparation.
+**Done:** multi-page site; EVENTHEMES rebrand (palette, typography, copy, truss motif, technical demo content); catalogue with managed categories and sub-categories, brand, model and reference, filters and search; quote basket and five-step quote request with optional budget and private attachments; readable request references (`EVT-2026-0001`) and the specified statuses; admin with request management and CSV export; automatic e-mails (team alert and client acknowledgement) through Resend or Brevo, previewed locally until a provider is configured; Supabase schema with RLS and rate limiting; French, English and Arabic versions (`/`, `/en/…`, `/ar/…`, Arabic right-to-left), with optional English and Arabic fields for every piece of content in the admin and acknowledgements in the visitor's language; one page per service and per service area (city), structured data, a multilingual sitemap, consent-based Google Analytics and Search Console verification (both off until configured); a Settings tab for the address and opening hours, publishing each translation and showing the waiting page during preparation; unit, integration, database and end-to-end tests.
 
-**Next:** Arabic (optional) and audits on the deployed site (Safari, Firefox, performance). The English texts are drafts to be validated by EVENTHEMES; the cities to publish, the legal texts and the analytics IDs are theirs to supply. To configure before launch: the e-mail provider account and `EMAIL_*` variables (see [docs/SETUP.md](docs/SETUP.md)).
+**Next:** audits on the deployed site (Safari, Firefox, performance). The English and Arabic texts are drafts to be validated by EVENTHEMES; the cities to publish, the legal texts and the analytics IDs are theirs to supply. To configure before launch: the e-mail provider account and `EMAIL_*` variables (see [docs/SETUP.md](docs/SETUP.md)).
 
 All photography and catalogue entries are illustrations marked « Exemple » or « Inspiration ». They must be replaced by EVENTHEMES’ own media, equipment and authorised projects before launch, together with the contact details and the validated legal texts.

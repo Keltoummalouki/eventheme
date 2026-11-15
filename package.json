@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --import ./tests/setup.mjs --test tests/*.test.ts",
+    "test:coverage": "tsx --import ./tests/setup.mjs --test --experimental-test-coverage --test-coverage-include=src/lib/**/*.ts --test-coverage-include=src/data/**/*.ts --test-coverage-exclude=src/lib/motion.ts --test-coverage-exclude=src/lib/intro.ts --test-coverage-exclude=src/lib/images.ts --test-coverage-lines=90 --test-coverage-functions=90 --test-coverage-branches=80 tests/*.test.ts",
+    "test:e2e": "playwright test",
     "content:export": "tsx scripts/export-content.ts",
     "admin:role": "tsx scripts/admin-role.ts"
   },
@@ -26,6 +28,8 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.14",
+    "@playwright/test": "1.64.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

@@ -1,28 +1,63 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Bebas_Neue, Noto_Kufi_Arabic, Noto_Sans_Arabic, Roboto } from "next/font/google";
+import localFont from "next/font/local";
 import ComingSoon from "@/components/eventheme/ComingSoon";
 import { EventhemeProvider } from "@/components/eventheme/Provider";
 import { brand } from "@/data/eventheme";
 import { dictionaries } from "@/data/locales";
-import { fill, ogLocale } from "@/lib/i18n";
+import { direction, fill, ogLocale } from "@/lib/i18n";
 import { isPublicRequest, requestLocale } from "@/lib/eventheme/locale";
 import { getEntries, localMode } from "@/lib/eventheme/server";
 import { localizeEntries } from "@/lib/eventheme/translations";
 import { publishedLocales, siteSettings } from "@/lib/eventheme/types";
 import "./globals.css";
 
-/** Titres, chiffres et données (cahier des charges §02). Police variable : un seul fichier. */
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin", "latin-ext"],
+/** Original Bebas supplied by Dharma Type, with accented glyphs from Bebas Neue. */
+const bebas = localFont({
+  src: "./fonts/Bebas-Regular.ttf",
+  weight: "400",
+  adjustFontFallback: false,
   display: "swap",
   variable: "--font-display",
 });
+const bebasAccents = Bebas_Neue({
+  weight: "400",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+  variable: "--font-display-accents",
+});
 
 /** Textes courants et interface. Police variable : un seul fichier. */
-const inter = Inter({
+const roboto = Roboto({
   subsets: ["latin", "latin-ext"],
   display: "swap",
   variable: "--font-body",
+});
+
+const signature = localFont({
+  src: "./fonts/Signature.otf",
+  weight: "400",
+  display: "swap",
+  variable: "--font-signature",
+});
+
+/**
+ * Arabe (pages /ar) : titres en coufique géométrique, textes en Noto Sans
+ * Arabic, dessiné pour accompagner Roboto. Placés après les polices latines
+ * (tokens.css) : ils ne servent qu’aux lettres arabes, et ne sont téléchargés
+ * que par une page qui en contient (pas de préchargement).
+ */
+const arabicDisplay = Noto_Kufi_Arabic({
+  subsets: ["arabic"],
+  display: "swap",
+  preload: false,
+  variable: "--font-display-ar",
+});
+const arabicBody = Noto_Sans_Arabic({
+  subsets: ["arabic"],
+  display: "swap",
+  preload: false,
+  variable: "--font-body-ar",
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -77,10 +112,13 @@ export default async function RootLayout({
   const closed = siteSettings(stored).comingSoon && (await isPublicRequest());
   return (
     <html
+      suppressHydrationWarning
       lang={locale}
-      className={`${spaceGrotesk.variable} ${inter.variable}`}
+      dir={direction(locale)}
+      className={`${bebas.variable} ${bebasAccents.variable} ${roboto.variable} ${signature.variable} ${arabicDisplay.variable} ${arabicBody.variable}`}
     >
       <body>
+        <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('eventheme-theme');document.documentElement.dataset.theme=t==='light'||t==='dark'?t:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}catch{document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}" }} />
         {/* Sans JavaScript, les blocs révélés au défilement restent visibles. */}
         <noscript>
           <style>

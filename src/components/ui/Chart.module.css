@@ -62,7 +62,7 @@
 
 .barShare {
   color: var(--gris);
-  margin-left: 7px;
+  margin-inline-start: 7px;
 }
 
 .barTrack {

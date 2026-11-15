@@ -29,7 +29,7 @@ Découvrir → Explorer le catalogue → Sélectionner (matériel + prestations)
 
 ---
 
-## Current State (2026-11-14)
+## Current State (2026-11-15)
 
 **Built and working:**
 
@@ -41,17 +41,17 @@ Découvrir → Explorer le catalogue → Sélectionner (matériel + prestations)
 - Admin at `/admin` (Supabase Auth, `app_metadata.role = "admin"`): dashboard, statistics, requests (reference, budget, participants, attachments downloaded through `/api/admin/attachments`), messages, clients, CRUD for services (with related catalogue categories), products, catalogue categories, event types, projects, page texts, service areas (cities), socials; optional English version of each; CSV export.
 - Data layer `src/lib/eventheme/server.ts`: local JSON store in development (`.eventheme/data.json`, git-ignored), Supabase when `EVENTHEME_DATA_MODE=supabase`. Migrations and a generated public seed in `supabase/`. RLS on every table, server-side validation, origin checks, DB rate limiting.
 - Automatic e-mails after each request (`after()` in `/api/inquiries`): team alert and client acknowledgement. Templates and provider payloads are pure (`src/lib/eventheme/emails.ts`); sending in `mailer.ts` through Resend or Brevo HTTP APIs with `fetch` (no SDK), chosen by `EMAIL_PROVIDER`; recipients and anti-abuse limits in `notifications.ts`. Without a provider: previews in `.eventheme/emails/` locally, nothing in production. A failed e-mail never fails a request; a retried completion never re-sends.
-- Languages: French at `/`, English under `/en/…` with English slugs (`/en/equipment`, `/en/quote`…). Routing helpers in `src/lib/i18n.ts` (`pathFor`, `routeOf`, `translatePath`, `alternatesFor`); the proxy passes the page language to the root layout (`<html lang>`, metadata, content); hreflang alternates on every page and in the sitemap; language switcher in the header and mobile menu. Interface texts live in `src/data/locales/fr.ts` (reference) and `en.ts` (English draft, to be validated by EVENTHEMES); components read `t`, `locale` and `href(key, id)` from `useEventheme()`. Staff content has an optional « Version anglaise » in the admin (`entry.translations.en`: title, subtitle, description, specifications, service discipline, colour, option names), merged server-side by `localizeEntries`; an empty field falls back to French. Each request records its language (`inquiry.locale`, from the `X-Locale` header): API errors (`translateServerError`) and the client acknowledgement follow it; the team alert stays French and flags English requests.
-- `npm test` (node:test via tsx), lint, typecheck; smoke scripts in `tests/*.mjs`.
+- Languages: French at `/`, English under `/en/…` and Arabic under `/ar/…` (right-to-left), both with English slugs (`/en/equipment`, `/ar/quote`…). Routing helpers in `src/lib/i18n.ts` (`pathFor`, `routeOf`, `translatePath`, `alternatesFor`, `direction`, `isRtl`, `plural`, `isolate`, `logicalArrow`); the proxy passes the page language to the root layout (`<html lang dir>`, metadata, content); hreflang alternates on every page and in the sitemap; language switcher in the header and mobile menu. Interface texts live in `src/data/locales/fr.ts` (reference), `en.ts` and `ar.ts` (drafts, to be validated by EVENTHEMES); components read `t`, `locale` and `href(key, id)` from `useEventheme()`. Staff content has optional « Version anglaise » and « Version arabe » sections in the admin (`entry.translations.en` / `.ar`: title, subtitle, description, specifications, service discipline, colour, option names), merged server-side by `localizeEntries`; an empty field falls back to French. Each request records its language (`inquiry.locale`, from the `X-Locale` header): API errors (`translateServerError`) and the client acknowledgement follow it (Arabic e-mails are laid out right-to-left); the team alert stays French and flags English and Arabic requests. Settings publish or hide each translation separately.
+- Tests (see « Tests » below): unit and integration suites in `tests/*.test.ts` (node:test via tsx), SQL migrations and RLS in PGlite, coverage thresholds, Playwright end-to-end specs in `e2e/`; smoke scripts in `tests/*.mjs`.
 
 - SEO (spec §10): one page per service (`ServicePages.tsx`: included services, related catalogue categories chosen in the admin, other services, cities served) and one page per published city (« Zones d’intervention », content kind `cities`, migration `20261114200000`; the `/villes` index exists only when a city is published; the city drafts in the seed are unpublished). JSON-LD from `src/lib/eventheme/structured.ts` (Organization and WebSite on the home page, BreadcrumbList on service, city and detail pages, Service on service and city pages; nothing for demo content). Sitemap with both languages, services and published cities, without demo entries; demo sheets are `noindex, follow`. New content gets a readable id from its title (`src/lib/slug.ts`), which becomes its address.
 - Analytics with consent (`audience.ts`, `Consent.tsx`): off unless `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set at build time; then a consent banner, Google Analytics loaded only after « Accepter » (Google signals and ad personalisation off), withdrawal from the footer (« Gérer les cookies »), and events without personal data (`generate_lead`, `add_to_quote`, `contact_click`). Search Console verification through `GOOGLE_SITE_VERIFICATION`.
 
 - Settings (« Paramètres », spec §07): one content entry `kind: "settings"`, id `settings` (migration `20261115090000`), edited in its own admin tab. General information (address, map link, opening hours with an optional English version) shown on the Contact page, in the footer and in the structured data; languages (publish or hide the English version: hidden, `/en/…` redirects temporarily to the French page and drops out of hreflang, the sitemap and the switcher); going live (the waiting page replaces every public page, `noindex`, empty sitemap; the admin stays open). Read through `siteSettings()` / `publishedLocales()` in `types.ts`. Everything in it is public: private values stay in environment variables. Phone, e-mail, WhatsApp and social links stay in « Contact & réseaux ».
 
-**Not built yet (see Roadmap):** Arabic (optional, right-to-left), Safari/Firefox and performance audits on the deployed site. « Archiver » a product is unpublishing it: it stays in the admin.
+**Not built yet (see Roadmap):** Safari/Firefox and performance audits on the deployed site. « Archiver » a product is unpublishing it: it stays in the admin.
 
-**Inherited, unused modules** (AURÉLYS single-page era; nothing imports them): `src/data/{site,hero,services,stats,testimonials,calculator}.ts`, `src/lib/pricing.ts`, `src/components/sections/{EventCalculator,Stats,StatCounter,Testimonials,EventTypes}.*`. Ask before deleting or repurposing them; never present their figures as EVENTHEMES facts.
+**Removed (2026-11-15, with the user's approval):** the AURÉLYS-era modules (`src/data/{site,hero,services,stats,testimonials,calculator}.ts`, `src/lib/pricing.ts`, `src/components/sections/{EventCalculator,Stats,StatCounter,Testimonials,EventTypes}.*`, `src/hooks/useCarousel.ts`) and the `/components/dropdowns` showcase page. Do not reintroduce their figures or copy.
 
 Internal identifiers keep the historical `eventheme` spelling on purpose: the `src/components/eventheme/` and `src/lib/eventheme/` folders, `useEventheme`, the `EVENTHEME_DATA_MODE` variable, the `eventheme-media` bucket, `.eventheme/`. Renaming them breaks deployments and stored data for no visible gain. User-facing text always says **EVENTHEMES**.
 
@@ -176,7 +176,8 @@ Supabase rules: RLS on every table (visitors read published content; only server
 
 ## Cross-cutting Requirements
 
-- **Languages (spec §11):** French (main), English, Arabic (optional, with RTL). Never hard-code copy in JSX: add the key to `fr.ts` **and** `en.ts` (`tests/i18n.test.ts` fails if keys, list lengths or `{placeholders}` differ) and read it through `t`. Links go through `href(key, id)` / `pathFor`, never a literal French path. Formatting helpers (`money`, `priceLabel`, `participantsLabel`, `daysLabel`, `sizeLabel`, `formatLongDate`…) take the locale. Stored values stay French (project types, contact methods, option names, server error messages) and are labelled per language at display (`projectCategoryLabel`, `contactMethodLabel`, `variantLabel`, `translateServerError`). Use CSS logical properties in new styles so RTL stays possible.
+- **Languages (spec §11):** French (main), English, Arabic (right-to-left). Never hard-code copy in JSX: add the key to `fr.ts`, `en.ts` **and** `ar.ts` (`tests/i18n.test.ts` and `tests/arabic.test.ts` fail if keys, list lengths or `{placeholders}` differ) and read it through `t`. Counts go through `plural()` (Arabic has one/two/few/many/other forms: `"two:…|few:…|other:…"`). Links go through `href(key, id)` / `pathFor`, never a literal French path. Formatting helpers (`money`, `priceLabel`, `participantsLabel`, `daysLabel`, `sizeLabel`, `formatLongDate`…) take the locale. Stored values stay French (project types, contact methods, option names, server error messages) and are labelled per language at display (`projectCategoryLabel`, `contactMethodLabel`, `variantLabel`, `translateServerError`).
+- **Right-to-left (Arabic):** CSS logical properties only (`inset-inline-start`, `margin-inline-end`, `text-align: start`…); a `transform-origin` or `translateX` that encodes a side needs a `[dir="rtl"]` override. Directional icons carry `data-mirror` (flipped by `base.css`). Latin fragments inside Arabic text (English lines, references, counters such as `03 / 07`) go in `<bdi>` (with `dir="ltr"` for numbers); phone numbers inside sentences through `isolate()`; phone inputs stay `dir="ltr"`. Arrow keys in carousels and calendars go through `logicalArrow()`. No letter-spacing on Arabic text. Arabic glyphs come from Noto Kufi Arabic (headings) and Noto Sans Arabic (body), fallbacks after the Latin faces, not preloaded.
 - **Responsive:** desktop, laptop, tablet, phone; menus, galleries, filters, forms and catalogue usable on small screens; no horizontal scroll.
 - **Animation (spec §08):** smooth scrolling, reveal on scroll, light cinematic transitions, discreet hovers, subtle parallax, animated counters only for real figures, micro-interactions. Never slow the site or block low-power devices; honour `prefers-reduced-motion`.
 - **Accessibility:** semantic HTML, keyboard navigation, visible focus, sufficient contrast, labelled inputs, meaningful alt text.
@@ -190,7 +191,7 @@ Supabase rules: RLS on every table (visitors read published content; only server
 
 ## Technical Principles
 
-**Stack:** Next.js (App Router), React 19, TypeScript, CSS Modules with design tokens, GSAP (`gsap`, `@gsap/react`), Lenis smooth scrolling on the home page, three.js for the hero rig, `next/font`, Supabase (Postgres, Auth, Storage). No UI framework, no utility-class library.
+**Stack:** Next.js (App Router), React 19, TypeScript, CSS Modules with design tokens, GSAP (`gsap`, `@gsap/react`), Lenis smooth scrolling on the home page, three.js for the hero rig, `next/font`, Supabase (Postgres, Auth, Storage). No UI framework, no utility-class library. Test-only tools (devDependencies): tsx with node:test, PGlite, Playwright.
 
 **Code organisation (keep it):**
 
@@ -204,7 +205,14 @@ Repeated content is data-driven, never hard-coded in JSX. Anything staff must ed
 
 **Motion rules** (`src/lib/motion.ts`): ornament goes through `motionSafe`, scroll-revealed content through `revealSafe`; always `fromTo`, never `from`; one property, one owner; animate `transform` and `opacity`.
 
-**Checks:** `npm run lint`, `npm run typecheck` and `npm test` before calling work done; `npm run build` for anything touching routing, metadata or server code. Visual changes should be checked at desktop, tablet and phone widths.
+**Checks:** `npm run lint`, `npm run typecheck` and `npm test` before calling work done; `npm run build` for anything touching routing, metadata or server code; `npm run test:coverage` (fails under lines 90 %, functions 90 %, branches 80 % of `src/lib` and `src/data`) and `npm run test:e2e` for anything touching a page, a form or a flow. Visual changes should be checked at desktop, tablet and phone widths.
+
+**Tests:**
+
+- `tests/setup.mjs` (loaded with `--import`) replaces `server-only` with an empty module, so server code runs under node:test. With `EVENTHEME_FAKE_SUPABASE=1` it also points `@supabase/supabase-js`, `@supabase/ssr` and `next/headers` to `tests/fake-supabase.ts`, an in-memory client with injectable failures (`fake.fail("inquiries.update")`) and concurrent edits (`fake.state.beforeUpdate`): `tests/supabase-mode.test.ts` covers the production branch of `server.ts` with it.
+- Server tests set `EVENTHEME_DATA_DIR` to a temporary folder before importing `server.ts`; never let a test write to `.eventheme/`. The form handler lives in `src/lib/eventheme/submit.ts` (`submitInquiry(request, schedule)`) so tests call it with real `Request` objects; the route only passes Next's `after`.
+- `tests/database.test.ts` runs every file of `supabase/migrations/` in PGlite (devDependency `@electric-sql/pglite`), prepared like Supabase (roles, default grants, `auth.jwt()`, `storage`), and plays each query as PostgREST does (role and JWT claims in a transaction). A new migration is tested automatically; a new table, policy, function or kind of content needs its own assertions there. Refusals assert the object that refuses (table, function or sequence).
+- Playwright (`playwright.config.ts`, `e2e/`): its own `next dev` on port 3100, built in `.next-e2e` (`EVENTHEME_DIST_DIR`, so it runs beside `npm run dev`), data in `.eventheme/e2e` (reset each run), e-mails previewed only, Supabase variables blanked, fake Analytics id `G-E2ETEST01`; Edge on Windows. Specs take their labels from the dictionaries and their addresses from `pathFor`, so they run in every language. Forms refuse submissions under 1.5 s (anti-spam): specs wait with `atHumanPace()` before sending. `E2E_BASE_URL` targets a deployed site instead (local-data checks skipped).
 
 ---
 
@@ -216,7 +224,7 @@ Repeated content is data-driven, never hard-coded in JSX. Anything staff must ed
 | 1 | Rebrand: name, palette, fonts, copy, navigation, home order, truss motif, technical demo content | Done |
 | 2 | Catalogue and quote: brand/model/reference, categories and sub-categories, private attachments, reference numbers, new statuses, « participants », minimal required fields | Done |
 | 3 | E-mails: admin notification and client acknowledgement | Done (provider account and `EMAIL_*` variables to configure) |
-| 4 | Languages: FR/EN routing and content model, then optional AR with RTL | FR/EN done (English texts to validate by EVENTHEMES); Arabic optional, later |
+| 4 | Languages: FR/EN routing and content model, then optional AR with RTL | Done (English and Arabic texts to validate by EVENTHEMES) |
 | 5 | SEO and launch: service and city pages, structured data, analytics with consent, legal pages, performance and cross-browser checks | Service and city pages, structured data, sitemap, analytics with consent and Search Console done; cities, legal texts, Analytics ID and Search Console token await EVENTHEMES; audits after deployment |
 
 ---
@@ -243,3 +251,13 @@ Acceptance: every page and navigation works; responsive on all planned formats; 
 Before building anything, ask:
 
 > Does this present EVENTHEMES as a powerful, professional and innovative technical partner, and does it make it easier for a visitor to send a complete, qualified quote request?
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

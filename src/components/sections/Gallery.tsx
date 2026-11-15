@@ -9,7 +9,7 @@ import { brand } from '@/data/eventheme';
 import { projectCategoryLabel } from '@/data/locales';
 import { cx } from '@/lib/cx';
 import type { Entry } from '@/lib/eventheme/types';
-import { fill } from '@/lib/i18n';
+import { fill, isRtl } from '@/lib/i18n';
 import { Flip, gsap, MOTION, prefersReducedMotion, revealSafe, useGSAP } from '@/lib/motion';
 import styles from './Gallery.module.css';
 import studio from './Studio.module.css';
@@ -28,6 +28,8 @@ const ALL = '';
  */
 export default function Gallery() {
   const { entries, locale, t, href } = useEventheme();
+  // De droite à gauche (arabe) : « suivant » défile vers la gauche, et les flèches s’inversent.
+  const rtl = isRtl(locale);
   const projects = entries.filter((e) => e.kind === 'projects');
   const categories = [ALL, ...new Set(projects.map((p) => p.category).filter((c): c is string => Boolean(c)))];
   const [category, setCategory] = useState(ALL);
@@ -39,7 +41,7 @@ export default function Gallery() {
 
   const moveReel = (direction: number) => {
     const reel = gridRef.current;
-    if (reel) reel.scrollBy({ left: direction * reel.clientWidth * .72, behavior: prefersReducedMotion() ? 'instant' : 'smooth' });
+    if (reel) reel.scrollBy({ left: direction * (rtl ? -1 : 1) * reel.clientWidth * .72, behavior: prefersReducedMotion() ? 'instant' : 'smooth' });
   };
 
   const changeCategory = (next: string) => {
@@ -121,8 +123,8 @@ export default function Gallery() {
         </div>
       )}
         <div className={styles.reelControls}>
-          <button type="button" disabled={visible.length < 2} onClick={() => moveReel(-1)} aria-label={t.gallery.previous}>←</button>
-          <button type="button" disabled={visible.length < 2} onClick={() => moveReel(1)} aria-label={t.gallery.next}>→</button>
+          <button type="button" disabled={visible.length < 2} onClick={() => moveReel(-1)} aria-label={t.gallery.previous}>{rtl ? '→' : '←'}</button>
+          <button type="button" disabled={visible.length < 2} onClick={() => moveReel(1)} aria-label={t.gallery.next}>{rtl ? '←' : '→'}</button>
         </div>
       </div>
 
@@ -190,6 +192,7 @@ function Lightbox({
   onClose: (restoreFocus?: boolean) => void;
 }) {
   const { locale, t, href } = useEventheme();
+  const rtl = isRtl(locale);
   const project = projects[index];
   const dialogRef = useRef<HTMLDivElement>(null);
   const images = [project.image, ...(project.gallery || [])].filter((url): url is string => Boolean(url));
@@ -225,8 +228,9 @@ function Lightbox({
           else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
         }
         if (event.key === 'Escape') onClose();
-        if (event.key === 'ArrowRight' && projects.length > 1) step(1);
-        if (event.key === 'ArrowLeft' && projects.length > 1) step(-1);
+        // De droite à gauche, le projet suivant est à gauche.
+        if (event.key === (rtl ? 'ArrowLeft' : 'ArrowRight') && projects.length > 1) step(1);
+        if (event.key === (rtl ? 'ArrowRight' : 'ArrowLeft') && projects.length > 1) step(-1);
       }}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -272,13 +276,13 @@ function Lightbox({
           {projects.length > 1 && (
             <div className={styles.pager}>
               <button type="button" onClick={() => step(-1)} aria-label={t.gallery.previousProject}>
-                ←
+                {rtl ? '→' : '←'}
               </button>
-              <span>
+              <span dir="ltr">
                 {String(index + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')}
               </span>
               <button type="button" onClick={() => step(1)} aria-label={t.gallery.nextProject}>
-                →
+                {rtl ? '←' : '→'}
               </button>
             </div>
           )}

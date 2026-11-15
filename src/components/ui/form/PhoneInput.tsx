@@ -223,6 +223,8 @@ export default function PhoneInput({
       <div ref={rootRef} className={s.anchor}>
         <div
           className={cx(s.control, s.withCountry)}
+          // Un numéro se lit de gauche à droite, indicatif en tête, même sur une page en arabe.
+          dir="ltr"
           data-invalid={shownError ? '' : undefined}
           data-disabled={disabled ? '' : undefined}
         >

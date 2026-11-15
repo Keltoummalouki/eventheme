@@ -24,6 +24,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* --- De droite à gauche (pages /ar) -------------------------------------- */
+
+/* L’interlettrage casse la liaison des lettres arabes : supprimé sur ces pages. */
+:root[lang='ar'] body * {
+  letter-spacing: 0 !important;
+}
+
+/*
+ * Chaque bloc de texte prend le sens de son propre contenu : un contenu
+ * pas encore traduit (français, anglais), une référence ou une marque se lit
+ * de gauche à droite, ponctuation comprise, au milieu de la mise en page arabe.
+ */
+:root[dir='rtl'] :is(p, h1, h2, h3, h4, h5, h6, li, dt, dd, td, th, figcaption, blockquote, address, label, legend) {
+  unicode-bidi: plaintext;
+}
+
+/* Flèches de direction (↗, →) retournées : elles pointent vers la suite de la lecture. */
+:root[dir='rtl'] [data-mirror] {
+  scale: -1 1;
+}
+
 img {
   display: block;
   width: 100%;
@@ -94,7 +115,7 @@ section {
   [data-print-root] {
     position: absolute;
     top: 0;
-    left: 0;
+    inset-inline-start: 0;
     width: 100%;
     box-shadow: none;
     clip-path: none !important;

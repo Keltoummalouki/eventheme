@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { CalendarIcon, ChevronIcon } from '@/components/ui/icons';
 import { formText } from '@/data/ui';
+import { logicalArrow } from '@/lib/i18n';
 import { useDismiss, useFlip } from '@/hooks/usePopover';
 import { cx } from '@/lib/cx';
 import Field, { FormValue, useFieldIds, type FieldProps } from './Field';
@@ -138,7 +139,7 @@ export default function YearPicker({
   }
 
   function onGridKeyDown(event: KeyboardEvent<HTMLTableElement>) {
-    const move = KEY_MOVES[event.key];
+    const move = KEY_MOVES[logicalArrow(event.key, event.currentTarget)];
     if (!move) return;
     event.preventDefault();
     focusYear.current = true;

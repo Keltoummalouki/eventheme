@@ -1,0 +1,11 @@
+.root { display:flex; gap:2px; color:var(--argent); }
+@media (max-width:960px) { .root { margin-inline-start:auto; flex-shrink:0; } }
+.root details { position:relative; }
+.root summary { display:grid; place-items:center; width:36px; min-height:44px; cursor:pointer; list-style:none; border-radius:5px; }
+.root summary::-webkit-details-marker { display:none; }
+.root svg { width:19px; height:19px; }
+.panel { position:absolute; top:calc(100% + 12px); inset-inline-end:0; min-width:150px; background:var(--noir-2); border:1px solid var(--ligne); border-radius:8px; padding:6px; box-shadow:var(--panneau-ombre); }
+.panel a,.panel button { display:flex; align-items:center; width:100%; min-height:44px; padding:8px 12px; color:var(--argent); font-size:13px; text-align:start; border-radius:4px; }
+.panel [aria-current],.panel [aria-pressed='true'] { color:var(--or-clair); background:var(--champ-actif); }
+.root summary:focus-visible { outline:2px solid var(--or); }
+@media(max-width:600px) { .root { gap:0; } .root summary { width:32px; } }

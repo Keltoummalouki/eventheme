@@ -2,7 +2,7 @@ import "server-only";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { providerRequest, type EmailMessage, type EmailProvider } from "./emails";
-import { localMode } from "./server";
+import { dataDirectory, localMode } from "./server";
 
 /**
  * Envoi des e-mails. Le fournisseur se choisit par configuration, sans
@@ -29,7 +29,7 @@ export async function sendEmail(message: EmailMessage): Promise<MailMode> {
   const mode = mailMode();
   if (mode === "off" || (mode === "provider" && !message.to.length)) return "off";
   if (mode === "preview") {
-    const directory = path.join(process.cwd(), ".eventheme", "emails");
+    const directory = path.join(dataDirectory(), "emails");
     await mkdir(directory, { recursive: true });
     const name = `${new Date().toISOString().replace(/[:.]/g, "-")}-${message.key.replace(/[^a-z0-9-]+/gi, "-")}.html`;
     const comment = (value: string) => value.replace(/--/g, "‑‑");

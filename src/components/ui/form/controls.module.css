@@ -25,7 +25,7 @@
 }
 
 .required {
-  margin-left: 4px;
+  margin-inline-start: 4px;
   color: var(--or);
 }
 
@@ -70,7 +70,7 @@
   color: var(--blanc);
   font: inherit;
   font-size: 0.8125rem;
-  text-align: left;
+  text-align: start;
   transition:
     border-color 0.25s var(--ease),
     box-shadow 0.25s var(--ease);
@@ -167,14 +167,14 @@
 
 /* Les boutons touchent le bord droit de la boîte. */
 .withStepper {
-  padding-right: 0;
+  padding-inline-end: 0;
 }
 
 .stepper {
   display: flex;
   flex-shrink: 0;
   align-self: stretch;
-  border-left: 1px solid var(--champ-filet);
+  border-inline-start: 1px solid var(--champ-filet);
 }
 
 .stepButton {
@@ -189,7 +189,7 @@
 }
 
 .stepButton + .stepButton {
-  border-left: 1px solid var(--champ-filet);
+  border-inline-start: 1px solid var(--champ-filet);
 }
 
 .stepButton svg {
@@ -244,7 +244,7 @@
 
 /* Le bouton du pays touche le bord gauche de la boîte. */
 .withCountry {
-  padding-left: 0;
+  padding-inline-start: 0;
 }
 
 .country {
@@ -254,7 +254,7 @@
   align-self: stretch;
   gap: 8px;
   padding: 0 12px 0 14px;
-  border-right: 1px solid var(--champ-filet);
+  border-inline-end: 1px solid var(--champ-filet);
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
@@ -322,9 +322,9 @@
 .option[data-divider]::after {
   content: '';
   position: absolute;
-  right: 18px;
+  inset-inline-end: 18px;
   bottom: -4px;
-  left: 18px;
+  inset-inline-start: 18px;
   height: 1px;
   background: var(--champ-filet);
 }
@@ -385,7 +385,7 @@
 
 .file {
   gap: 16px;
-  padding-left: 7px;
+  padding-inline-start: 7px;
   cursor: pointer;
 }
 
@@ -520,7 +520,7 @@
 
 /* Aide et erreur alignées sur le texte, pas sur la case. */
 .checkNote {
-  padding-left: 30px;
+  padding-inline-start: 30px;
 }
 
 /* Icône, unité ou action placée dans la boîte. */
@@ -546,7 +546,7 @@
   place-items: center;
   width: 32px;
   height: 32px;
-  margin-right: -8px;
+  margin-inline-end: -8px;
   color: var(--gris);
   transition: color 0.2s;
 }
@@ -607,7 +607,7 @@
 .panel {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
+  inset-inline-start: 0;
   z-index: 40;
   /* Filet doré en tête : un calque de fond, pour qu'il ne défile pas avec la liste. */
   background:
@@ -626,8 +626,8 @@
 }
 
 .panel[data-align='end'] {
-  left: auto;
-  right: 0;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
 }
 
 @keyframes panel-in {
@@ -682,7 +682,7 @@
   font: inherit;
   font-size: 0.8125rem;
   line-height: 1.45;
-  text-align: left;
+  text-align: start;
   color: rgba(255, 255, 255, 0.86);
   cursor: pointer;
   transition:
@@ -696,7 +696,7 @@
   position: absolute;
   top: 8px;
   bottom: 8px;
-  left: 0;
+  inset-inline-start: 0;
   width: 1px;
   background: var(--or);
   transform: scaleY(0);

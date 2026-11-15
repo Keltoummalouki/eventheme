@@ -73,8 +73,8 @@
    puis se referme en bandeau sombre dès que l'on défile. */
 .overlay {
   position: fixed;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   background: transparent;
   border-bottom-color: transparent;
   backdrop-filter: none;
@@ -96,14 +96,18 @@
 /* Filet doré de progression de lecture (piloté par GSAP en scaleX). */
 .progress {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   bottom: -1px;
   height: 1px;
   background: linear-gradient(90deg, var(--or-profond), var(--or-clair));
   transform: scaleX(0);
   transform-origin: left center;
   pointer-events: none;
+}
+/* De droite à gauche (arabe) : la barre part du côté du début de lecture. */
+[dir="rtl"] .progress {
+  transform-origin: right center;
 }
 .brand {
   flex: none;
@@ -119,7 +123,7 @@
   display: flex;
   gap: 26px;
   align-items: center;
-  margin-left: auto;
+  margin-inline-start: auto;
   font-size: 11px;
   letter-spacing: 0.02em;
 }
@@ -139,8 +143,8 @@
   height: 1px;
   background: var(--or);
   bottom: 24px;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
 }
 .quoteButton {
   white-space: nowrap;
@@ -160,6 +164,15 @@
 }
 .language:hover {
   color: var(--or);
+}
+/* Les autres langues publiées, côte à côte. */
+.languages {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.languages .menuLanguage + .menuLanguage {
+  margin-inline-start: 22px;
 }
 /* Dans le menu plein écran des petits écrans. */
 .menuLanguage {
@@ -199,8 +212,8 @@
 }
 .menuToggle span {
   position: absolute;
-  left: 10px;
-  right: 10px;
+  inset-inline-start: 10px;
+  inset-inline-end: 10px;
   height: 1px;
   background: var(--blanc);
   transition:
@@ -212,12 +225,12 @@
 }
 .menuToggle span:last-child {
   top: 26px;
-  left: 18px;
+  inset-inline-start: 18px;
 }
 .menuToggleOpen span:first-child,
 .menuToggleOpen span:last-child {
   top: 21.5px;
-  left: 10px;
+  inset-inline-start: 10px;
   background: var(--or-clair);
 }
 .menuToggleOpen span:first-child {
@@ -307,8 +320,8 @@
 .heroBottom {
   position: absolute;
   bottom: 34px;
-  left: 8%;
-  right: 5%;
+  inset-inline-start: 8%;
+  inset-inline-end: 5%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -327,7 +340,7 @@
 }
 .heroCredit {
   position: absolute;
-  right: 20px;
+  inset-inline-end: 20px;
   top: 28px;
   writing-mode: vertical-rl;
   color: #ffffff90;
@@ -404,7 +417,7 @@
 .cardNumber {
   position: absolute;
   top: 20px;
-  left: 24px;
+  inset-inline-start: 24px;
   color: #fff9;
   font-family: var(--ff-display);
   font-size: 22px;
@@ -412,8 +425,8 @@
 .serviceCaption {
   position: absolute;
   bottom: 24px;
-  left: 24px;
-  right: 18px;
+  inset-inline-start: 24px;
+  inset-inline-end: 18px;
   display: flex;
   align-items: flex-end;
   gap: 10px;
@@ -464,7 +477,7 @@
   border-bottom: 1px solid #ffffff20;
   color: var(--argent);
   font-size: 12px;
-  text-align: left;
+  text-align: start;
 }
 .eventLinks a:hover {
   color: var(--or-clair);
@@ -505,7 +518,7 @@
 .imageTag {
   position: absolute;
   top: 16px;
-  left: 16px;
+  inset-inline-start: 16px;
   font-size: 8px;
   letter-spacing: 0.12em;
   background: rgba(8, 9, 11, 0.72);
@@ -598,12 +611,12 @@
   color: var(--gris);
 }
 .footerBottom span {
-  margin-right: auto;
+  margin-inline-end: auto;
 }
 .toast {
   position: fixed;
   bottom: 25px;
-  right: 25px;
+  inset-inline-end: 25px;
   background: var(--blanc);
   color: var(--noir);
   padding: 18px 24px;
@@ -629,7 +642,7 @@
 .skip {
   position: fixed;
   top: -100px;
-  left: 20px;
+  inset-inline-start: 20px;
   z-index: 100;
   background: var(--or);
   color: var(--noir);
@@ -882,7 +895,7 @@
   display: grid;
   gap: 8px;
   margin: 16px 0 8px;
-  padding-left: 18px;
+  padding-inline-start: 18px;
   color: var(--argent);
   font-size: 14px;
   line-height: 1.6;
@@ -931,7 +944,7 @@
 }
 .lightbox button {
   position: absolute;
-  right: 25px;
+  inset-inline-end: 25px;
   top: 12px;
   font-size: 40px;
 }
@@ -1163,7 +1176,7 @@
   flex: 1;
 }
 .steps button {
-  text-align: left;
+  text-align: start;
   font-size: 9px;
   color: var(--gris);
 }
@@ -1224,7 +1237,7 @@
   min-height: 65px;
 }
 .choice > span:last-child {
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 .choice input {
   accent-color: var(--or);
@@ -1281,7 +1294,7 @@
   align-items: center;
 }
 .formActions > .previous {
-  margin-right: auto;
+  margin-inline-end: auto;
 }
 .summary {
   background: var(--noir-2);
@@ -1369,7 +1382,7 @@
 }
 .honeypot {
   position: absolute;
-  left: -10000px;
+  inset-inline-start: -10000px;
   width: 1px;
   height: 1px;
   overflow: hidden;
@@ -1414,7 +1427,7 @@
 }
 .sidebar {
   background: var(--noir);
-  border-right: 1px solid #ffffff15;
+  border-inline-end: 1px solid #ffffff15;
   padding: 10px 22px 30px;
   position: sticky;
   top: 0;
@@ -1440,7 +1453,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  text-align: left;
+  text-align: start;
   padding: 11px 12px;
   font-size: 11px;
   color: var(--gris);
@@ -1557,7 +1570,7 @@
   max-width: 420px;
 }
 .toolbarAction {
-  margin-left: auto;
+  margin-inline-start: auto;
   white-space: nowrap;
 }
 .tableWrap {
@@ -1567,7 +1580,7 @@
   border-collapse: collapse;
   width: 100%;
   font-size: 11px;
-  text-align: left;
+  text-align: start;
 }
 .table th {
   color: var(--gris);
@@ -1598,7 +1611,7 @@
   white-space: nowrap;
 }
 .tableActions > * + * {
-  margin-left: 18px;
+  margin-inline-start: 18px;
 }
 .status {
   display: inline-block;
@@ -1809,7 +1822,7 @@
 .photoThumb button {
   position: absolute;
   top: 4px;
-  right: 4px;
+  inset-inline-end: 4px;
   background: rgba(8, 9, 11, 0.8);
 }
 .adminPanel .actions {
@@ -1841,7 +1854,7 @@
   margin-block-start: 16px;
 }
 .requestSummary {
-  padding-left: 20px;
+  padding-inline-start: 20px;
   color: var(--gris);
   font-size: 12px;
 }
@@ -1973,7 +1986,7 @@
     height: 320px;
   }
   .serviceCaption {
-    left: 18px;
+    inset-inline-start: 18px;
     bottom: 20px;
   }
   .serviceCaption h3 {
@@ -2032,7 +2045,7 @@
     width: 124px;
   }
   .quoteButton {
-    margin-left: auto;
+    margin-inline-start: 0;
   }
   .menuToggle {
     display: block;
@@ -2183,7 +2196,7 @@
     max-width: none;
   }
   .toolbarAction {
-    margin-left: 0;
+    margin-inline-start: 0;
   }
 }
 @media (max-width: 600px) {
@@ -2234,8 +2247,8 @@
   }
   .heroBottom {
     bottom: 27px;
-    left: 7%;
-    right: 7%;
+    inset-inline-start: 7%;
+    inset-inline-end: 7%;
     font-size: 7px;
     letter-spacing: 0.1em;
   }
@@ -2244,7 +2257,7 @@
   }
   .heroCredit {
     font-size: 7px;
-    right: 9px;
+    inset-inline-end: 9px;
   }
   .heroImage {
     object-position: 60% center;
@@ -2297,9 +2310,9 @@
     height: 265px;
   }
   .serviceCaption {
-    left: 14px;
+    inset-inline-start: 14px;
     bottom: 16px;
-    right: 12px;
+    inset-inline-end: 12px;
   }
   .serviceCaption h3 {
     font-size: 25px;
@@ -2309,7 +2322,7 @@
   }
   .cardNumber {
     font-size: 20px;
-    left: 16px;
+    inset-inline-start: 16px;
     top: 15px;
   }
   .occasion h2 {
@@ -2515,7 +2528,7 @@
   .sidebar {
     position: relative;
     height: auto;
-    border-right: 0;
+    border-inline-end: 0;
     border-bottom: 1px solid #ffffff20;
     padding: 10px 20px 20px;
   }
@@ -2592,8 +2605,8 @@
   }
   .table th,
   .table td {
-    padding-left: 8px;
-    padding-right: 8px;
+    padding-inline-start: 8px;
+    padding-inline-end: 8px;
   }
   .adminPanel .sectionHeading {
     flex-direction: row;
@@ -2606,7 +2619,7 @@
     margin-bottom: 20px;
   }
   .toast {
-    right: 15px;
+    inset-inline-end: 15px;
     bottom: 15px;
     font-size: 11px;
     padding: 16px 20px;
@@ -2627,3 +2640,4 @@
     transition: none !important;
   }
 }
+@media(max-width:600px) { .header .quoteButton { display:none; } .header > div { margin-inline-start:auto; } }

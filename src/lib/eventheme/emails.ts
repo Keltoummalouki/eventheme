@@ -79,11 +79,14 @@ const paragraph = (text: string) =>
 const multiline = (text: string) => escapeHtml(text).replace(/\n/g, "<br>");
 
 export function layout({ lang = "fr", preheader, title, intro, rows, outro = [], button, footer }: Layout) {
+  // Arabe : de droite à gauche, posé sur chaque cellule (les messageries ignorent souvent <html dir>).
+  const rtl = lang === "ar";
+  const side = rtl ? "direction:rtl;text-align:right;" : "";
   const table = rows.length
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:22px 0;font-family:${font};font-size:14px;line-height:1.5;">${rows
         .map(
           ([label, value]) =>
-            `<tr><td style="padding:10px 12px 10px 0;border-bottom:1px solid ${color.line};color:${color.label};width:36%;vertical-align:top;">${escapeHtml(label)}</td><td style="padding:10px 0;border-bottom:1px solid ${color.line};color:${color.noir};vertical-align:top;">${multiline(value)}</td></tr>`,
+            `<tr><td style="${side}padding:${rtl ? "10px 0 10px 12px" : "10px 12px 10px 0"};border-bottom:1px solid ${color.line};color:${color.label};width:36%;vertical-align:top;">${escapeHtml(label)}</td><td style="${side}padding:10px 0;border-bottom:1px solid ${color.line};color:${color.noir};vertical-align:top;">${multiline(value)}</td></tr>`,
         )
         .join("")}</table>`
     : "";
@@ -91,23 +94,23 @@ export function layout({ lang = "fr", preheader, title, intro, rows, outro = [],
     ? `<p style="margin:26px 0 6px;"><a href="${escapeHtml(button.href)}" style="display:inline-block;background:${color.or};color:${color.noir};font-family:${font};font-size:14px;font-weight:bold;text-decoration:none;padding:13px 24px;">${escapeHtml(button.label)}</a></p>`
     : "";
   const html = `<!doctype html>
-<html lang="${lang}">
+<html lang="${lang}" dir="${rtl ? "rtl" : "ltr"}">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title></head>
 <body style="margin:0;padding:0;background:${color.page};">
 <span style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${color.page};padding:24px 12px;">
 <tr><td align="center">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-collapse:collapse;">
-<tr><td style="background:${color.noir};padding:22px 32px;font-family:${font};font-size:18px;font-weight:bold;letter-spacing:4px;color:#ffffff;">${escapeHtml(brand.name)}<br><span style="font-size:10px;font-weight:normal;letter-spacing:3px;color:${color.or};">${escapeHtml(brand.sector.toUpperCase())}</span></td></tr>
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" dir="${rtl ? "rtl" : "ltr"}" style="max-width:600px;width:100%;background:#ffffff;border-collapse:collapse;">
+<tr><td style="${side}background:${color.noir};padding:22px 32px;font-family:${font};font-size:18px;font-weight:bold;letter-spacing:4px;color:#ffffff;">${escapeHtml(brand.name)}<br><span style="font-size:10px;font-weight:normal;letter-spacing:3px;color:${color.or};">${escapeHtml(brand.sector.toUpperCase())}</span></td></tr>
 <tr><td style="height:3px;line-height:3px;font-size:0;background:${color.or};">&nbsp;</td></tr>
-<tr><td style="padding:32px;">
+<tr><td style="${side}padding:32px;">
 <h1 style="margin:0 0 18px;font-family:${font};font-size:22px;line-height:1.3;font-weight:normal;color:${color.noir};">${escapeHtml(title)}</h1>
 ${intro.map(paragraph).join("\n")}
 ${table}
 ${outro.map(paragraph).join("\n")}
 ${action}
 </td></tr>
-<tr><td style="padding:20px 32px;background:${color.foot};font-family:${font};font-size:12px;line-height:1.6;color:${color.label};">${footer.map(escapeHtml).join("<br>")}</td></tr>
+<tr><td style="${side}padding:20px 32px;background:${color.foot};font-family:${font};font-size:12px;line-height:1.6;color:${color.label};">${footer.map(escapeHtml).join("<br>")}</td></tr>
 </table>
 </td></tr>
 </table>
@@ -175,6 +178,7 @@ export function teamEmail(
   options: { to: string[]; adminUrl?: string; completed?: boolean; pendingAttachments?: number },
 ): EmailMessage {
   const reference = referenceOf(inquiry);
+  const clientLanguage = localeOf(inquiry.locale);
   const date = parseIsoDate(inquiry.date);
   const subject = oneLine(
     [
@@ -195,7 +199,11 @@ export function teamEmail(
     ...(inquiry.email ? [["E-mail", inquiry.email] as const] : []),
     ["Contact préféré", inquiry.contactMethod || "—"],
     // L'équipe répond dans la langue du client.
-    ...(localeOf(inquiry.locale) === "en" ? [["Langue", "Anglais : répondre en anglais"] as const] : []),
+    ...(clientLanguage === "en"
+      ? [["Langue", "Anglais : répondre en anglais"] as const]
+      : clientLanguage === "ar"
+        ? [["Langue", "Arabe : répondre en arabe"] as const]
+        : []),
     ...eventRows(inquiry, entries),
     ...(inquiry.kind === "quote"
       ? [

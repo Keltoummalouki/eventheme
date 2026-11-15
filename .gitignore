@@ -24,6 +24,11 @@ Thumbs.db
 # Private local preview data (may contain client information)
 .eventheme/
 test-results/
+
+# End-to-end tests (Playwright): their own build folder and reports
+.next-e2e/
+playwright-report/
+blob-report/
 public/uploads/
 
 # Supabase CLI cache

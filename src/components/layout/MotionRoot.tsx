@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import { gsap, refreshOnAssetsReady, ScrollTrigger } from '@/lib/motion';
@@ -18,6 +18,7 @@ const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home
  * une section épinglée calculée trop tôt se déclencherait à côté.
  */
 export default function MotionRoot() {
+  const smooth = useRef<Lenis | null>(null);
   useEffect(refreshOnAssetsReady, []);
 
   useEffect(() => {
@@ -37,13 +38,18 @@ export default function MotionRoot() {
       // Native smooth anchor scrolling can be interrupted by an image-triggered refresh.
       frame = window.requestAnimationFrame(() => {
         ScrollTrigger.refresh();
-        const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 80;
-        window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - headerHeight - 16, behavior: 'instant' });
+        // The floating navigation includes space above it; keep anchors below its bottom edge.
+        const headerBottom = document.querySelector('header')?.getBoundingClientRect().bottom ?? 80;
         const previousTabIndex = target.getAttribute('tabindex');
         target.setAttribute('tabindex', '-1');
         target.focus({ preventScroll: true });
         if (previousTabIndex === null) target.removeAttribute('tabindex');
         else target.setAttribute('tabindex', previousTabIndex);
+        const top = target.getBoundingClientRect().top + window.scrollY - headerBottom - 16;
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        // Focus before scrolling: the keyboard cancellation handler must not cancel this new journey.
+        if (smooth.current && !reduced && event.detail > 0) smooth.current.scrollTo(top, { duration: 1.1 });
+        else window.scrollTo({ top, behavior: reduced || event.detail === 0 ? 'instant' : 'smooth' });
       });
     };
     document.addEventListener('click', navigate, true);
@@ -67,6 +73,7 @@ export default function MotionRoot() {
         // la page située derrière est arrêtée.
         prevent: (node) => locked || node.matches('dialog[open], [role="dialog"], [role="listbox"]'),
       });
+      smooth.current = lenis;
 
       const syncScrollLock = () => {
         // Shell et les dialogues posent leurs verrous en style inline. Ne pas
@@ -122,6 +129,7 @@ export default function MotionRoot() {
         gsap.ticker.remove(tick);
         unsubscribe();
         lenis.destroy();
+        smooth.current = null;
       };
     });
 

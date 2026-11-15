@@ -82,7 +82,9 @@ export async function verifyAdmin() {
 }
 
 type LocalStore = { entries: Entry[]; inquiries: Inquiry[] };
-const directory = path.join(process.cwd(), ".eventheme");
+/** Données locales : `.eventheme/`, ou le dossier de EVENTHEME_DATA_DIR (tests, démonstration isolée). */
+const directory = process.env.EVENTHEME_DATA_DIR ? path.resolve(process.env.EVENTHEME_DATA_DIR) : path.join(process.cwd(), ".eventheme");
+export const dataDirectory = () => directory;
 const file = path.join(directory, "data.json");
 async function localRead(): Promise<LocalStore> {
   try {

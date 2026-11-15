@@ -6,12 +6,13 @@ import MobileMenu from "@/components/layout/MobileMenu";
 import { brand, navigation } from "@/data/eventheme";
 import { dictionaries } from "@/data/locales";
 import { measurementId, reopenConsent } from "@/lib/eventheme/audience";
-import { siteSettings } from "@/lib/eventheme/types";
+import { publishedLocales, siteSettings } from "@/lib/eventheme/types";
 import Consent from "./Consent";
+import Preferences from "./Preferences";
 
 /** Mesure d’audience : active seulement si l’identifiant Google Analytics est configuré (au build). */
 const audience = measurementId(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
-import { fill, locales, routeOf, translatePath } from "@/lib/i18n";
+import { direction, fill, routeOf, translatePath } from "@/lib/i18n";
 import { useScrolled } from "@/hooks/useScrolled";
 import { cx } from "@/lib/cx";
 import { findSocial } from "@/lib/eventheme/types";
@@ -43,20 +44,9 @@ export default function Shell({ children }: { children: ReactNode }) {
   const scrolled = useScrolled(40);
   const header = useRef<HTMLElement>(null);
   const { entries, basket, notice, locale, t, href } = useEventheme();
-  const links = navigation.map((key) => [t.nav[key], href(key)] as const);
-  // L’autre langue : un lien simple, pour recharger la page dans sa langue (<html lang>, contenus).
-  const other = locales.find((item) => item !== locale) ?? locale;
-  const languageLink = (className: string) => (
-    <a
-      href={translatePath(path, other)}
-      hrefLang={other}
-      lang={other}
-      className={className}
-      aria-label={dictionaries[other].languageName}
-    >
-      {other.toUpperCase()}
-    </a>
-  );
+  const homeHref = home ? "#accueil" : href("home");
+  const links = navigation.map((key) => [t.nav[key], key === "home" ? homeHref : href(key)] as const);
+  // Les autres langues publiées : des liens simples, pour recharger la page dans sa langue (<html lang dir>, contenus).
   const socials = entries.filter((e) => e.kind === "socials");
   const services = entries.filter((e) => e.kind === "services");
   const cities = entries.filter((e) => e.kind === "cities");
@@ -77,7 +67,8 @@ export default function Shell({ children }: { children: ReactNode }) {
     const headerElement = header.current;
     const toggle = document.getElementById("menu-toggle");
     root.style.overflow = "hidden";
-    menu?.querySelector<HTMLElement>("a[href]")?.focus({ preventScroll: true });
+    // Keep the close control focused; Tab then enters the menu in DOM order.
+    toggle?.focus({ preventScroll: true });
 
     const focusable = () =>
       Array.from(
@@ -154,6 +145,26 @@ export default function Shell({ children }: { children: ReactNode }) {
     </Button>
   );
 
+  useGSAP(() => motionSafe(header, () => {
+    if (!home || !header.current) return;
+    const nav = header.current.querySelector<HTMLElement>('nav');
+    const marker = nav?.querySelector<HTMLElement>('[data-nav-marker]');
+    if (!nav || !marker) return;
+    const place = (link: HTMLElement | null, immediate = false) => {
+      if (!link || !nav.offsetWidth) return;
+      const box = link.getBoundingClientRect();
+      const parent = nav.getBoundingClientRect();
+      gsap.to(marker, { x: box.left - parent.left, scaleX: box.width / 100, opacity: 1, duration: immediate ? 0 : .24, ease: 'power3.out', overwrite: true });
+    };
+    const reset = () => place(nav.querySelector('[aria-current="page"]'));
+    const over = (event: Event) => { const link = (event.target as HTMLElement).closest('a'); if (link) place(link, event.type === 'focusin'); };
+    const resize = new ResizeObserver(() => place(nav.querySelector('[aria-current="page"]'), true));
+    resize.observe(nav);
+    nav.addEventListener('pointerover', over); nav.addEventListener('pointerleave', reset); nav.addEventListener('focusin', over); nav.addEventListener('focusout', reset);
+    place(nav.querySelector('[aria-current="page"]'), true);
+    return () => { resize.disconnect(); nav.removeEventListener('pointerover', over); nav.removeEventListener('pointerleave', reset); nav.removeEventListener('focusin', over); nav.removeEventListener('focusout', reset); };
+  }, '(min-width: 961px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'), { scope: header, dependencies: [home, path], revertOnUpdate: true });
+
   return (
     <div className={s.site}>
       <a className={s.skip} href="#main" inert={open}>
@@ -172,14 +183,15 @@ export default function Shell({ children }: { children: ReactNode }) {
         data-scrolled={scrolled}
         data-menu-open={open}
       >
-        <Link href={href("home")} onClick={() => setOpen(false)} className={cx(s.brand, home && homeHeader.brand)}>
+        <Link href={homeHref} onClick={() => setOpen(false)} className={cx(s.brand, home && homeHeader.brand)}>
           <Logo alt={fill(t.nav.logoAlt, { brand: brand.name })} />
         </Link>
         <nav className={cx(s.nav, home && homeHeader.navigation)} aria-label={t.nav.main}>
+          {home && <span className={homeHeader.navMarker} data-nav-marker aria-hidden="true" />}
           {navigation.map((key) => (
             <Link
               key={key}
-              href={href(key)}
+              href={key === "home" ? homeHref : href(key)}
               className={route.key === key ? s.active : ""}
               aria-current={route.key === key ? "page" : undefined}
             >
@@ -187,7 +199,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
-        {settings.english && languageLink(s.language)}
+        <Preferences />
         {quoteButton}
         <button
           id="menu-toggle"
@@ -207,11 +219,19 @@ export default function Shell({ children }: { children: ReactNode }) {
         id="menu-mobile"
         open={open}
         links={links}
-        current={path}
+        current={home ? homeHref : path}
         socials={socials}
         onNavigate={() => setOpen(false)}
         label={t.nav.mobile}
-        language={settings.english ? languageLink(s.menuLanguage) : undefined}
+        heading={t.footer.explore}
+        languageLabel={t.nav.language}
+        language={publishedLocales(entries).length > 1 ? (
+          <div className={homeHeader.menuLanguages}>
+            {publishedLocales(entries).map((item) => <a key={item} href={translatePath(path, item)} hrefLang={item} lang={item} dir={direction(item)} aria-current={item === locale ? "true" : undefined}>
+              {dictionaries[item].languageName}
+            </a>)}
+          </div>
+        ) : undefined}
         action={
           <Button href={quoteHref} icon={<ArrowUpRightIcon />} onClick={() => setOpen(false)}>
             {t.nav.quote} {count > 0 && `(${count})`}
@@ -334,3 +354,4 @@ export function CTA() {
     </section>
   );
 }
+

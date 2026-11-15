@@ -112,7 +112,7 @@
 
 /* « Valider » reste à droite, même sans « Effacer ». */
 .confirm {
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 /* Au doigt : des cases plus hautes, un chiffre plus lisible. */

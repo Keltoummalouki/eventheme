@@ -22,15 +22,17 @@ import {
   participantsLabel,
   referenceOf,
   SETTINGS_ID,
+  translatedLocales,
   type Entry,
   type EntryTranslation,
   type Inquiry,
   type Kind,
   type SiteSettings,
+  type TranslatedLocale,
   type Variant,
 } from "@/lib/eventheme/types";
 import { adminLogin } from "@/lib/eventheme/auth";
-import { pathFor, type PageKey } from "@/lib/i18n";
+import { direction, pathFor, type PageKey } from "@/lib/i18n";
 import { isGeneratedId, slugify, uniqueSlug } from "@/lib/slug";
 import { categoryTrail, childCategories, topCategories } from "@/lib/eventheme/catalogue";
 import { sizeLabel } from "@/lib/eventheme/requests";
@@ -871,10 +873,11 @@ export default function Admin({
                   )}
                   <br />
                   Contact préféré : {inquiry.contactMethod}
-                  {inquiry.locale === "en" && (
+                  {inquiry.locale && inquiry.locale !== "fr" && (
                     <>
                       <br />
-                      <strong>Langue : anglais</strong> (demande envoyée depuis le site anglais)
+                      <strong>Langue : {inquiry.locale === "en" ? "anglais" : "arabe"}</strong> (demande envoyée
+                      depuis le site {inquiry.locale === "en" ? "anglais" : "arabe"})
                     </>
                   )}
                 </p>
@@ -1080,6 +1083,7 @@ function SettingsPanel({
   const stored = entries.find((entry) => entry.kind === "settings")?.settings;
   const [settings, setSettings] = useState<SiteSettings>(() => ({
     english: true,
+    arabic: true,
     comingSoon: false,
     ...stored,
   }));
@@ -1146,6 +1150,17 @@ function SettingsPanel({
             value={settings.hoursEn || ""}
             onChange={(e) => set("hoursEn", e.target.value)}
           />
+          <Textarea
+            label="Horaires — version arabe (facultative)"
+            rows={4}
+            maxLength={1000}
+            hint="Vide : les horaires français sont affichés sur le site arabe."
+            placeholder={settings.hours}
+            value={settings.hoursAr || ""}
+            onChange={(e) => set("hoursAr", e.target.value)}
+            lang="ar"
+            dir="rtl"
+          />
         </div>
         <p className={s.caption}>
           Téléphone, e-mail, WhatsApp et réseaux sociaux : onglet « Contact &amp; réseaux ».
@@ -1156,9 +1171,12 @@ function SettingsPanel({
         <Checkbox checked={settings.english !== false} onChange={(english) => set("english", english)}>
           Publier la version anglaise du site (/en)
         </Checkbox>
+        <Checkbox checked={settings.arabic !== false} onChange={(arabic) => set("arabic", arabic)}>
+          Publier la version arabe du site (/ar)
+        </Checkbox>
         <p className={s.caption}>
-          Décochée : le sélecteur de langue disparaît, les pages anglaises renvoient vers leur version
-          française et le plan du site ne les liste plus. À cocher une fois les textes anglais validés.
+          Une version décochée disparaît du sélecteur de langue, ses pages renvoient vers leur version
+          française et le plan du site ne les liste plus. À cocher une fois ses textes validés.
         </p>
       </fieldset>
       <fieldset>
@@ -1283,14 +1301,13 @@ function EntryEditor({
   // Adresse publique de la fiche ; pour un nouveau contenu, celle que donnera son titre.
   const page = pageOf[entry.kind];
   const address = page && pathFor("fr", page, isNew && isGeneratedId(entry.id) ? slugify(entry.title) || "…" : entry.id);
-  // Version anglaise (site /en) : les champs traduisibles de ce type de contenu.
-  const english = entry.translations?.en ?? {};
-  const setEnglish = (field: keyof EntryTranslation, value: string) =>
+  // Versions traduites (sites /en et /ar) : les champs traduisibles de ce type de contenu.
+  const setVersion = (language: TranslatedLocale, field: keyof EntryTranslation, value: string) =>
     setEntry(
       (current) =>
         current && {
           ...current,
-          translations: { ...current.translations, en: { ...current.translations?.en, [field]: value } },
+          translations: { ...current.translations, [language]: { ...current.translations?.[language], [field]: value } },
         },
     );
   const translatable = has("title") || has("description") || entry.kind === "socials";
@@ -1864,11 +1881,20 @@ function EntryEditor({
           </p>
         </fieldset>
       )}
-      {translatable && (
-        <fieldset className={s.translation} lang="en">
-          <legend lang="fr">Version anglaise (facultative)</legend>
-          <p className={s.caption} lang="fr">
-            Affichée sur le site anglais (/en). Un champ vide reprend le texte français, indiqué en gris.
+      {translatable &&
+        translatedLocales.map((language) => {
+          const version = entry.translations?.[language] ?? {};
+          const setField = (name: keyof EntryTranslation, value: string) => setVersion(language, name, value);
+          // Les champs arabes se saisissent de droite à gauche.
+          const text = { lang: language, dir: direction(language) } as const;
+          return (
+        <fieldset key={language} className={s.translation}>
+          <legend>{language === "en" ? "Version anglaise (facultative)" : "Version arabe (facultative)"}</legend>
+          <p className={s.caption}>
+            {language === "en"
+              ? "Affichée sur le site anglais (/en)."
+              : "Affichée sur le site arabe (/ar), écrit de droite à gauche."}{" "}
+            Un champ vide reprend le texte français, indiqué en gris.
           </p>
           <div className={s.formGrid}>
             {entry.kind === "socials" && (
@@ -1877,8 +1903,9 @@ function EntryEditor({
                 hint="Le nom du compte (@…) n’a pas besoin d’être traduit."
                 maxLength={250}
                 placeholder={entry.description}
-                value={english.description || ""}
-                onChange={(e) => setEnglish("description", e.target.value)}
+                value={version.description || ""}
+                onChange={(e) => setField("description", e.target.value)}
+                {...text}
               />
             )}
             {has("title") && (
@@ -1886,8 +1913,9 @@ function EntryEditor({
                 label="Titre"
                 maxLength={250}
                 placeholder={entry.title}
-                value={english.title || ""}
-                onChange={(e) => setEnglish("title", e.target.value)}
+                value={version.title || ""}
+                onChange={(e) => setField("title", e.target.value)}
+                {...text}
               />
             )}
             {has("discipline") && (
@@ -1895,8 +1923,9 @@ function EntryEditor({
                 label="Discipline (surtitre)"
                 maxLength={60}
                 placeholder={entry.category}
-                value={english.category || ""}
-                onChange={(e) => setEnglish("category", e.target.value)}
+                value={version.category || ""}
+                onChange={(e) => setField("category", e.target.value)}
+                {...text}
               />
             )}
             {has("subtitle") && (
@@ -1904,8 +1933,9 @@ function EntryEditor({
                 label="Sous-titre / surtitre"
                 className={s.fullWidth}
                 placeholder={entry.subtitle}
-                value={english.subtitle || ""}
-                onChange={(e) => setEnglish("subtitle", e.target.value)}
+                value={version.subtitle || ""}
+                onChange={(e) => setField("subtitle", e.target.value)}
+                {...text}
               />
             )}
             {has("description") && (
@@ -1915,8 +1945,9 @@ function EntryEditor({
                 rows={4}
                 maxLength={10000}
                 placeholder={entry.description}
-                value={english.description || ""}
-                onChange={(e) => setEnglish("description", e.target.value)}
+                value={version.description || ""}
+                onChange={(e) => setField("description", e.target.value)}
+                {...text}
               />
             )}
             {has("product") && (
@@ -1924,8 +1955,9 @@ function EntryEditor({
                 label="Couleur / finition"
                 maxLength={250}
                 placeholder={entry.color}
-                value={english.color || ""}
-                onChange={(e) => setEnglish("color", e.target.value)}
+                value={version.color || ""}
+                onChange={(e) => setField("color", e.target.value)}
+                {...text}
               />
             )}
             {has("variants") && !!entry.variants?.length && (
@@ -1935,8 +1967,9 @@ function EntryEditor({
                 className={s.fullWidth}
                 rows={Math.min(6, entry.variants.length)}
                 placeholder={entry.variants.map((variant) => variant.name).join("\n")}
-                value={english.variants || ""}
-                onChange={(e) => setEnglish("variants", e.target.value)}
+                value={version.variants || ""}
+                onChange={(e) => setField("variants", e.target.value)}
+                {...text}
               />
             )}
             {(has("items") || has("product")) && (
@@ -1956,13 +1989,15 @@ function EntryEditor({
                 className={s.fullWidth}
                 rows={5}
                 placeholder={entry.specifications}
-                value={english.specifications || ""}
-                onChange={(e) => setEnglish("specifications", e.target.value)}
+                value={version.specifications || ""}
+                onChange={(e) => setField("specifications", e.target.value)}
+                {...text}
               />
             )}
           </div>
         </fieldset>
-      )}
+          );
+        })}
       <div className={s.formActions}>
         <Button type="submit" loading={busy} disabled={uploading !== null}>
           {busy ? "Enregistrement…" : "Enregistrer les modifications"}

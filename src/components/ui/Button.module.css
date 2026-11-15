@@ -37,6 +37,10 @@
   transform: translateX(-101%);
   transition: transform 0.45s var(--ease);
 }
+/* De droite à gauche : le remplissage arrive par la droite. */
+[dir="rtl"] .btn::before {
+  transform: translateX(101%);
+}
 
 .label {
   display: inline-flex;
@@ -125,6 +129,10 @@
   background: var(--or);
   transform: scaleX(0);
   transform-origin: left;
+}
+/* De droite à gauche (arabe) : la barre part du côté du début de lecture. */
+[dir="rtl"] .link::before {
+  transform-origin: right center;
 }
 
 .link .icon {
@@ -217,8 +225,8 @@
     content: '';
     position: absolute;
     top: 50%;
-    left: 0;
-    right: 0;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
     height: 44px;
     transform: translateY(-50%);
   }
@@ -259,7 +267,7 @@
   width: 0.75em;
   height: 0.75em;
   border: 1px solid currentColor;
-  border-right-color: transparent;
+  border-inline-end-color: transparent;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

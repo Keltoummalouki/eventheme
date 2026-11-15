@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Dossier de compilation : `.next` par défaut. Les tests de bout en bout
+  // (Playwright) compilent dans `.next-e2e`, pour tourner à côté d’un `npm run dev`
+  // sans partager son cache.
+  distDir: process.env.EVENTHEME_DIST_DIR || '.next',
   // Les visuels de la maquette sont servis par des CDN externes et utilisent un
   // repli `onError`. On garde donc la balise <img> native (cf. SmartImage) plutôt
   // que next/image, afin de préserver exactement les filtres et transitions CSS.

@@ -1,6 +1,6 @@
 import { dictionaries } from "@/data/locales";
 import { isSocialNetwork, type SocialNetwork } from "@/data/socials";
-import { defaultLocale, fill, intlLocale, locales, type Locale } from "@/lib/i18n";
+import { defaultLocale, fill, intlLocale, locales, plural, type Locale } from "@/lib/i18n";
 /** Nombre au format de la langue. */
 const number = (value: number, locale: Locale, options?: Intl.NumberFormatOptions) =>
   new Intl.NumberFormat(intlLocale[locale], options).format(value);
@@ -31,8 +31,10 @@ export type SiteSettings = {
   /** Horaires d’ouverture, sur plusieurs lignes, et leur version anglaise facultative. */
   hours?: string;
   hoursEn?: string;
-  /** Version anglaise publiée (oui par défaut). */
+  hoursAr?: string;
+  /** Versions anglaise et arabe publiées (oui par défaut). */
   english?: boolean;
+  arabic?: boolean;
   /** Page d’attente à la place du site public (non par défaut). */
   comingSoon?: boolean;
 };
@@ -95,8 +97,11 @@ export type Entry = {
   /** Nombre d'abonnés d'un réseau, facultatif. */
   followers?: number;
   /** Version anglaise des textes, facultative : le français s'affiche à défaut. */
-  translations?: { en?: EntryTranslation };
+  translations?: Partial<Record<TranslatedLocale, EntryTranslation>>;
 };
+/** Langues traduites d’un contenu : toutes sauf le français, la langue de saisie. */
+export type TranslatedLocale = Exclude<Locale, "fr">;
+export const translatedLocales = locales.filter((locale): locale is TranslatedLocale => locale !== defaultLocale);
 /**
  * Champs traduisibles d'un contenu (version anglaise facultative, saisie dans
  * l'administration). `variants` : les noms des variantes, un par ligne, dans l'ordre.
@@ -197,7 +202,7 @@ export const MAX_PARTICIPANTS = 100000;
 export function participantsLabel(value: number, locale: Locale = "fr") {
   const format = dictionaries[locale].format;
   if (value <= 0) return format.participantsUnknown;
-  return fill(value > 1 ? format.participants : format.participant, { count: number(value, locale) });
+  return fill(plural(value > 1 ? format.participants : format.participant, value, locale), { count: number(value, locale) });
 }
 export type CallbackReceipt = {
   id: string;
@@ -269,13 +274,20 @@ export const labels: Record<Kind, string> = {
   settings: "Paramètres",
 };
 /** Paramètres du site, avec leurs valeurs par défaut s’ils n’ont jamais été enregistrés. */
-export function siteSettings(entries: Entry[]): SiteSettings & { english: boolean; comingSoon: boolean } {
+export function siteSettings(entries: Entry[]): SiteSettings & { english: boolean; arabic: boolean; comingSoon: boolean } {
   const stored = entries.find((entry) => entry.kind === "settings")?.settings;
-  return { ...stored, english: stored?.english !== false, comingSoon: stored?.comingSoon === true };
+  return {
+    ...stored,
+    english: stored?.english !== false,
+    arabic: stored?.arabic !== false,
+    comingSoon: stored?.comingSoon === true,
+  };
 }
 /** Langues publiées : le français toujours, l’anglais si les paramètres le permettent. */
-export const publishedLocales = (entries: Entry[]): readonly Locale[] =>
-  siteSettings(entries).english ? locales : [defaultLocale];
+export function publishedLocales(entries: Entry[]): readonly Locale[] {
+  const { english, arabic } = siteSettings(entries);
+  return locales.filter((locale) => locale === defaultLocale || (locale === "en" ? english : arabic));
+}
 export const money = (value: number, locale: Locale = "fr") =>
   new Intl.NumberFormat(locale === "fr" ? "fr-MA" : intlLocale[locale], {
     style: "currency",
@@ -289,15 +301,19 @@ export const MAX_DURATION_HOURS = 72;
 export const MAX_RENTAL_DAYS = 60;
 export const hoursLabel = (value: number, locale: Locale = "fr") =>
   fill(dictionaries[locale].format.hours, { count: number(value, locale, { maximumFractionDigits: 1 }) });
-export const daysLabel = (value: number, locale: Locale = "fr") =>
-  fill(value > 1 ? dictionaries[locale].format.days : dictionaries[locale].format.day, { count: value });
+export const daysLabel = (value: number, locale: Locale = "fr") => {
+  const format = dictionaries[locale].format;
+  return fill(plural(value > 1 ? format.days : format.day, value, locale), { count: number(value, locale) });
+};
 /** Réseau d'un lien de contact ; les fiches antérieures au champ `network` le portent dans leur identifiant. */
 export const socialNetworkOf = (entry: Entry): SocialNetwork | undefined =>
   entry.network ?? (isSocialNetwork(entry.id) ? entry.id : undefined);
 export const findSocial = (entries: Entry[], network: SocialNetwork) =>
   entries.find((e) => e.kind === "socials" && socialNetworkOf(e) === network);
 export const followersLabel = (followers: number, locale: Locale = "fr") =>
-  fill(dictionaries[locale].format.followers, { count: number(followers, locale, { notation: "compact" }) });
+  fill(plural(dictionaries[locale].format.followers, followers, locale), {
+    count: number(followers, locale, { notation: "compact" }),
+  });
 export function priceLabel(entry: Entry, locale: Locale = "fr") {
   const format = dictionaries[locale].format;
   if (entry.price == null || entry.pricing === "request") return format.onRequest;

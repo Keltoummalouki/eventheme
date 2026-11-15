@@ -1,5 +1,4 @@
 "use client";
-import Curtain from "@/components/layout/Curtain";
 import MotionRoot from "@/components/layout/MotionRoot";
 import CTA from "@/components/sections/CTA";
 import Gallery from "@/components/sections/Gallery";
@@ -20,7 +19,6 @@ export default function Home() {
   return (
     <>
       <MotionRoot />
-      <Curtain />
       <Hero />
       <Presentation />
       <Services />

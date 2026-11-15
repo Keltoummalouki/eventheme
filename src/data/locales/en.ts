@@ -6,6 +6,7 @@ import type { Dictionary } from "./fr";
  */
 export const en: Dictionary = {
   languageName: "English",
+  languageShort: "EN",
 
   meta: {
     title: "{brand} — {baseline} in Morocco",
@@ -362,6 +363,7 @@ export const en: Dictionary = {
       configure: "Choose your services and equipment: the estimate updates live with your choices. Nothing is committed before we talk.",
       done: "Thank you for your request. Our team will contact you as soon as possible to prepare a proposal suited to your event.",
     },
+    nameSeparator: ", ",
     reassurance: "No commitment · No online payment · At your own pace",
     preferWriting: "Prefer to write?",
     whatsapp: "Let’s chat on WhatsApp",

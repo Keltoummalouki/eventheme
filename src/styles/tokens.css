@@ -39,11 +39,19 @@
   --panneau-ombre: 0 24px 60px rgba(0, 0, 0, 0.6);
 
   /* Typographie — les variables --font-* sont injectées par next/font (layout.tsx).
-     Titres : Space Grotesk · Textes : Inter · Chiffres et données : Space Grotesk. */
-  --ff-display: var(--font-display), 'Space Grotesk', system-ui, sans-serif;
-  --ff-body: var(--font-body), 'Inter', system-ui, sans-serif;
-  --ff-data: var(--ff-display);
+     Titres : Bebas · Textes et données : Roboto · Signature : Signature (Arif Studios). */
+  --ff-display: var(--font-display), var(--font-display-accents), var(--font-display-ar), sans-serif;
+  --ff-body: var(--font-body), var(--font-body-ar), 'Roboto', system-ui, sans-serif;
+  --ff-data: var(--ff-body);
+  --ff-signature: var(--font-signature), cursive;
 
   /* Courbe d'accélération commune à toutes les transitions */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+:root { color-scheme: dark; }
+:root[data-theme='light'] { color-scheme: light; --noir:#f6f4ee; --noir-2:#ffffff; --noir-3:#ece9e1; --noir-4:#e1ddd3; --blanc:#181a1d; --argent:#454951; --gris:#62666e; --or:#9a721f; --or-clair:#805b12; --or-profond:#6a4d14; --ligne:rgba(128,91,18,.25); --ligne-argent:rgba(30,35,40,.15); --champ-filet:rgba(30,35,40,.23); --panneau-ombre:0 20px 60px rgba(40,35,20,.15); }
+:root[data-theme='light'] header { background:rgba(246,244,238,.96) !important; }
+
+/* Light surfaces need dark ink; photographic overlays retain their own dark palette. */
+:root[data-theme='light'] { --or:#896313; --or-clair:#75520c; --gris:#62636a; --champ-actif:rgba(137,99,19,.09); --champ-filet-survol:rgba(137,99,19,.65); --rouge:#b52c38; --rouge-voile:rgba(181,44,56,.09); }

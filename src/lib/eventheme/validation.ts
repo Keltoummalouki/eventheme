@@ -8,6 +8,7 @@ import {
   MAX_RENTAL_DAYS,
   SETTINGS_ID,
   translatableFields,
+  translatedLocales,
   type Entry,
   type EntryTranslation,
   type InquiryInput,
@@ -159,8 +160,8 @@ export function validateEntry(value: unknown): Entry {
   }
   result.demo = v.demo === true;
   result.available = v.available !== false;
-  const english = translation(v.translations);
-  if (english) result.translations = { en: english };
+  const translations = translationsOf(v.translations);
+  if (translations) result.translations = translations;
   return result;
 }
 /** Paramètres du site : un seul contenu, des champs connus, des valeurs par défaut sûres. */
@@ -175,29 +176,35 @@ function settingsEntry(v: Entry): Entry {
     map,
     hours: optional("hours", 1000),
     hoursEn: optional("hoursEn", 1000),
+    hoursAr: optional("hoursAr", 1000),
     english: raw.english !== false,
+    arabic: raw.arabic !== false,
     comingSoon: raw.comingSoon === true,
   };
   return { id: SETTINGS_ID, kind: "settings", title: "Paramètres du site", description: "", published: true, settings };
 }
 /**
- * Version anglaise facultative d’un contenu : seuls les champs traduisibles,
+ * Versions traduites facultatives d’un contenu (anglais, arabe) : seuls les champs traduisibles,
  * mêmes limites que le français ; les champs vides sont omis (le français s’affiche).
  */
-function translation(value: unknown): EntryTranslation | undefined {
+function translationsOf(value: unknown): Entry["translations"] {
   if (value == null) return undefined;
   const object = (candidate: unknown): candidate is Record<string, unknown> =>
     typeof candidate === "object" && candidate !== null && !Array.isArray(candidate);
-  if (!object(value)) throw new Error("Version anglaise invalide.");
-  const english = value.en;
-  if (english == null) return undefined;
-  if (!object(english)) throw new Error("Version anglaise invalide.");
-  const result: EntryTranslation = {};
-  for (const field of translatableFields) {
-    const raw = english[field];
-    if (raw == null) continue;
-    const content = text(raw, field === "title" ? 250 : field === "description" ? 10000 : 3000);
-    if (content) result[field] = content;
+  if (!object(value)) throw new Error("Version traduite invalide.");
+  const result: NonNullable<Entry["translations"]> = {};
+  for (const locale of translatedLocales) {
+    const version = value[locale];
+    if (version == null) continue;
+    if (!object(version)) throw new Error("Version traduite invalide.");
+    const fields: EntryTranslation = {};
+    for (const field of translatableFields) {
+      const raw = version[field];
+      if (raw == null) continue;
+      const content = text(raw, field === "title" ? 250 : field === "description" ? 10000 : 3000);
+      if (content) fields[field] = content;
+    }
+    if (Object.keys(fields).length) result[locale] = fields;
   }
   return Object.keys(result).length ? result : undefined;
 }

@@ -20,8 +20,8 @@
 .rig {
   position: absolute;
   top: 28px;
-  left: 6vw;
-  right: 6vw;
+  inset-inline-start: 6vw;
+  inset-inline-end: 6vw;
   width: auto;
 }
 
@@ -87,8 +87,8 @@
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   height: 1px;
   background: var(--ligne);
 }
@@ -98,6 +98,10 @@
   transform: scaleX(var(--progress, 0));
   transform-origin: left center;
   transition: transform 1.2s var(--ease);
+}
+/* De droite à gauche (arabe) : la barre part du côté du début de lecture. */
+[dir="rtl"] .journey::after {
+  transform-origin: right center;
 }
 
 .journey li {
@@ -169,15 +173,15 @@
 
 .card::before {
   top: -6px;
-  left: -6px;
-  border-right: none;
+  inset-inline-start: -6px;
+  border-inline-end: none;
   border-bottom: none;
 }
 
 .card::after {
-  right: -6px;
+  inset-inline-end: -6px;
   bottom: -6px;
-  border-left: none;
+  border-inline-start: none;
   border-top: none;
 }
 
@@ -294,7 +298,7 @@
 
 .honeypot {
   position: absolute;
-  left: -10000px;
+  inset-inline-start: -10000px;
   width: 1px;
   height: 1px;
   overflow: hidden;
@@ -308,7 +312,7 @@
 .error {
   margin: 18px 0;
   padding: 11px 14px;
-  border-left: 2px solid var(--or);
+  border-inline-start: 2px solid var(--or);
   background: rgba(201, 162, 74, 0.09);
   font-size: 0.8rem;
   color: var(--blanc);
@@ -462,8 +466,8 @@
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   height: 1px;
   background: var(--ligne);
 }
@@ -476,6 +480,10 @@
   transform-origin: left center;
   transition: transform 0.9s var(--ease);
 }
+/* De droite à gauche (arabe) : la barre part du côté du début de lecture. */
+[dir="rtl"] .steps::after {
+  transform-origin: right center;
+}
 
 .steps button {
   display: flex;
@@ -483,7 +491,7 @@
   align-items: flex-start;
   gap: 6px;
   width: 100%;
-  text-align: left;
+  text-align: start;
   font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.5);
 }
@@ -743,7 +751,7 @@
 .productImage span {
   position: absolute;
   top: 10px;
-  left: 10px;
+  inset-inline-start: 10px;
   padding: 4px 8px;
   font-size: 0.54rem;
   letter-spacing: 0.16em;
@@ -822,8 +830,8 @@
 .stepper input {
   width: 52px;
   border: none;
-  border-left: 1px solid var(--ligne);
-  border-right: 1px solid var(--ligne);
+  border-inline-start: 1px solid var(--ligne);
+  border-inline-end: 1px solid var(--ligne);
   background: transparent;
   color: var(--blanc);
   font: inherit;
@@ -967,7 +975,7 @@
 }
 
 .stepActions > :first-child:not(:last-child) {
-  margin-right: auto;
+  margin-inline-end: auto;
 }
 
 /* --- Estimation en direct ---------------------------------------------- */
@@ -1113,8 +1121,8 @@
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   height: 4px;
   background: linear-gradient(90deg, var(--or-profond), var(--or-clair), var(--or));
 }
@@ -1139,7 +1147,7 @@
   display: grid;
   justify-items: end;
   gap: 2px;
-  text-align: right;
+  text-align: end;
 }
 
 .paperRef span,
@@ -1194,7 +1202,7 @@
   font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.18em;
-  text-align: left;
+  text-align: start;
   text-transform: uppercase;
   color: #666;
   border-bottom: 1px solid rgba(8, 9, 11, 0.25);
@@ -1215,7 +1223,7 @@
 .paperTable th:last-child,
 .paperTable td:last-child {
   width: 150px;
-  text-align: right;
+  text-align: end;
   white-space: nowrap;
 }
 
@@ -1415,7 +1423,7 @@
 
   .paperRef {
     justify-items: start;
-    text-align: left;
+    text-align: start;
   }
 
   .paperParties {
@@ -1432,3 +1440,7 @@
     font-size: 0.68rem;
   }
 }
+.paper { background:#fff; color:#181a1d; }
+.productImage span { color:#fff; }
+:global([data-theme='light']) .paper { --blanc:#fff; --noir:#181a1d; box-shadow:0 24px 70px rgba(45,39,25,.12); }
+:global([data-theme='light']) .mobileBar { background:rgba(246,244,238,.97); color:var(--argent); }

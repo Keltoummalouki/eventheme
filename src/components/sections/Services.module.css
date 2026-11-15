@@ -57,7 +57,7 @@
   position: absolute;
   z-index: 2;
   top: 24px;
-  left: 26px;
+  inset-inline-start: 26px;
   font-family: var(--ff-display);
   font-style: normal;
   font-size: 1.1rem;
@@ -68,7 +68,7 @@
 .spine {
   position: absolute;
   z-index: 2;
-  left: 26px;
+  inset-inline-start: 26px;
   bottom: 30px;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
@@ -87,7 +87,7 @@
 .body {
   position: absolute;
   z-index: 2;
-  left: 0;
+  inset-inline-start: 0;
   bottom: 0;
   width: min(560px, 44vw);
   padding: 34px;
@@ -201,3 +201,4 @@
     transform: none;
   }
 }
+:global([data-theme='light']) .panel { --blanc:#fff; --argent:#c5c8ce; --noir:#08090b; --or:#c9a24a; --or-clair:#d9be80; }

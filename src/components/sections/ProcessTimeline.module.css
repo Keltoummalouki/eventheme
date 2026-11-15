@@ -8,7 +8,7 @@
 .photo { position: absolute; inset: 0; opacity: 0; filter: saturate(.7) brightness(.76); transform: scale(1.08); transition: opacity 500ms ease, transform 900ms var(--ease); }
 .activePhoto { opacity: 1; transform: scale(1); }
 .orbit { position: absolute; inset: -8%; border: 1px solid rgba(201, 162, 74, 0.26); border-radius: 50%; }
-.largeNumber { position: absolute; top: -60px; right: -34px; font-family: var(--ff-data); font-size: clamp(110px, 13vw, 200px); font-weight: 300; line-height: 1; letter-spacing: -.06em; color: var(--or); }
+.largeNumber { position: absolute; top: -60px; inset-inline-end: -34px; font-family: var(--ff-data); font-size: clamp(110px, 13vw, 200px); font-weight: 300; line-height: 1; letter-spacing: -.06em; color: var(--or); }
 .stageCaption { position: relative; display: flex; justify-content: space-between; gap: 20px; padding-top: 30px; color: var(--or); font-size: 12px; }
 .stageCaption > span:last-child { color: var(--gris); font-size: 8px; align-self: center; }
 .meter { display: flex; gap: 5px; margin-top: 16px; }
@@ -21,7 +21,7 @@
 .chapter dl { display: grid; gap: 22px; }
 .chapter dt { font-size: 13px; color: var(--blanc); margin-bottom: 7px; }
 .chapter dd { font-size: 12px; line-height: 1.8; max-width: 41ch; color: var(--argent); }
-@media (max-width: 960px) { .layout { gap: 10%; } .stage { top: 125px; } .largeNumber { right: -16px; top: -38px; } }
+@media (max-width: 960px) { .layout { gap: 10%; } .stage { top: 125px; } .largeNumber { inset-inline-end: -16px; top: -38px; } }
 @media (max-width: 767px) {
   .heading { grid-template-columns: 1fr; gap: 24px; }
   .layout { grid-template-columns: 1fr; margin-top: 62px; gap: 60px; }

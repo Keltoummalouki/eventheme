@@ -5,6 +5,7 @@ import { CalendarIcon, ChevronIcon } from '@/components/ui/icons';
 import { useFormLocale, useFormText } from './locale';
 import { useDismiss, useFlip } from '@/hooks/usePopover';
 import { cx } from '@/lib/cx';
+import { logicalArrow } from '@/lib/i18n';
 import {
   addDays,
   addMonths,
@@ -144,7 +145,7 @@ export default function DatePicker({
   }
 
   function onGridKeyDown(event: KeyboardEvent<HTMLTableElement>) {
-    const move = KEY_MOVES[event.key];
+    const move = KEY_MOVES[logicalArrow(event.key, event.currentTarget)];
     if (!move) return;
     event.preventDefault();
     focusDay.current = true;

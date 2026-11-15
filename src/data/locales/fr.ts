@@ -5,6 +5,8 @@
  */
 export const fr = {
   languageName: "Français",
+  /** Libellé court du sélecteur de langue. */
+  languageShort: "FR",
 
   meta: {
     title: "{brand} — {baseline} au Maroc",
@@ -373,6 +375,8 @@ export const fr = {
       configure: "Choisissez vos prestations et votre matériel : l’estimation évolue en direct avec vos choix. Rien n’est engagé avant notre échange.",
       done: "Merci pour votre demande. Notre équipe vous contactera dans les meilleurs délais afin de préparer une proposition adaptée à votre événement.",
     },
+    /** Avant le prénom dans « C’est noté{name}. » */
+    nameSeparator: ", ",
     reassurance: "Sans engagement · Sans paiement en ligne · À votre rythme",
     preferWriting: "Vous préférez écrire ?",
     whatsapp: "Échangeons sur WhatsApp",

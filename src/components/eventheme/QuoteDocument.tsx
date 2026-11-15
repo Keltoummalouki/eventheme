@@ -14,7 +14,7 @@ import {
   type QuoteResult,
 } from "@/lib/eventheme/types";
 import { quoteMessage, whatsappLink } from "@/lib/eventheme/whatsapp";
-import { fill, intlLocale } from "@/lib/i18n";
+import { fill, intlLocale, isRtl } from "@/lib/i18n";
 import { contactMethodLabel } from "@/data/locales";
 import { gsap, revealSafe, useGSAP } from "@/lib/motion";
 import { initialQuote, useEventheme, useQuote } from "./Provider";
@@ -62,7 +62,7 @@ export default function QuoteDocument({ result }: { result: QuoteResult }) {
             { clipPath: "inset(0% 0% 100% 0%)", y: 40 },
             { clipPath: "inset(0% 0% 0% 0%)", y: 0, duration: 1.4, ease: "expo.inOut" },
           )
-          .fromTo(rows, { autoAlpha: 0, x: -16 }, { autoAlpha: 1, x: 0, duration: 0.5, stagger: 0.06 }, "-=0.5");
+          .fromTo(rows, { autoAlpha: 0, x: isRtl(locale) ? 16 : -16 }, { autoAlpha: 1, x: 0, duration: 0.5, stagger: 0.06 }, "-=0.5");
       }),
     { scope: ref },
   );

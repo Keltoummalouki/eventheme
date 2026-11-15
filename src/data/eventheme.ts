@@ -516,7 +516,7 @@ export const seed: Entry[] = [
   ),
   // Paramètres du site : adresse et horaires vides tant qu’EVENTHEMES ne les a pas fournis ;
   // version anglaise publiée, site ouvert (pas de page d’attente).
-  entry("settings", "settings", "Paramètres du site", "", { settings: { english: true, comingSoon: false } }),
+  entry("settings", "settings", "Paramètres du site", "", { settings: { english: true, arabic: true, comingSoon: false } }),
   entry("instagram", "socials", "Instagram", "@eventhemes", {
     network: "instagram",
     url: "https://www.instagram.com/eventhemes/",
@@ -527,3 +527,186 @@ export const seed: Entry[] = [
     ...en({ description: "Let’s talk about your project" }),
   }),
 ];
+
+/**
+ * Versions arabes du contenu de départ (pages /ar) : brouillons de traduction,
+ * à faire valider par EVENTHEMES. Le titre d’accueil reste l’accroche anglaise.
+ */
+const exampleNoteAr = "مثال لبطاقة منتج، يُستبدل بمعدات EVENTHEMES.";
+const inspirationNoteAr = "لوحة إلهام. توضح هذه الصورة أجواءً ولا تمثل عملًا أنجزته EVENTHEMES.";
+const arabic: Record<string, EntryTranslation> = {
+  home: {
+    description: "المسرح والهياكل والصورة والصوت والإضاءة: تورّد EVENTHEMES الحلول التقنية لفعالياتكم في المغرب وتركّبها وتشغّلها.",
+    subtitle: "الإنتاج التقني للفعاليات · المغرب",
+  },
+  about: {
+    title: "التقنية في خدمة\nفعالياتكم.",
+    description:
+      "EVENTHEMES متخصصة في الحلول التقنية والسمعية البصرية للفعاليات بمختلف أحجامها. نعمل في توريد المعدات اللازمة للفعاليات المهنية والخاصة وكرائها وتركيبها وتشغيلها.",
+    subtitle: "عن EVENTHEMES",
+  },
+  values: {
+    title: "القوة التقنية.\nالتميز المهني.",
+    description:
+      "ثلاث قيم توجه كل مشروع: القوة التقنية والتميز المهني والابتكار السمعي البصري. تحضير دقيق، من أجل تقنية تخدم الفعالية دون أن تطغى عليها.",
+  },
+  contact: {
+    title: "لنتحدث عن\nفعاليتكم القادمة.",
+    description: "مكان أو تاريخ أو صيغة؟ صفوا لنا مشروعكم: يعود إليكم فريقنا لإعداد عرض مناسب.",
+  },
+  "services-page": {
+    title: "خبراتنا\nالتقنية.",
+    description: "المسارح والهياكل والشاشات والصوت والإضاءة والتحكم: خدمات متكاملة أو حسب الاختيار، من الدراسة التقنية إلى التفكيك.",
+  },
+  "location-page": {
+    title: "مخزون\nالمعدات.",
+    description:
+      "تصفحوا معداتنا حسب الفئة وأضيفوها إلى طلب عرض السعر. يؤكد فريقنا التوفر والسعر النهائي حسب التاريخ والكمية والمدة والمكان.",
+  },
+  "projects-page": {
+    title: "أعمالنا\nوإنجازاتنا.",
+    description: "حفلات رسمية وفعاليات شركات وحفلات موسيقية ومهرجانات ومؤتمرات: مشاريعنا مصنفة حسب نوع الفعالية.",
+  },
+  "cities-page": {
+    title: "مناطق\nعملنا.",
+    description: "المدن التي يعمل فيها فريقنا لفعالياتكم: المسرح والهياكل وشاشات LED والصوت والإضاءة والتحكم التقني.",
+  },
+  scenes: {
+    title: "المسارح والمنصات",
+    category: "المسرح",
+    description: "مسارح معيارية ومنصات وأرضيات: قاعدة متينة بأبعاد تناسب مكانكم وبرنامجكم.",
+  },
+  structures: {
+    title: "الهياكل والتراس",
+    category: "الهياكل",
+    description: "هياكل ألومنيوم وأنظمة أسقف وحوامل وأنظمة تعليق لحمل الإضاءة والصوت والصورة بأمان تام.",
+  },
+  "led-video": {
+    title: "شاشات LED والفيديو",
+    category: "الصورة",
+    description: "جدران LED وشاشات عملاقة وبث وحلول فيديو تمنح رسالتكم كامل حضورها.",
+  },
+  sonorisation: {
+    title: "أنظمة الصوت",
+    category: "الصوت",
+    description: "أنظمة صوت ومكبرات وميكروفونات وطاولات مزج لصوت واضح ومتحكم فيه، من المؤتمر إلى الحفل الموسيقي.",
+  },
+  eclairage: {
+    title: "الإضاءة الاحترافية",
+    category: "الإضاءة",
+    description: "أجهزة إضاءة متحركة وكشافات PAR LED وإضاءة معمارية ومؤثرات ضوئية لصنع أجواء فعاليتكم.",
+  },
+  regie: {
+    title: "التحكم التقني",
+    category: "التحكم",
+    description: "التحكم في الصوت والإضاءة والفيديو: تنسيق فعاليتكم وتشغيلها تقنيًا، من التركيب إلى العرض المباشر.",
+  },
+  complementaires: {
+    title: "خدمات تكميلية",
+    category: "حسب الطلب",
+    description: "مؤثرات خاصة وتركيب وتشغيل وتفكيك، حسب الخدمات المختارة لمشروعكم.",
+  },
+  gala: { title: "حفل رسمي ومراسم", description: "مسرح وإضاءة أجواء وصوت متحكم فيه لأمسية استثنائية." },
+  soiree: { title: "سهرة خاصة أو مهنية", description: "صوت وإضاءة ومؤثرات تمنح سهرتكم إيقاعها." },
+  concert: { title: "حفل موسيقي ومهرجان", description: "مسرح وهياكل وصوت وإضاءة بأبعاد تناسب العروض الحية والجمهور الواسع." },
+  corporate: { title: "فعالية شركة", description: "صورة وصوت وتحكم تقني لمؤتمراتكم وجموعكم العامة وفعاليات شركتكم." },
+  conference: { title: "مؤتمر وندوة", description: "تضخيم صوت المداخلات وشاشات وبث من أجل رسالة واضحة." },
+  lancement: { title: "إطلاق منتج", description: "إضاءة وجدران LED ومؤثرات للكشف عن منتجكم." },
+  prive: { title: "عيد ميلاد ومناسبة خاصة", description: "صوت وإضاءة وأجواء حسب الطلب لاحتفالاتكم الخاصة." },
+  "cat-scenes": { title: "المسارح والمنصات", description: "مسارح معيارية ومنصات وأرضيات." },
+  "cat-structures": { title: "الهياكل والتراس", description: "هياكل ألومنيوم وأنظمة أسقف وحوامل وأنظمة تعليق." },
+  "cat-image": { title: "شاشات LED والفيديو", description: "جدران LED وشاشات وبث الفيديو." },
+  "cat-image-led": { title: "جدران LED", description: "شاشات LED معيارية للداخل والخارج." },
+  "cat-son": { title: "الصوت", description: "أنظمة صوت ومكبرات وميكروفونات." },
+  "cat-son-diffusion": { title: "مكبرات الصوت", description: "مكبرات صوت وأنظمة line array." },
+  "cat-son-micros": { title: "الميكروفونات", description: "ميكروفونات سلكية ولاسلكية." },
+  "cat-lumiere": { title: "الإضاءة", description: "كشافات وأجهزة متحركة ومؤثرات ضوئية." },
+  "cat-lumiere-lyres": { title: "أجهزة الإضاءة المتحركة", description: "كشافات آلية: حزم ضوئية وإضاءة غامرة ومركزة." },
+  "cat-lumiere-projecteurs": { title: "كشافات LED", description: "كشافات PAR LED وإضاءة الأجواء." },
+  "cat-regie": { title: "التحكم", description: "طاولات ومعدات التحكم في الصوت والإضاءة والفيديو." },
+  "cat-effets": { title: "المؤثرات الخاصة", description: "دخان وقصاصات ملونة ومؤثرات مسرحية." },
+  "cat-effets-fumee": { title: "الدخان والضباب", description: "آلات الدخان والضباب." },
+  "cat-effets-confettis": { title: "القصاصات الملونة", description: "مدافع وقاذفات القصاصات الملونة." },
+  "mur-led": {
+    title: "جدار LED معياري",
+    description: `${exampleNoteAr} جدار صور قابل للتركيب للمسرح أو المؤتمر أو المعرض: الحجم ودقة البكسل والسطوع حسب المكان ومسافة المشاهدة.`,
+    variants: "داخلي\nخارجي",
+  },
+  "line-array": {
+    title: "نظام صوت line array",
+    description: `${exampleNoteAr} نظام معلّق أو موضوع على الأرض لتغطية جمهور واسع؛ يُحسب التجهيز حسب سعة المكان وخصائصه الصوتية.`,
+  },
+  "micros-hf": {
+    title: "ميكروفونات لاسلكية",
+    description: `${exampleNoteAr} ميكروفونات يدوية أو رأسية للمداخلات والموائد المستديرة والتنشيط.`,
+    variants: "ميكروفون يدوي\nميكروفون رأسي",
+  },
+  console: {
+    title: "طاولة مزج رقمية",
+    description: `${exampleNoteAr} طاولة للتحكم في صوت مؤتمراتكم وحفلاتكم وسهراتكم.`,
+  },
+  lyre: {
+    title: "جهاز إضاءة متحرك",
+    description: `${exampleNoteAr} كشاف آلي للحزم الضوئية والحركات والمؤثرات الضوئية على المسرح.`,
+  },
+  "par-led": {
+    title: "كشاف PAR LED",
+    description: `${exampleNoteAr} كشاف ملون لإضاءة المسرح أو الديكور أو المعمار.`,
+  },
+  truss: {
+    title: "هيكل تراس من الألومنيوم",
+    description: `${exampleNoteAr} عوارض وأبراج من الألومنيوم لحمل الإضاءة والصوت والصورة: بوابات وشبكات وأنظمة أسقف.`,
+    color: "ألومنيوم",
+    variants: "طول 1 م\nطول 2 م\nطول 3 م",
+  },
+  scene: {
+    title: "مسرح معياري",
+    description: `${exampleNoteAr} منصات قابلة للتجميع لتكوين مسرح أو منصة بالارتفاع والأبعاد التي تناسب فعاليتكم.`,
+    color: "أسود",
+  },
+  fumee: {
+    title: "آلة دخان",
+    description: `${exampleNoteAr} ضباب أو دخان كثيف لإبراز الحزم الضوئية وصنع الأجواء.`,
+  },
+  confettis: {
+    title: "مدفع قصاصات ملونة",
+    description: `${exampleNoteAr} مؤثر إطلاق للحظات القوية: افتتاح أو كشف أو ختام.`,
+  },
+  "inspiration-gala": { title: "أجواء حفل رسمي", description: inspirationNoteAr },
+  "inspiration-corporate": { title: "أجواء مؤتمر شركات", description: inspirationNoteAr },
+  "inspiration-concert": { title: "أجواء حفل موسيقي", description: inspirationNoteAr },
+  "inspiration-prive": { title: "أجواء سهرة خاصة", description: inspirationNoteAr },
+  "inspiration-festival": { title: "أجواء مهرجان", description: inspirationNoteAr },
+  "inspiration-conference": { title: "أجواء مؤتمر", description: inspirationNoteAr },
+  casablanca: {
+    title: "الدار البيضاء",
+    description:
+      "العاصمة الاقتصادية للمغرب، تحتضن الدار البيضاء المؤتمرات والمعارض وإطلاق المنتجات وسهرات الشركات. لكل صيغة من هذه الصيغ، يصمم فريقنا التجهيز التقني المناسب: المسرح والهياكل وشاشات LED والصوت والإضاءة والتحكم.",
+  },
+  rabat: {
+    title: "الرباط",
+    description:
+      "في الرباط، تتطلب المؤتمرات والمراسم والفعاليات المؤسساتية تقنية دقيقة وهادئة: تضخيم صوت المداخلات والشاشات والإضاءة والتحكم، بتحضير منهجي.",
+  },
+  marrakech: {
+    title: "مراكش",
+    description: "حفلات رسمية وسهرات خاصة وندوات في مراكش: نكوّن مسرح فعاليتكم وإضاءتها وصورتها وصوتها، في الداخل كما في الهواء الطلق.",
+  },
+  tanger: {
+    title: "طنجة",
+    description: "في طنجة، نرافق فعاليات شركاتكم وحفلاتكم الموسيقية وسهراتكم: دراسة تقنية للمكان وتركيب وتشغيل وتفكيك.",
+  },
+  agadir: {
+    title: "أكادير",
+    description: "ندوات وسهرات وفعاليات في الهواء الطلق بأكادير: مسرح وهياكل وصوت وإضاءة بأبعاد تناسب مكانكم وجمهوركم.",
+  },
+  fes: {
+    title: "فاس",
+    description: "مهرجانات ومراسم وفعاليات ثقافية في فاس: تقنية في خدمة المكان والبرنامج، من الدراسة إلى العرض المباشر.",
+  },
+  whatsapp: { description: "لنتحدث عن مشروعكم" },
+};
+for (const item of seed) {
+  const translation = arabic[item.id];
+  if (translation) item.translations = { ...item.translations, ar: translation };
+}

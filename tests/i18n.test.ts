@@ -58,7 +58,7 @@ test("product and project sheets keep their identifier across languages", () => 
   assert.deepEqual(routeOf("/en/projects/inspiration%20gala"), { locale: "en", key: "projects", id: "inspiration gala" });
   assert.equal(translatePath("/materiel/mur-led", "en"), "/en/equipment/mur-led");
   assert.equal(translatePath("/en/equipment/mur-led?x=1", "fr"), "/materiel/mur-led");
-  assert.deepEqual(alternatesFor("projects", "a"), { fr: "/realisations/a", en: "/en/projects/a" });
+  assert.deepEqual(alternatesFor("projects", "a"), { fr: "/realisations/a", en: "/en/projects/a", ar: "/ar/projects/a" });
 });
 
 test("addresses outside the site map keep their language but name no page", () => {
@@ -72,7 +72,8 @@ test("addresses outside the site map keep their language but name no page", () =
 
 test("an unknown or missing language reads as French", () => {
   assert.equal(localeOf("en"), "en");
-  for (const value of [undefined, null, "", "EN", "ar", "fr-FR", 1]) assert.equal(localeOf(value), "fr");
+  assert.equal(localeOf("ar"), "ar");
+  for (const value of [undefined, null, "", "EN", "AR", "de", "fr-FR", 1]) assert.equal(localeOf(value), "fr");
 });
 
 /* --- Dictionnaires ----------------------------------------------------------- */
@@ -271,7 +272,7 @@ const request = (over: Partial<Inquiry> = {}): Inquiry => ({
 test("a visitor from the English site receives an English acknowledgement", () => {
   const mail = clientEmail(request(), entries, { whatsappUrl: "https://wa.me/212600000000" })!;
   assert.equal(mail.subject, "Summary of your quote request · EVT-2026-0050");
-  assert.match(mail.html, /<html lang="en">/);
+  assert.match(mail.html, /<html lang="en" dir="ltr">/);
   for (const fragment of ["Hello Sam,", "on WhatsApp to prepare", "Gala &amp; ceremony", "Sound systems", "12 June 2099", "120 attendees", "On request", "Message us on WhatsApp", "Event technical production"])
     assert.ok(mail.html.includes(fragment), fragment);
   assert.match(mail.text, /^Event: Gala & ceremony$/m);
@@ -281,7 +282,7 @@ test("a visitor from the English site receives an English acknowledgement", () =
 test("without a language, the acknowledgement stays French; the team alert is always French", () => {
   const french = clientEmail(request({ locale: undefined }), entries, {})!;
   assert.match(french.subject, /^Récapitulatif de votre demande de devis/);
-  assert.match(french.html, /<html lang="fr">/);
+  assert.match(french.html, /<html lang="fr" dir="ltr">/);
   assert.match(french.text, /^Événement : Gala & cérémonie$/m);
   const team = teamEmail(request(), entries, { to: ["equipe@eventhemes.ma"] });
   assert.match(team.subject, /^Demande de devis · EVT-2026-0050 · Gala & cérémonie/);

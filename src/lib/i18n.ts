@@ -1,8 +1,9 @@
 /**
  * Langues du site (cahier des charges §11) : le français à la racine, l’anglais
- * sous /en, avec des adresses traduites. L’arabe (RTL) viendra s’ajouter ici.
+ * sous /en et l’arabe sous /ar (écrit de droite à gauche), avec des adresses
+ * traduites. Les paramètres du site peuvent masquer l’anglais ou l’arabe.
  */
-export const locales = ["fr", "en"] as const;
+export const locales = ["fr", "en", "ar"] as const;
 export type Locale = (typeof locales)[number];
 export const defaultLocale: Locale = "fr";
 export const isLocale = (value: unknown): value is Locale => locales.includes(value as Locale);
@@ -13,8 +14,44 @@ export const localeOf = (value: unknown): Locale => (isLocale(value) ? value : d
 export const LOCALE_HEADER = "x-eventhemes-locale";
 
 /** Formats Intl (dates, nombres, montants) et Open Graph de chaque langue. */
-export const intlLocale: Record<Locale, string> = { fr: "fr-FR", en: "en-GB" };
-export const ogLocale: Record<Locale, string> = { fr: "fr_FR", en: "en_GB" };
+export const intlLocale: Record<Locale, string> = { fr: "fr-FR", en: "en-GB", ar: "ar-MA" };
+export const ogLocale: Record<Locale, string> = { fr: "fr_FR", en: "en_GB", ar: "ar_AR" };
+
+/** Sens d’écriture de chaque langue : l’arabe s’écrit de droite à gauche. */
+export const direction = (locale: Locale): "ltr" | "rtl" => (locale === "ar" ? "rtl" : "ltr");
+export const isRtl = (locale: Locale) => direction(locale) === "rtl";
+
+/**
+ * Flèches gauche/droite dans une grille affichée de droite à gauche (calendrier,
+ * années) : « suivant » y est à gauche. Les autres touches sont inchangées.
+ */
+export function logicalArrow(key: string, element: Element | null) {
+  if (key !== "ArrowLeft" && key !== "ArrowRight") return key;
+  const rtl = element ? getComputedStyle(element).direction === "rtl" : false;
+  return rtl ? (key === "ArrowLeft" ? "ArrowRight" : "ArrowLeft") : key;
+}
+
+/**
+ * Accord du nom avec le nombre. Un libellé simple est rendu tel quel ; un
+ * libellé à variantes « one:…|two:…|few:…|many:…|other:… » (l’arabe) donne la
+ * forme de la catégorie Intl.PluralRules du nombre, sinon « other ».
+ */
+export function plural(template: string, count: number, locale: Locale) {
+  if (!template.includes("|")) return template;
+  const forms = new Map(
+    template.split("|").map((part) => {
+      const separator = part.indexOf(":");
+      return [part.slice(0, separator).trim(), part.slice(separator + 1)] as const;
+    }),
+  );
+  return forms.get(new Intl.PluralRules(intlLocale[locale]).select(count)) ?? forms.get("other") ?? template;
+}
+
+/**
+ * Texte de gauche à droite isolé (numéro de téléphone, adresse e-mail) : dans
+ * une phrase arabe, ses chiffres et symboles gardent leur ordre.
+ */
+export const isolate = (text: string) => `\u2066${text}\u2069`;
 
 /** Pages du site et leur adresse dans chaque langue. */
 export const pageKeys = [
@@ -44,6 +81,19 @@ const slugs: Record<Locale, Record<PageKey, string>> = {
     cities: "villes",
   },
   en: {
+    home: "",
+    about: "about",
+    services: "services",
+    equipment: "equipment",
+    projects: "projects",
+    contact: "contact",
+    quote: "quote",
+    legal: "legal-notice",
+    privacy: "privacy-policy",
+    cities: "cities",
+  },
+  // L’arabe reprend les adresses anglaises : lisibles partout, sans encodage.
+  ar: {
     home: "",
     about: "about",
     services: "services",

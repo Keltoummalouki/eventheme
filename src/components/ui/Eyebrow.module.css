@@ -23,6 +23,10 @@
   transform: scaleX(var(--eyebrow-rule, 1));
   transform-origin: left center;
 }
+/* De droite à gauche (arabe) : la barre part du côté du début de lecture. */
+[dir="rtl"] .eyebrow::before {
+  transform-origin: right center;
+}
 
 .centered {
   justify-content: center;

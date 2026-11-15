@@ -11,7 +11,7 @@ import { findSocial, type QuoteContact, type QuotePhase } from "@/lib/eventheme/
 import { gsap, MOTION, prefersReducedMotion, revealSafe, useGSAP } from "@/lib/motion";
 import { isMoroccanCity } from "@/data/moroccanCities";
 import { track } from "@/lib/eventheme/audience";
-import { fill } from "@/lib/i18n";
+import { fill, isolate } from "@/lib/i18n";
 import { isValidPhone } from "@/lib/phone";
 import { useEventheme, useQuote } from "./Provider";
 import QuoteConfigurator from "./QuoteConfigurator";
@@ -181,7 +181,7 @@ export default function QuoteStudio({
   }
 
   // « {name} » : le prénom, précédé d’une virgule, s’il est connu.
-  const name = firstName ? `, ${firstName}` : "";
+  const name = firstName ? `${t.quote.nameSeparator}${firstName}` : "";
   const [titleStart, titleEnd] = t.quote.titles[phase];
   const title = (
     <>
@@ -190,7 +190,8 @@ export default function QuoteStudio({
       <em>{fill(titleEnd, { name })}</em>
     </>
   );
-  const intro = fill(t.quote.intros[phase], { phone: lead?.phone || contact.phone });
+  // Le numéro reste lisible (chiffres dans l’ordre) au milieu d’une phrase arabe.
+  const intro = fill(t.quote.intros[phase], { phone: isolate(lead?.phone || contact.phone) });
   const wide = phase === "configure" || phase === "done";
 
   return (

@@ -30,7 +30,7 @@ import {
 } from "@/lib/eventheme/types";
 import { track } from "@/lib/eventheme/audience";
 import { uploadAttachment } from "@/lib/eventheme/upload";
-import { fill, intlLocale } from "@/lib/i18n";
+import { fill, intlLocale, isRtl } from "@/lib/i18n";
 import { gsap, MOTION, prefersReducedMotion } from "@/lib/motion";
 import { useEventheme, useQuote } from "./Provider";
 import s from "./QuoteStudio.module.css";
@@ -103,7 +103,7 @@ export default function QuoteConfigurator() {
     if (!prefersReducedMotion() && panel.current)
       gsap.fromTo(
         panel.current.querySelectorAll(`.${s.stepBody} > *`),
-        { autoAlpha: 0, x: 28 },
+        { autoAlpha: 0, x: isRtl(locale) ? -28 : 28 },
         {
           autoAlpha: 1,
           x: 0,
@@ -113,7 +113,7 @@ export default function QuoteConfigurator() {
           clearProps: "transform,opacity,visibility",
         },
       );
-  }, [step]);
+  }, [step, locale]);
 
   /* Montant estimé : le chiffre défile de l'ancienne à la nouvelle valeur.
      Le nœud n'a pas d'enfant React : seul cet effet écrit dedans. */
